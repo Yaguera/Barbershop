@@ -61,7 +61,7 @@ export default async function Home() {
                 <Link href="/dashboard" className="text-branco/50 hover:text-dourado-premium transition-colors">
                   <User className="w-5 h-5" />
                 </Link>
-                <Link href="/api/auth/signout" className="text-branco/50 hover:text-red-400 transition-colors">
+                <Link href="/api/auth/signout?callbackUrl=/" className="text-branco/50 hover:text-red-400 transition-colors">
                   <LogOut className="w-5 h-5" />
                 </Link>
               </div>
