@@ -1,0 +1,204 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GetBarberAvailabilityUseCase } from './GetBarberAvailabilityUseCase';
+import { CreateAppointmentUseCase } from './CreateAppointmentUseCase';
+import { ChangeAppointmentStatusUseCase } from './ChangeAppointmentStatusUseCase';
+import { BarberRepository } from '../domain/repositories/BarberRepository';
+import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
+import { ServiceRepository } from '../domain/repositories/ServiceRepository';
+
+// Mock values
+const mockBarber = {
+  id: 'barber-1',
+  userId: 'user-barber-1',
+  workDays: [1, 2, 3, 4, 5], // Mon-Fri
+  workStart: '09:00',
+  workEnd: '18:00',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  user: {
+    id: 'user-barber-1',
+    name: 'Barber Jack',
+    email: 'jack@barber.com',
+    emailVerified: null,
+    image: null,
+    passwordHash: 'hash',
+    role: 'BARBER',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+};
+
+const mockService = {
+  id: 'service-1',
+  name: 'Corte',
+  price: 50.0,
+  durationMinutes: 30,
+  commissionRate: 0.40,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+describe('App Barbearia Core Use Cases', () => {
+  let barberRepo: BarberRepository;
+  let appointmentRepo: AppointmentRepository;
+  let serviceRepo: ServiceRepository;
+
+  beforeEach(() => {
+    barberRepo = {
+      findById: vi.fn().mockResolvedValue(mockBarber),
+      findByUserId: vi.fn(),
+      findAll: vi.fn(),
+      create: vi.fn(),
+    };
+
+    appointmentRepo = {
+      findById: vi.fn(),
+      findByIdWithRelations: vi.fn(),
+      findByBarberAndDate: vi.fn().mockResolvedValue([]),
+      findByClient: vi.fn(),
+      createTransactional: vi.fn(),
+      updateStatus: vi.fn(),
+      getFinanceReport: vi.fn(),
+    };
+
+    serviceRepo = {
+      findById: vi.fn().mockResolvedValue(mockService),
+      findAll: vi.fn(),
+      create: vi.fn(),
+    };
+  });
+
+  describe('GetBarberAvailabilityUseCase', () => {
+    it('should calculate free slots correctly for a work day', async () => {
+      const useCase = new GetBarberAvailabilityUseCase(barberRepo, appointmentRepo, serviceRepo);
+      // June 15, 2026 is a Monday (weekday 1)
+      const testDate = new Date('2026-06-15T12:00:00');
+      
+      const slots = await useCase.execute({
+        barberId: 'barber-1',
+        date: testDate,
+        serviceId: 'service-1',
+      });
+
+      // 9:00 to 18:00 is 9 hours = 18 slots of 30 mins
+      expect(slots.length).toBe(18);
+      expect(slots[0].time).toBe('09:00');
+      expect(slots[0].available).toBe(true);
+    });
+
+    it('should return empty slots if date is not a working day', async () => {
+      const useCase = new GetBarberAvailabilityUseCase(barberRepo, appointmentRepo, serviceRepo);
+      // June 14, 2026 is a Sunday (weekday 0) which is not in mockBarber.workDays
+      const testDate = new Date('2026-06-14T12:00:00');
+
+      const slots = await useCase.execute({
+        barberId: 'barber-1',
+        date: testDate,
+        serviceId: 'service-1',
+      });
+
+      expect(slots.length).toBe(0);
+    });
+  });
+
+  describe('CreateAppointmentUseCase', () => {
+    it('should throw an error if booking is outside working hours', async () => {
+      const useCase = new CreateAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
+      // Book at 08:00 AM (workStart is 09:00 AM)
+      const bookingTime = new Date('2026-06-15T08:00:00');
+
+      await expect(
+        useCase.execute({
+          clientId: 'client-1',
+          barberId: 'barber-1',
+          serviceId: 'service-1',
+          startTime: bookingTime,
+        })
+      ).rejects.toThrow('Appointment time is outside of barber working hours');
+    });
+
+    it('should throw 409 Conflict if transactional booking returns null (occupied)', async () => {
+      // Mock repository to simulate conflict
+      appointmentRepo.createTransactional = vi.fn().mockResolvedValue(null);
+
+      const useCase = new CreateAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
+      const bookingTime = new Date('2026-06-15T10:00:00');
+
+      try {
+        await useCase.execute({
+          clientId: 'client-1',
+          barberId: 'barber-1',
+          serviceId: 'service-1',
+          startTime: bookingTime,
+        });
+        // should fail if it doesn't throw
+        expect(true).toBe(false);
+      } catch (error: unknown) {
+        const err = error as Error & { status?: number };
+        expect(err.status).toBe(409);
+        expect(err.message).toBe('The requested time slot is no longer available');
+      }
+    });
+  });
+
+  describe('ChangeAppointmentStatusUseCase', () => {
+    it('should throw error if attempting to modify COMPLETED appointment as a Barber (Immutable)', async () => {
+      const mockAppointment = {
+        id: 'app-1',
+        clientId: 'client-1',
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        startTime: new Date(),
+        endTime: new Date(),
+        status: 'COMPLETED',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      appointmentRepo.findById = vi.fn().mockResolvedValue(mockAppointment);
+
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+
+      await expect(
+        useCase.execute({
+          appointmentId: 'app-1',
+          newStatus: 'CANCELED',
+          userId: 'user-barber-1',
+          userRole: 'BARBER',
+        })
+      ).rejects.toThrow('This appointment is COMPLETED and can only be modified by an administrator');
+    });
+
+    it('should allow modifying COMPLETED appointment as an ADMIN', async () => {
+      const mockAppointment = {
+        id: 'app-1',
+        clientId: 'client-1',
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        startTime: new Date(),
+        endTime: new Date(),
+        status: 'COMPLETED',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      appointmentRepo.findById = vi.fn().mockResolvedValue(mockAppointment);
+      appointmentRepo.updateStatus = vi.fn().mockResolvedValue({
+        ...mockAppointment,
+        status: 'CANCELED',
+      });
+
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+
+      const result = await useCase.execute({
+        appointmentId: 'app-1',
+        newStatus: 'CANCELED',
+        userId: 'admin-id',
+        userRole: 'ADMIN',
+      });
+
+      expect(result.status).toBe('CANCELED');
+      expect(appointmentRepo.updateStatus).toHaveBeenCalledWith('app-1', 'CANCELED');
+    });
+  });
+});
