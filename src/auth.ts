@@ -82,5 +82,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/auth/login',
   },
   trustHost: true,
-  secret: 'my-super-secret-key-for-demo',
 });
