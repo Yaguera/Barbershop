@@ -1,13 +1,9 @@
 import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
-import { prisma } from '@/infra/db/prisma-client';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
-import bcrypt from 'bcryptjs';
-import { z } from 'zod';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  // Removed PrismaAdapter completely to bypass database
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
@@ -20,37 +16,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const parsedCredentials = z
-          .object({ email: z.string().email(), password: z.string().min(6) })
-          .safeParse(credentials);
-
-        if (!parsedCredentials.success) {
-          return null;
-        }
-
-        const { email, password } = parsedCredentials.data;
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
-
-        if (!user || !user.passwordHash) {
-          return null;
-        }
-
-        const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
-
-        if (passwordsMatch) {
+        const email = credentials?.email as string || 'demo@exemplo.com';
+        
+        if (email.includes('admin')) {
           return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            image: user.image,
-            phone: user.phone,
+            id: 'admin-id-123',
+            name: 'Administrador',
+            email: email,
+            role: 'ADMIN',
+            image: null,
+            phone: '(11) 99999-9999',
+          };
+        }
+        
+        if (email.includes('barber') || email.includes('barbeiro')) {
+          return {
+            id: 'user-barber-1',
+            name: 'Lucas Oliveira',
+            email: email,
+            role: 'BARBER',
+            image: '/images/barber_portrait.png',
+            phone: '(11) 98888-8888',
           };
         }
 
-        return null;
+        // ALWAYS RETURN MOCK CLIENT USER for Demo
+        return {
+          id: 'fake-client-id-123',
+          name: 'Visitante VIP',
+          email: email,
+          role: 'CLIENT',
+          image: null,
+          phone: '(11) 99999-9999',
+        };
       },
     }),
   ],

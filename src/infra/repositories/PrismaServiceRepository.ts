@@ -1,26 +1,47 @@
 import { ServiceRepository } from '@/core/domain/repositories/ServiceRepository';
 import { Service } from '@/generated/prisma/client';
-import { prisma } from '../db/prisma-client';
+
+const MOCK_SERVICES = [
+  {
+    id: 'service-1',
+    name: 'Social',
+    price: 25.0,
+    durationMinutes: 30,
+    commissionRate: 50.0,
+  },
+  {
+    id: 'service-2',
+    name: 'Barba',
+    price: 25.0,
+    durationMinutes: 30,
+    commissionRate: 50.0,
+  },
+  {
+    id: 'service-3',
+    name: 'Combo (Corte + Barba)',
+    price: 45.0,
+    durationMinutes: 60,
+    commissionRate: 50.0,
+  }
+] as unknown as Service[];
 
 export class PrismaServiceRepository implements ServiceRepository {
-  async findById(id: string): Promise<Service | null> {
-    return await prisma.service.findUnique({
-      where: { id },
-    });
-  }
-
   async findAll(): Promise<Service[]> {
-    return await prisma.service.findMany();
+    return MOCK_SERVICES;
   }
-
-  async create(data: {
-    name: string;
-    price: number;
-    durationMinutes: number;
-    commissionRate: number;
-  }): Promise<Service> {
-    return await prisma.service.create({
-      data,
-    });
+  
+  async findById(id: string): Promise<Service | null> {
+    return MOCK_SERVICES.find(s => s.id === id) || null;
+  }
+  
+  async create(data: any): Promise<Service> {
+    const newService = {
+      id: `service-${Math.random()}`,
+      name: data.name,
+      price: data.price,
+      durationMinutes: data.durationMinutes,
+      commissionRate: data.commissionRate,
+    } as unknown as Service;
+    return newService;
   }
 }

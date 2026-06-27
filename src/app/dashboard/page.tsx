@@ -54,7 +54,7 @@ export default function ClientDashboard() {
     if (result.success) {
       await loadAppointments();
     } else {
-      setErrorMsg(result.error);
+      setErrorMsg(result.error || null);
     }
     setCancellingId(null);
   };

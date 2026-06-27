@@ -56,7 +56,7 @@ export async function signUpAction(prevState: unknown, formData: FormData) {
   } catch (error: unknown) {
     console.error('Sign up action error:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: (error as any).errors[0].message };
     }
     const err = error as Error;
     return {
@@ -139,7 +139,7 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
   } catch (error: unknown) {
     console.error('Update profile action error:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: (error as any).errors[0].message };
     }
     const err = error as Error;
     return {

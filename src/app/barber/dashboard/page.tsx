@@ -66,7 +66,7 @@ export default function BarberDashboard() {
     if (result.success) {
       await loadQueue();
     } else {
-      setErrorMsg(result.error);
+      setErrorMsg(result.error || null);
     }
     setUpdatingId(null);
   };

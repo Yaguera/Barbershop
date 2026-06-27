@@ -23,6 +23,7 @@ interface AdminBarberProp {
   workDays: number[];
   workStart: string;
   workEnd: string;
+  image?: string | null;
 }
 
 export default function AdminDashboard() {

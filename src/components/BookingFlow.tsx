@@ -99,7 +99,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         });
 
         if (result.success) {
-          setBookingSuccess(result.appointment);
+          setBookingSuccess(result.appointment || null);
           clearBooking();
         } else {
           setErrorMessage(result.error || 'Erro ao realizar agendamento.');
@@ -155,7 +155,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
     });
 
     if (result.success) {
-      setBookingSuccess(result.appointment);
+      setBookingSuccess(result.appointment || null);
       clearBooking();
     } else {
       setErrorMessage(result.error || 'Ocorreu um erro.');
