@@ -466,50 +466,31 @@ export function AdminCalendarView() {
                         setSelectedDay(parts[2]);
                         setViewMode('DAY');
                       }}
-                      className={`relative aspect-[1.1/1] p-3 rounded-2xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                      className={`relative aspect-square min-h-[3rem] min-w-[3rem] p-1.5 sm:p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-between cursor-pointer ${
                         !cell.isCurrentMonth
-                          ? 'bg-zinc-950/40 border-zinc-900/60 text-zinc-600 opacity-50'
+                          ? 'bg-zinc-950/40 border-zinc-900/60 text-zinc-600 opacity-40'
                           : isToday
-                          ? 'bg-gradient-to-br from-amber-500/20 to-zinc-900 border-amber-500/60 shadow-md shadow-amber-500/10 text-white'
-                          : 'bg-zinc-900/80 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/60 text-white'
+                          ? 'bg-gradient-to-br from-amber-500/25 to-zinc-900 border-amber-500 shadow-md shadow-amber-500/10 font-bold'
+                          : data.count > 0 && cell.isCurrentMonth
+                          ? 'bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 font-bold'
+                          : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/60 text-white'
                       }`}
                     >
-                      <div className="flex items-start justify-between w-full">
-                        <span className={`text-sm font-black ${isToday ? 'text-amber-400' : cell.isCurrentMonth ? 'text-white' : 'text-zinc-600'}`}>
+                      <div className="flex justify-center items-center w-full relative">
+                        <span className={`text-xs sm:text-sm font-black ${isToday ? 'text-amber-400' : data.count > 0 && cell.isCurrentMonth ? 'text-amber-300' : cell.isCurrentMonth ? 'text-white' : 'text-zinc-600'}`}>
                           {cell.day}
                         </span>
                         {isToday && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-500 text-zinc-950 uppercase">
-                            Hoje
-                          </span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 absolute right-0.5 top-0.5" title="Hoje"></span>
                         )}
                       </div>
 
-                      {/* Day metrics badge */}
-                      {cell.isCurrentMonth && (
-                        <div className="mt-1 w-full space-y-1">
-                          {data.count > 0 ? (
-                            <>
-                              <div className="px-1.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-between text-amber-400 font-extrabold text-[10px]">
-                                <span>{data.count} {data.count === 1 ? 'agend.' : 'agend.'}</span>
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                              </div>
-                              <div className="flex items-center justify-between text-[9px] font-bold text-zinc-300 px-0.5">
-                                <span className="text-emerald-400" title="Concluídos">✓ {data.completed_count || 0}</span>
-                                <span className="text-amber-400" title="Pendentes">⏳ {data.pending_count || 0}</span>
-                                {((data.canceled_count || 0) > 0 || (data.no_show_count || 0) > 0) && (
-                                  <span className="text-red-400" title="Cancelados/Faltas">✕ {(data.canceled_count || 0) + (data.no_show_count || 0)}</span>
-                                )}
-                              </div>
-                              <div className="text-[10px] font-bold text-emerald-400 truncate px-0.5">
-                                {formatCurrency(data.revenue)}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="text-[11px] font-medium text-zinc-600 italic py-1">
-                              Sem fluxo
-                            </div>
-                          )}
+                      {/* Simplified Minimalist Badge (No "Sem fluxo", No financial/status icon stacking) */}
+                      {cell.isCurrentMonth && data.count > 0 && (
+                        <div className="mt-0.5 flex flex-col items-center justify-center w-full">
+                          <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-zinc-950 font-black text-[9px] sm:text-[10px] leading-none shadow-sm flex items-center justify-center">
+                            {data.count}
+                          </span>
                         </div>
                       )}
                     </button>
