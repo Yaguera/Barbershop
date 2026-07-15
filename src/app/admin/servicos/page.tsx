@@ -9,6 +9,7 @@ import {
   deleteServiceAction,
 } from '@/app/actions/service-actions';
 import { uploadServiceImageAction } from '@/app/actions/upload-actions';
+import { compressImageClient } from '@/utils/compress-image';
 import {
   Scissors,
   Plus,
@@ -128,15 +129,23 @@ export default function AdminServicesPage() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const originalFile = e.target.files?.[0];
+    if (!originalFile) return;
 
     setIsUploadingImage(true);
     setErrorMsg(null);
-    const formData = new FormData();
-    formData.append('file', file);
 
     try {
+      // Compressão no navegador (Frontend) antes do envio para a Server Action
+      const compressedFile = await compressImageClient(originalFile, {
+        maxSizeMB: 0.5, // 500KB
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+      });
+
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
       const res = await uploadServiceImageAction(formData);
       if (res.success && res.imageUrl) {
         setImageUrl(res.imageUrl);
@@ -144,7 +153,7 @@ export default function AdminServicesPage() {
         setErrorMsg(res.error || 'Erro ao fazer upload da imagem.');
       }
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro de conexão ao enviar imagem.');
+      setErrorMsg(err?.message || 'Erro ao comprimir ou enviar imagem.');
     } finally {
       setIsUploadingImage(false);
     }

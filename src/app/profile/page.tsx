@@ -8,6 +8,7 @@ import { User, Key, Mail, Image as ImageIcon, Phone, Save, ArrowLeft, RefreshCw,
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { compressImageClient } from '@/utils/compress-image';
 
 const formatPhone = (value: string): string => {
   if (!value) return '';
@@ -91,17 +92,24 @@ export default function ProfilePage() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const originalFile = e.target.files?.[0];
+    if (!originalFile) return;
 
     setIsUploadingImage(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
+      // Compressão no navegador (Frontend) antes de enviar à Server Action
+      const compressedFile = await compressImageClient(originalFile, {
+        maxSizeMB: 0.5, // 500KB
+        maxWidthOrHeight: 800,
+        useWebWorker: true,
+      });
+
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
       const res = await uploadProfileImageAction(formData);
       if (res.success && res.imageUrl) {
         setImage(res.imageUrl);
@@ -110,7 +118,7 @@ export default function ProfilePage() {
         setErrorMsg(res.error || 'Erro ao fazer upload da imagem.');
       }
     } catch {
-      setErrorMsg('Erro de conexão ao enviar imagem.');
+      setErrorMsg('Erro ao comprimir ou enviar imagem.');
     } finally {
       setIsUploadingImage(false);
     }
