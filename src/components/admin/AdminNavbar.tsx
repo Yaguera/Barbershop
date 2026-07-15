@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -22,6 +23,11 @@ interface AdminNavbarProps {
 export function AdminNavbar({ activePage }: AdminNavbarProps) {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-900 bg-black/80 backdrop-blur-md">
@@ -127,138 +133,140 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
         {/* Hamburger Menu Button (Mobile) */}
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 hover:bg-zinc-800 transition-colors md:hidden focus:outline-none"
+          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 hover:bg-zinc-800 transition-colors md:hidden focus:outline-none cursor-pointer"
           aria-label="Abrir menu lateral"
         >
           <Menu className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Mobile Drawer Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 transition-opacity md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Mobile Drawer via Portal (breaks out of backdrop-blur containing block) */}
+      {mounted && isOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] md:hidden">
+          {/* Backdrop Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsOpen(false)}
+          />
 
-      {/* Mobile Drawer Sidebar */}
-      {isOpen && (
-        <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-zinc-950 border-l border-zinc-800 z-50 p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-200 md:hidden overflow-y-auto">
-          <div className="space-y-6">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
-              <span className="text-base font-bold text-amber-400">
-                Menu de Navegação
-              </span>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-slate-400 hover:text-white transition-colors"
-                aria-label="Fechar menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
+          {/* Drawer Sidebar */}
+          <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-zinc-950 border-l border-zinc-800 z-10 p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-200 overflow-y-auto text-white">
+            <div className="space-y-6">
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
+                <span className="text-base font-bold text-amber-400">
+                  Menu de Navegação
+                </span>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  aria-label="Fechar menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Profile Summary in Drawer */}
+              {session?.user && (
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+                  {session.user.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || 'Admin'}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-full border border-amber-500/30 object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
+                      {session.user.name?.charAt(0) || 'A'}
+                    </div>
+                  )}
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-xs text-slate-400">Administrador</span>
+                    <span className="text-sm font-bold text-white truncate">{session.user.name}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation Links Stacked Vertically */}
+              <nav className="flex flex-col gap-2.5">
+                <Link
+                  href="/admin/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                    activePage === 'dashboard'
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
+                      : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
+                  }`}
+                >
+                  <LayoutDashboard className="w-4 h-4 text-amber-400" />
+                  Painel Administrativo
+                </Link>
+
+                <Link
+                  href="/admin/calendario"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                    activePage === 'calendario'
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
+                      : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
+                  }`}
+                >
+                  <CalendarDays className="w-4 h-4 text-amber-400" />
+                  Calendário Hierárquico
+                </Link>
+
+                <Link
+                  href="/admin/clientes"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                    activePage === 'clientes'
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
+                      : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
+                  }`}
+                >
+                  <Users className="w-4 h-4 text-amber-400" />
+                  Gestão de Clientes
+                </Link>
+
+                <Link
+                  href="/admin/servicos"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                    activePage === 'servicos'
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
+                      : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
+                  }`}
+                >
+                  <Scissors className="w-4 h-4 text-amber-400" />
+                  Gestão de Serviços
+                </Link>
+
+                <Link
+                  href="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
+                >
+                  <User className="w-4 h-4 text-slate-400" />
+                  Meu Perfil
+                </Link>
+              </nav>
             </div>
 
-            {/* Profile Summary in Drawer */}
-            {session?.user && (
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-                {session.user.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt={session.user.name || 'Admin'}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 rounded-full border border-amber-500/30 object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
-                    {session.user.name?.charAt(0) || 'A'}
-                  </div>
-                )}
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-xs text-slate-400">Administrador</span>
-                  <span className="text-sm font-bold text-white truncate">{session.user.name}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Navigation Links Stacked Vertically */}
-            <nav className="flex flex-col gap-2.5">
-              <Link
-                href="/admin/dashboard"
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  activePage === 'dashboard'
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
-                    : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
-                }`}
+            {/* Drawer Footer with Sign Out */}
+            <div className="pt-4 border-t border-zinc-900">
+              <button
+                onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
               >
-                <LayoutDashboard className="w-4 h-4 text-amber-400" />
-                Painel Administrativo
-              </Link>
-
-              <Link
-                href="/admin/calendario"
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  activePage === 'calendario'
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
-                    : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
-                }`}
-              >
-                <CalendarDays className="w-4 h-4 text-amber-400" />
-                Calendário Hierárquico
-              </Link>
-
-              <Link
-                href="/admin/clientes"
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  activePage === 'clientes'
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
-                    : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
-                }`}
-              >
-                <Users className="w-4 h-4 text-amber-400" />
-                Gestão de Clientes
-              </Link>
-
-              <Link
-                href="/admin/servicos"
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  activePage === 'servicos'
-                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
-                    : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
-                }`}
-              >
-                <Scissors className="w-4 h-4 text-amber-400" />
-                Gestão de Serviços
-              </Link>
-
-              <Link
-                href="/profile"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
-              >
-                <User className="w-4 h-4 text-slate-400" />
-                Meu Perfil
-              </Link>
-            </nav>
+                <LogOut className="w-4 h-4" />
+                Sair do Sistema
+              </button>
+            </div>
           </div>
-
-          {/* Drawer Footer with Sign Out */}
-          <div className="pt-4 border-t border-zinc-900">
-            <button
-              onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair do Sistema
-            </button>
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );

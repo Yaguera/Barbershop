@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,8 +10,8 @@ import {
   User as UserIcon, 
   LogOut, 
   Menu, 
-  X, 
-  Calendar 
+  X,
+  LayoutDashboard
 } from 'lucide-react';
 
 interface BarberNavbarProps {
@@ -20,10 +21,16 @@ interface BarberNavbarProps {
 export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-900 bg-preto-classico/95 backdrop-blur-md text-white">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        {/* Logo / Brand */}
         <Link href="/" className="flex items-center gap-3">
           <Image 
             src="/logo.png" 
@@ -37,28 +44,30 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-4">
-          {session?.user && (
-            <div className="flex items-center gap-2">
-              {session.user.image ? (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name || 'Barbeiro'}
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-xs">
-                  {session.user.name?.charAt(0) || 'B'}
-                </div>
-              )}
-              <span className="text-sm text-zinc-350">
-                Barbeiro: <span className="text-white font-semibold">{session.user.name}</span>
-              </span>
-            </div>
-          )}
+        {/* Desktop Navigation (hidden on mobile) */}
+        <div className="hidden md:flex items-center gap-3">
+          <div className="flex items-center gap-2 mr-2 pr-3 border-r border-zinc-800">
+            {session?.user?.image && (
+              <Image
+                src={session.user.image}
+                alt={session.user.name || 'Barbeiro'}
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
+              />
+            )}
+            <span className="text-sm text-zinc-350">
+              Barbeiro: <span className="text-white font-semibold">{session?.user?.name}</span>
+            </span>
+          </div>
+
+          <Link
+            href="/barber/dashboard"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 transition-colors"
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            Agenda
+          </Link>
 
           {barberProfileId && (
             <Link
@@ -77,7 +86,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
             <UserIcon className="w-3.5 h-3.5" />
             Perfil
           </Link>
-
+          
           <button
             onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-650/15 hover:bg-red-650/25 text-red-400 border border-red-500/25 transition-colors cursor-pointer"
@@ -90,102 +99,108 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
         {/* Hamburger Menu Button (Mobile) */}
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 hover:bg-zinc-800 transition-colors md:hidden focus:outline-none"
-          aria-label="Abrir menu do barbeiro"
+          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 hover:bg-zinc-800 transition-colors md:hidden focus:outline-none cursor-pointer"
+          aria-label="Abrir menu lateral"
         >
           <Menu className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Mobile Drawer Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 transition-opacity md:hidden"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Mobile Drawer via Portal */}
+      {mounted && isOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] md:hidden">
+          {/* Backdrop Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsOpen(false)}
+          />
 
-      {/* Mobile Drawer Sidebar */}
-      {isOpen && (
-        <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-zinc-950 border-l border-zinc-800 z-50 p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-200 md:hidden overflow-y-auto">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
-              <span className="text-base font-bold text-amber-400">
-                Painel do Barbeiro
-              </span>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-slate-400 hover:text-white transition-colors"
-                aria-label="Fechar menu"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {session?.user && (
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-                {session.user.image ? (
-                  <Image
-                    src={session.user.image}
-                    alt={session.user.name || 'Barbeiro'}
-                    width={40}
-                    height={40}
-                    className="w-10 h-10 rounded-full border border-carvalho/30 object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
-                    {session.user.name?.charAt(0) || 'B'}
-                  </div>
-                )}
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-xs text-amber-400/80 font-medium">Barbeiro Profissional</span>
-                  <span className="text-sm font-bold text-white truncate">{session.user.name}</span>
-                </div>
-              </div>
-            )}
-
-            <nav className="flex flex-col gap-2.5">
-              <Link
-                href="/barber/dashboard"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/15 text-amber-400 border border-amber-500/40 transition-all"
-              >
-                <Calendar className="w-4 h-4 text-amber-400" />
-                Fila de Atendimento (Agenda)
-              </Link>
-
-              {barberProfileId && (
-                <Link
-                  href={`/admin/barbeiros/${barberProfileId}/metricas`}
+          {/* Drawer Sidebar */}
+          <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-zinc-950 border-l border-zinc-800 z-10 p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-200 overflow-y-auto text-white">
+            <div className="space-y-6">
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
+                <span className="text-base font-bold text-amber-400">
+                  Menu do Barbeiro
+                </span>
+                <button
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
+                  className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  aria-label="Fechar menu"
                 >
-                  <BarChart3 className="w-4 h-4 text-amber-400" />
-                  Minhas Métricas & Desempenho
-                </Link>
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Profile Summary in Drawer */}
+              {session?.user && (
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+                  {session.user.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || 'Barbeiro'}
+                      width={40}
+                      height={40}
+                      className="w-10 h-10 rounded-full border border-carvalho/30 object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-carvalho/20 flex items-center justify-center text-carvalho font-bold">
+                      {session.user.name?.charAt(0) || 'B'}
+                    </div>
+                  )}
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-xs text-zinc-400">Barbeiro</span>
+                    <span className="text-sm font-bold text-white truncate">{session.user.name}</span>
+                  </div>
+                </div>
               )}
 
-              <Link
-                href="/profile"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
-              >
-                <UserIcon className="w-4 h-4 text-slate-400" />
-                Meu Perfil
-              </Link>
-            </nav>
-          </div>
+              {/* Navigation Links Stacked Vertically */}
+              <nav className="flex flex-col gap-2.5">
+                <Link
+                  href="/barber/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-200 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-amber-400" />
+                  Minha Agenda & Calendário
+                </Link>
 
-          <div className="pt-4 border-t border-zinc-900">
-            <button
-              onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold bg-red-650/15 hover:bg-red-650/25 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair da Conta
-            </button>
+                {barberProfileId && (
+                  <Link
+                    href={`/admin/barbeiros/${barberProfileId}/metricas`}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-amber-500/15 text-amber-400 border border-amber-500/40 transition-all"
+                  >
+                    <BarChart3 className="w-4 h-4 text-amber-400" />
+                    Minhas Métricas
+                  </Link>
+                )}
+
+                <Link
+                  href="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
+                >
+                  <UserIcon className="w-4 h-4 text-slate-400" />
+                  Meu Perfil
+                </Link>
+              </nav>
+            </div>
+
+            {/* Drawer Footer with Sign Out */}
+            <div className="pt-4 border-t border-zinc-900">
+              <button
+                onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold bg-red-650/15 hover:bg-red-650/25 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                Sair da Conta
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );
