@@ -2,6 +2,7 @@ import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberReposit
 import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { auth } from '@/auth';
 import BookingFlow from '@/components/BookingFlow';
+import SignOutButton from '@/components/SignOutButton';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { User, LogOut } from 'lucide-react';
@@ -70,9 +71,7 @@ export default async function Home() {
                 <Link href="/dashboard" className="text-branco/50 hover:text-dourado-premium transition-colors">
                   <User className="w-5 h-5" />
                 </Link>
-                <Link href="/api/auth/signout?callbackUrl=/" className="text-branco/50 hover:text-red-400 transition-colors">
-                  <LogOut className="w-5 h-5" />
-                </Link>
+                <SignOutButton />
               </div>
             ) : (
               <Link

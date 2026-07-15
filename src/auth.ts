@@ -114,9 +114,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const isProd = process.env.NODE_ENV === 'production';
       let cleanBaseUrl = baseUrl;
       if (isProd && cleanBaseUrl.includes('localhost')) {
-        const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-        if (vercelDomain) {
-          cleanBaseUrl = `https://${vercelDomain}`;
+        try {
+          const { headers } = await import('next/headers');
+          const headerList = await headers();
+          const host = headerList.get('x-forwarded-host') || headerList.get('host');
+          if (host && !host.includes('localhost')) {
+            const proto = headerList.get('x-forwarded-proto') || 'https';
+            cleanBaseUrl = `${proto}://${host}`;
+          } else {
+            const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+            if (vercelDomain) {
+              cleanBaseUrl = `https://${vercelDomain}`;
+            }
+          }
+        } catch (e) {
+          const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+          if (vercelDomain) {
+            cleanBaseUrl = `https://${vercelDomain}`;
+          }
         }
       }
 

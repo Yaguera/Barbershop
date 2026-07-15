@@ -114,7 +114,7 @@ export default function ClientDashboard() {
             </Link>
             <button
               id="btn-logout"
-              onClick={() => signOut({ callbackUrl: '/' })}
+              onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-600/15 hover:bg-red-600/25 text-red-400 border border-red-500/25 transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
