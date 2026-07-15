@@ -40,12 +40,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
 
         if (passwordsMatch) {
+          const cleanImage = user.image && (user.image.startsWith('data:') || user.image.length > 150) ? 'DB_IMAGE' : user.image;
           return {
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
-            image: user.image,
+            image: cleanImage,
             phone: user.phone,
           };
         }
@@ -64,8 +65,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role || 'CLIENT';
         token.phone = user.phone;
         const img = user.image || null;
-        if (img && (img.startsWith('data:') || img.length > 1000)) {
-          token.image = 'BASE64_IN_DB';
+        if (img && (img.startsWith('data:') || img.length > 150 || img === 'BASE64_IN_DB' || img === 'DB_IMAGE')) {
+          token.image = 'DB_IMAGE';
         } else {
           token.image = img;
         }
@@ -76,13 +77,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (session.phone !== undefined) token.phone = session.phone;
         if (session.image !== undefined) {
           const img = session.image;
-          if (img && (typeof img === 'string') && (img.startsWith('data:') || img.length > 1000)) {
-            token.image = 'BASE64_IN_DB';
+          if (img && (typeof img === 'string') && (img.startsWith('data:') || img.length > 150 || img === 'BASE64_IN_DB' || img === 'DB_IMAGE')) {
+            token.image = 'DB_IMAGE';
           } else {
             token.image = session.image;
           }
         }
       }
+      // Remove any large properties automatically attached by Google/OAuth providers or adapter
+      delete (token as any).picture;
+      delete (token as any).sub;
+      delete (token as any).passwordHash;
       return token;
     },
     async session({ session, token }) {
@@ -93,17 +98,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (token.name) session.user.name = token.name as string;
         if (token.email) session.user.email = token.email as string;
 
-        if (token.image === 'BASE64_IN_DB' && token.id) {
+        if ((token.image === 'BASE64_IN_DB' || token.image === 'DB_IMAGE') && token.id) {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
             select: { image: true },
           });
           session.user.image = dbUser?.image || null;
         } else {
-          session.user.image = token.image as string;
+          session.user.image = (token.image as string) || null;
         }
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      const isProd = process.env.NODE_ENV === 'production';
+      let cleanBaseUrl = baseUrl;
+      if (isProd && cleanBaseUrl.includes('localhost')) {
+        const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+        if (vercelDomain) {
+          cleanBaseUrl = `https://${vercelDomain}`;
+        }
+      }
+
+      if (url.startsWith('/')) {
+        return `${cleanBaseUrl}${url}`;
+      }
+      try {
+        const urlObj = new URL(url);
+        if (urlObj.origin === cleanBaseUrl || (isProd && !urlObj.hostname.includes('localhost'))) {
+          return url;
+        }
+      } catch (e) {
+        // Ignore parsing errors
+      }
+      return cleanBaseUrl;
     },
   },
   pages: {
