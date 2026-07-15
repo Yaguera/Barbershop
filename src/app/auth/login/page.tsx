@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 function LoginForm() {
   const router = useRouter();
@@ -55,6 +55,10 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-md p-8 bg-zinc-900 border border-nogueira/15 rounded-3xl shadow-xl space-y-6">
+      <Link href="/" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-semibold transition-colors">
+        <ArrowLeft className="w-4 h-4" />
+        Voltar para o início
+      </Link>
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold tracking-tight text-preto-classico">Bem-vindo de volta</h1>
         <p className="text-off-white text-sm">Entre na sua conta para agendar e gerenciar seus horários.</p>

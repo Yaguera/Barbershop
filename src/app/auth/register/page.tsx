@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signUpAction } from '@/app/actions/auth-actions';
-import { User as UserIcon, Mail, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { User as UserIcon, Mail, Lock, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 
 function RegisterForm() {
   const router = useRouter();
@@ -52,6 +52,10 @@ function RegisterForm() {
 
   return (
     <div className="w-full max-w-md p-8 bg-zinc-900 border border-nogueira/15 rounded-3xl shadow-xl space-y-6">
+      <Link href="/" className="inline-flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-semibold transition-colors">
+        <ArrowLeft className="w-4 h-4" />
+        Voltar para o início
+      </Link>
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold tracking-tight text-preto-classico">Criar uma conta</h1>
         <p className="text-off-white text-sm">Cadastre-se para agendar seu horário em instantes.</p>

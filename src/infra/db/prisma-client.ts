@@ -8,7 +8,11 @@ if (!connectionString) {
   throw new Error('DATABASE_URL is not set in environment variables');
 }
 
-const pool = new Pool({ connectionString });
+const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const pool = new Pool({
+  connectionString,
+  ssl: isLocal ? false : { rejectUnauthorized: false },
+});
 const adapter = new PrismaPg(pool);
 
 // Global declaration for hot-reloading in Next.js development

@@ -66,7 +66,7 @@ export default function BarberDashboard() {
     if (result.success) {
       await loadQueue();
     } else {
-      setErrorMsg(result.error);
+      setErrorMsg(result.error || 'Erro ao atualizar status');
     }
     setUpdatingId(null);
   };
@@ -196,7 +196,7 @@ export default function BarberDashboard() {
             {/* Logout Button */}
             <button
               id="btn-logout"
-              onClick={() => signOut({ callbackUrl: '/auth/login' })}
+              onClick={() => signOut({ callbackUrl: '/' })}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-650/15 hover:bg-red-650/25 text-red-400 border border-red-500/25 transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />

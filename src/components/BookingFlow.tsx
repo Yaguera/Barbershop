@@ -98,7 +98,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
           startTimeStr: startTime,
         });
 
-        if (result.success) {
+        if (result.success && result.appointment) {
           setBookingSuccess(result.appointment);
           clearBooking();
         } else {
@@ -154,7 +154,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
       startTimeStr: startTime,
     });
 
-    if (result.success) {
+    if (result.success && result.appointment) {
       setBookingSuccess(result.appointment);
       clearBooking();
     } else {
