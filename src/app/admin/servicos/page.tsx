@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { AdminNavbar } from '@/components/admin/AdminNavbar';
 
 interface ServiceProp {
   id: string;
@@ -255,60 +256,7 @@ export default function AdminServicesPage() {
   return (
     <div className="min-h-screen bg-black text-slate-100 flex flex-col selection:bg-amber-500/30">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-zinc-900 bg-black/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Logo" width={40} height={40} className="w-10 h-10 rounded-full border border-amber-500/30 object-cover" />
-            <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent hidden sm:inline">
-              José Carlos Barber Shop
-            </span>
-          </Link>
-          <div className="flex items-center gap-3 flex-wrap">
-            {session?.user && (
-              <div className="flex items-center gap-2 mr-2">
-                <span className="text-sm text-slate-400 hidden md:inline">
-                  Admin: <span className="text-slate-200 font-semibold">{session.user.name}</span>
-                </span>
-              </div>
-            )}
-            <Link
-              href="/admin/dashboard"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Dashboard
-            </Link>
-            <Link
-              href="/admin/calendario"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition-colors"
-            >
-              <CalendarDays className="w-3.5 h-3.5" />
-              Calendário
-            </Link>
-            <Link
-              href="/admin/clientes"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-amber-400 border border-zinc-800 transition-colors"
-            >
-              <Users className="w-3.5 h-3.5" />
-              Clientes
-            </Link>
-            <Link
-              href="/profile"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 transition-colors"
-            >
-              <User className="w-3.5 h-3.5" />
-              Perfil
-            </Link>
-            <button
-              onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
+      <AdminNavbar activePage="servicos" />
 
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 py-8 space-y-8 max-w-6xl">

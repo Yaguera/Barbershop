@@ -6,6 +6,7 @@ import { getClientAppointmentsAction, changeAppointmentStatusAction } from '@/ap
 import { Calendar, Scissors, AlertCircle, RefreshCw, X, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ClientNavbar } from '@/components/ClientNavbar';
 
 interface ClientAppointment {
   id: string;
@@ -82,47 +83,7 @@ export default function ClientDashboard() {
   return (
     <div className="min-h-screen bg-preto-classico text-off-white flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-zinc-900 bg-preto-classico/95 backdrop-blur-md text-white">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="José Carlos Barber Shop Logo" width={40} height={40} className="w-10 h-10 rounded-full border border-carvalho/30 object-cover" />
-            <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent hidden sm:inline">
-              José Carlos Barber Shop
-            </span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              {session?.user?.image && (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name || 'Cliente'}
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
-                />
-              )}
-              <span className="text-sm text-zinc-350">
-                Cliente: <span className="text-white font-semibold">{session?.user?.name}</span>
-              </span>
-            </div>
-            <Link
-              href="/profile"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 transition-colors"
-            >
-              <User className="w-3.5 h-3.5" />
-              Perfil
-            </Link>
-            <button
-              id="btn-logout"
-              onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-600/15 hover:bg-red-600/25 text-red-400 border border-red-500/25 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
+      <ClientNavbar />
 
       {/* Content */}
       <main className="flex-grow container mx-auto px-4 py-8 max-w-3xl space-y-6">

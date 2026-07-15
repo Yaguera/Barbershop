@@ -6,6 +6,7 @@ import { getBarberAppointmentsAction, changeAppointmentStatusAction, getBarberMo
 import { Clock, Check, X, AlertOctagon, RefreshCw, ChevronLeft, ChevronRight, Calendar, User as UserIcon, LogOut, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BarberNavbar } from '@/components/barber/BarberNavbar';
 
 interface BarberAppointment {
   id: string;
@@ -187,58 +188,8 @@ export default function BarberDashboard() {
   return (
     <div className="min-h-screen bg-preto-classico text-off-white flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-zinc-900 bg-preto-classico/95 backdrop-blur-md text-white">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="José Carlos Barber Shop Logo" width={40} height={40} className="w-10 h-10 rounded-full border border-carvalho/30 object-cover" />
-            <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent hidden sm:inline">
-              José Carlos Barber Shop
-            </span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              {session?.user?.image && (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name || 'Barbeiro'}
-                  width={32}
-                  height={32}
-                  className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
-                />
-              )}
-              <span className="text-sm text-zinc-350">
-                Barbeiro: <span className="text-white font-semibold">{session?.user?.name}</span>
-              </span>
-            </div>
-            {barberProfileId && (
-              <Link
-                href={`/admin/barbeiros/${barberProfileId}/metricas`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
-              >
-                <BarChart3 className="w-3.5 h-3.5" />
-                Métricas
-              </Link>
-            )}
-            <Link
-              href="/profile"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 transition-colors"
-            >
-              <UserIcon className="w-3.5 h-3.5" />
-              Perfil
-            </Link>
-            
-            {/* Logout Button */}
-            <button
-              id="btn-logout"
-              onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-650/15 hover:bg-red-650/25 text-red-400 border border-red-500/25 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Header */}
+      <BarberNavbar barberProfileId={barberProfileId || undefined} />
 
       {/* Content */}
       <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl space-y-8">
@@ -303,46 +254,40 @@ export default function BarberDashboard() {
                       setCurrentMonthDate(cell.date);
                     }
                   }}
-                  className={`relative aspect-[4/3] sm:aspect-[1.5/1] p-2 rounded-xl text-left border transition-all flex flex-col justify-between cursor-pointer ${
+                  className={`relative aspect-square min-h-[40px] min-w-[40px] p-1.5 sm:p-2 rounded-xl text-center border transition-all flex flex-col items-center justify-between cursor-pointer ${
                     isSelected
-                      ? 'bg-azul-barbeiro text-white border-azul-barbeiro shadow-md shadow-blue-500/10'
+                      ? 'bg-azul-barbeiro text-white border-azul-barbeiro shadow-md shadow-blue-500/10 font-bold'
                       : isToday
                       ? 'bg-carvalho/10 text-nogueira border-carvalho/50 hover:bg-carvalho/20 font-bold'
+                      : cellOccupancy > 0 && cell.isCurrentMonth
+                      ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40 hover:bg-yellow-500/30 font-bold'
                       : cell.isCurrentMonth
                       ? 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800/50 text-off-white'
                       : 'bg-transparent border-transparent text-zinc-300 opacity-40'
                   } ${
-                    isWeekend && !isSelected && cell.isCurrentMonth
+                    isWeekend && !isSelected && cell.isCurrentMonth && !(cellOccupancy > 0)
                       ? 'bg-zinc-50/55 text-zinc-500' 
                       : ''
                   }`}
                 >
-                  <div className="flex justify-between items-start w-full">
-                    <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-zinc-500'}`}>
+                  <div className="flex justify-center items-center w-full relative">
+                    <span className={`text-xs sm:text-sm font-bold ${isSelected ? 'text-white' : cellOccupancy > 0 && cell.isCurrentMonth ? 'text-yellow-400' : 'text-zinc-400'}`}>
                       {cell.day}
                     </span>
                     {isToday && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-nogueira"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-nogueira absolute right-0.5 top-0.5"></span>
                     )}
                   </div>
                   
-                  {/* Visual Occupancy Indicator (RNF / Item 7) */}
+                  {/* Minimalist Occupancy Indicator (Mobile-First) */}
                   {cellOccupancy > 0 && cell.isCurrentMonth && (
-                    <div className="mt-1 flex flex-col gap-1 items-start w-full">
-                      <div className={`px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 w-full justify-between ${
-                        isSelected
-                          ? 'bg-white/20 text-white'
-                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                      }`}>
-                        <span className="truncate">{cellOccupancy} {cellOccupancy === 1 ? 'cliente' : 'clientes'}</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0"></span>
-                      </div>
-                      <div className="w-full h-1 bg-amber-400/30 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-amber-400 rounded-full transition-all" 
-                          style={{ width: `${Math.min(100, cellOccupancy * 20)}%` }}
-                        />
-                      </div>
+                    <div className="mt-0.5 flex flex-col items-center justify-center w-full">
+                      {/* Small centered dot */}
+                      <div className={`w-1.5 h-1.5 rounded-full mt-0.5 mx-auto ${isSelected ? 'bg-white' : 'bg-yellow-500'}`} />
+                      {/* Subtle count only on larger screens */}
+                      <span className={`hidden sm:block text-[9px] font-bold mt-0.5 ${isSelected ? 'text-white/90' : 'text-yellow-400/90'}`}>
+                        {cellOccupancy} {cellOccupancy === 1 ? 'atend.' : 'atend.'}
+                      </span>
                     </div>
                   )}
                 </button>
