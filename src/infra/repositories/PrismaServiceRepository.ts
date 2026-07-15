@@ -9,8 +9,16 @@ export class PrismaServiceRepository implements ServiceRepository {
     });
   }
 
-  async findAll(): Promise<Service[]> {
-    return await prisma.service.findMany();
+  async findAll(options?: { activeOnly?: boolean }): Promise<Service[]> {
+    if (options?.activeOnly) {
+      return await prisma.service.findMany({
+        where: { active: true },
+        orderBy: { name: 'asc' },
+      });
+    }
+    return await prisma.service.findMany({
+      orderBy: { name: 'asc' },
+    });
   }
 
   async create(data: {
@@ -18,8 +26,30 @@ export class PrismaServiceRepository implements ServiceRepository {
     price: number;
     durationMinutes: number;
     commissionRate: number;
+    image?: string | null;
+    active?: boolean;
   }): Promise<Service> {
     return await prisma.service.create({
+      data: {
+        ...data,
+        active: data.active ?? true,
+      },
+    });
+  }
+
+  async update(
+    id: string,
+    data: Partial<{
+      name: string;
+      price: number;
+      durationMinutes: number;
+      commissionRate: number;
+      image?: string | null;
+      active?: boolean;
+    }>
+  ): Promise<Service> {
+    return await prisma.service.update({
+      where: { id },
       data,
     });
   }

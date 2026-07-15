@@ -19,6 +19,7 @@ model User {
   passwordHash  String?         // Optional because Google users won't have it initially
   phone         String?
   role          String          @default("CLIENT") // ADMIN, BARBER, CLIENT
+  active        Boolean         @default(true)     // Soft delete status
   accounts      Account[]
   sessions      Session[]
   appointments  Appointment[]   @relation("ClientAppointments")
@@ -80,6 +81,8 @@ model Service {
   price            Float
   durationMinutes  Int
   commissionRate   Float         // e.g. 0.40 for 40% (RN09.2)
+  image            String?
+  active           Boolean       @default(true)
   appointments     Appointment[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

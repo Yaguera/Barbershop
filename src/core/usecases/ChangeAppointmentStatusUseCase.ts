@@ -20,6 +20,23 @@ export class ChangeAppointmentStatusUseCase {
       throw new Error('Appointment not found');
     }
 
+    // Validação de Domínio: Bloqueio de Status "Não Compareceu" Prematuro
+    if (newStatus === 'NO_SHOW') {
+      const now = new Date();
+      if (now < appointment.startTime) {
+        const error = new Error("Não é possível marcar como 'Não compareceu' antes do horário agendado.");
+        (error as any).status = 400;
+        throw error;
+      }
+    }
+
+    // Trava de Transição de Estado: Imutabilidade de Agendamentos Cancelados
+    if (appointment.status === 'CANCELED') {
+      const error = new Error("Operação inválida: Este agendamento já foi cancelado e não pode sofrer novas alterações.");
+      (error as any).status = 400;
+      throw error;
+    }
+
     // 2. Check current status rules (RN07.3)
     if (appointment.status === 'COMPLETED') {
       // Once marked as COMPLETED, it is immutable for the barber (only Admin can audit and correct)

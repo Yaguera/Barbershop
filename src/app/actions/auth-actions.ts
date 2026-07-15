@@ -4,6 +4,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
 import { auth } from '@/auth';
+import { UpdatePasswordUseCase } from '@/core/usecases/UpdatePasswordUseCase';
 
 // Zod Schema to validate and sanitize sign-up payload (RN01.2)
 const signUpSchema = z.object({
@@ -111,18 +112,12 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
       email: string;
       image: string | null;
       phone: string | null;
-      passwordHash?: string;
     } = {
       name: payload.name,
       email: payload.email,
       image: payload.image || null,
       phone: payload.phone || null,
     };
-
-    // Hash password if updating
-    if (payload.password) {
-      updateData.passwordHash = await bcrypt.hash(payload.password, 10);
-    }
 
     const updatedUser = await userRepository.update(userId, updateData);
 
@@ -146,5 +141,33 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
       success: false,
       error: err.message || 'Erro interno no servidor.',
     };
+  }
+}
+
+export async function updatePasswordAction(data: {
+  currentPassword?: string;
+  newPassword?: string;
+}) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return { success: false, error: 'Usuário não autenticado.' };
+    }
+
+    const userRepository = new PrismaUserRepository();
+    const useCase = new UpdatePasswordUseCase(userRepository);
+
+    await useCase.execute({
+      userId,
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
+    });
+
+    return { success: true, message: 'Senha atualizada com sucesso!' };
+  } catch (error: unknown) {
+    console.error('Update password action error:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao alterar senha.' };
   }
 }

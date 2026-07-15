@@ -1,6 +1,7 @@
 import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
+import { startOfDay, endOfDay } from '../utils/date-utils';
 
 export interface GetBarberAvailabilityRequest {
   barberId: string;
@@ -49,16 +50,14 @@ export class GetBarberAvailabilityUseCase {
 
     const blocksNeeded = Math.ceil(durationMinutes / 30);
 
-    // 4. Retrieve existing appointments for the day
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    // 4. Retrieve existing appointments for the day using precise local boundaries
+    const start = startOfDay(date);
+    const end = endOfDay(date);
 
     const appointments = await this.appointmentRepository.findByBarberAndDate(
       barberId,
-      startOfDay,
-      endOfDay
+      start,
+      end
     );
 
     // Filter active appointments that block time (PENDING or COMPLETED)

@@ -8,16 +8,16 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const [opacity, setOpacity] = useState(1);
 
   useEffect(() => {
-    // Show splash for 2.5 seconds
+    // Show splash briefly for smooth entrance without blocking LCP
     const timer1 = setTimeout(() => {
       setOpacity(0);
-    }, 2000);
+    }, 600);
 
-    // Unmount after fade out transition (500ms)
+    // Unmount after fade out transition (300ms)
     const timer2 = setTimeout(() => {
       setIsVisible(false);
       onFinish();
-    }, 2500);
+    }, 900);
 
     return () => {
       clearTimeout(timer1);
@@ -29,7 +29,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-preto-profundo transition-opacity duration-500 ease-in-out"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-preto-profundo transition-opacity duration-300 ease-in-out pointer-events-none"
       style={{ opacity }}
     >
       {/* Background Image with heavy blur */}
@@ -38,6 +38,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           src="/images/splash_bg.png"
           alt="Barbershop Background"
           fill
+          sizes="100vw"
+          quality={70}
           className="object-cover opacity-40 blur-sm scale-105"
           priority
         />

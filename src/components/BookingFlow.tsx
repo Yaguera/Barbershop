@@ -15,6 +15,7 @@ interface ServiceProp {
   name: string;
   price: number;
   durationMinutes: number;
+  image?: string | null;
 }
 
 interface BarberProp {
@@ -23,6 +24,9 @@ interface BarberProp {
   workDays: number[];
   workStart: string;
   workEnd: string;
+  image?: string | null;
+  active?: boolean;
+  specialty?: string;
 }
 
 interface BookingFlowProps {
@@ -56,7 +60,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
   } = useBookingStore();
 
   // Local state
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
   const [step, setStep] = useState(0); // 0 = Home, 1 = Services, 2 = Barber, 3 = DateTime, 4 = Confirm
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [availableSlots, setAvailableSlots] = useState<{ time: string; dateTime: string; available: boolean }[]>([]);
@@ -84,6 +88,16 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const shown = sessionStorage.getItem('splash_shown_perf');
+      if (!shown) {
+        setShowSplash(true);
+        sessionStorage.setItem('splash_shown_perf', 'true');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const attemptAutoSubmit = async () => {
@@ -172,9 +186,6 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p);
   };
 
-  if (showSplash) {
-    return <SplashScreen onFinish={() => setShowSplash(false)} />;
-  }
 
   if (bookingSuccess) {
     return (
@@ -226,7 +237,9 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
   }
 
   return (
-    <div className="space-y-8 pb-12">
+    <>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      <div className="space-y-8 pb-12">
       {/* Dynamic Header based on Step */}
       {step > 0 && (
         <div className="flex items-center justify-between mb-6">
@@ -252,7 +265,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               <h1 className="text-2xl font-bold text-branco">{session?.user?.name || 'Visitante VIP'}</h1>
             </div>
             {session?.user?.image ? (
-              <img src={session.user.image} alt="Profile" className="w-12 h-12 rounded-full border-2 border-dourado-premium/50" />
+              <Image src={session.user.image} alt="Profile" width={48} height={48} className="w-12 h-12 rounded-full border-2 border-dourado-premium/50 object-cover" />
             ) : (
               <div className="w-12 h-12 rounded-full bg-cinza-grafite flex items-center justify-center border border-branco/10">
                 <UserIcon className="w-6 h-6 text-branco/50" />
@@ -289,7 +302,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 <div key={service.id} onClick={() => { setService(service.id, service.name, service.price); setStep(2); }} 
                      className="snap-center shrink-0 w-64 glass rounded-3xl p-4 border border-branco/5 cursor-pointer hover:bg-cinza-grafite/50 transition-all">
                   <div className="h-32 rounded-2xl mb-4 overflow-hidden relative">
-                    <Image src="/images/service_image.png" alt="Service" fill className="object-cover" />
+                    <Image src={service.image || "/images/service_image.png"} alt="Service" fill className="object-cover" />
                   </div>
                   <h4 className="font-bold text-branco text-lg">{service.name}</h4>
                   <div className="flex justify-between items-center mt-2">
@@ -305,13 +318,14 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
           <div>
             <h3 className="text-lg font-bold text-branco mb-4">Nossos Barbeiros</h3>
             <div className="grid grid-cols-2 gap-4">
-              {initialBarbers.slice(0, 4).map((barber) => (
+              {initialBarbers.filter((b) => b.active !== false).slice(0, 4).map((barber) => (
                 <div key={barber.id} onClick={() => { setBarber(barber.id, barber.name); setStep(3); }} 
                      className="glass rounded-3xl p-4 flex flex-col items-center cursor-pointer hover:bg-cinza-grafite/50 transition-all text-center">
                   <div className="w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-dourado-premium/30">
-                    <Image src="/images/barber_portrait.png" alt="Barber" width={64} height={64} className="object-cover w-full h-full" />
+                    <Image src={barber.image || "/images/barber_portrait.png"} alt="Barber" width={64} height={64} className="object-cover w-full h-full" />
                   </div>
                   <h4 className="font-bold text-branco text-sm">{barber.name}</h4>
+                  <p className="text-branco/50 text-[10px] mt-0.5 line-clamp-1">{barber.specialty || 'Especialista Premium'}</p>
                   <div className="flex items-center mt-1 text-dourado-premium text-xs">
                     <Star className="w-3 h-3 fill-current mr-1" /> 4.9
                   </div>
@@ -339,7 +353,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 }`}
               >
                 <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 mr-4">
-                  <Image src="/images/service_image.png" alt="Service" width={80} height={80} className="object-cover w-full h-full" />
+                  <Image src={service.image || "/images/service_image.png"} alt="Service" width={80} height={80} className="object-cover w-full h-full" />
                 </div>
                 <div className="flex-grow">
                   <h3 className="font-bold text-branco text-lg">{service.name}</h3>
@@ -364,7 +378,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             <p className="text-branco/60">Selecione o profissional de sua preferência.</p>
           </div>
           <div className="grid gap-4">
-            {initialBarbers.map((barber) => (
+            {initialBarbers.filter((b) => b.active !== false).map((barber) => (
               <button
                 key={barber.id}
                 onClick={() => { setBarber(barber.id, barber.name); setStep(3); }}
@@ -373,11 +387,11 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 }`}
               >
                 <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 mr-4 border border-branco/10">
-                  <Image src="/images/barber_portrait.png" alt="Barber" width={64} height={64} className="object-cover w-full h-full" />
+                  <Image src={barber.image || "/images/barber_portrait.png"} alt="Barber" width={64} height={64} className="object-cover w-full h-full" />
                 </div>
                 <div className="flex-grow">
                   <h3 className="font-bold text-branco text-lg">{barber.name}</h3>
-                  <p className="text-branco/50 text-xs mt-0.5">Especialista Premium</p>
+                  <p className="text-dourado-premium/90 text-xs font-medium mt-0.5">{barber.specialty || 'Especialista Premium'}</p>
                   <div className="flex items-center mt-1 text-dourado-premium text-xs">
                     <Star className="w-3.5 h-3.5 fill-current mr-1" /> 4.9 <span className="text-branco/30 ml-1">(120+ avaliações)</span>
                   </div>
@@ -534,5 +548,6 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         </div>
       )}
     </div>
+    </>
   );
 }

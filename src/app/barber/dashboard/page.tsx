@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { getBarberAppointmentsAction, changeAppointmentStatusAction } from '@/app/actions/appointment-actions';
-import { Clock, Check, X, AlertOctagon, RefreshCw, ChevronLeft, ChevronRight, Calendar, User as UserIcon, LogOut } from 'lucide-react';
+import { getBarberAppointmentsAction, changeAppointmentStatusAction, getBarberMonthScheduleAction } from '@/app/actions/appointment-actions';
+import { Clock, Check, X, AlertOctagon, RefreshCw, ChevronLeft, ChevronRight, Calendar, User as UserIcon, LogOut, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface BarberAppointment {
   id: string;
@@ -25,6 +26,8 @@ export default function BarberDashboard() {
   const [currentMonthDate, setCurrentMonthDate] = useState<Date>(new Date());
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
+  const [monthOccupancyMap, setMonthOccupancyMap] = useState<Record<string, number>>({});
 
   const formatYYYYMMDD = (d: Date): string => {
     const year = d.getFullYear();
@@ -40,10 +43,24 @@ export default function BarberDashboard() {
     const result = await getBarberAppointmentsAction(dateStr);
     if (result.success && result.appointments) {
       setAppointments(result.appointments);
+      if (result.barberId) setBarberProfileId(result.barberId);
     } else {
       setErrorMsg(result.error || 'Erro ao carregar fila.');
     }
     setIsLoading(false);
+  };
+
+  const loadMonthOccupancy = async () => {
+    const year = currentMonthDate.getFullYear();
+    const month = currentMonthDate.getMonth() + 1;
+    const result = await getBarberMonthScheduleAction(year, month, barberProfileId || undefined);
+    if (result.success && result.occupancy) {
+      const map: Record<string, number> = {};
+      result.occupancy.forEach((item) => {
+        map[item.date] = item.count;
+      });
+      setMonthOccupancyMap(map);
+    }
   };
 
   useEffect(() => {
@@ -53,6 +70,11 @@ export default function BarberDashboard() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
+
+  useEffect(() => {
+    loadMonthOccupancy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMonthDate, barberProfileId]);
 
   const handleStatusChange = async (appointmentId: string, newStatus: 'PENDING' | 'COMPLETED' | 'CANCELED' | 'NO_SHOW') => {
     setUpdatingId(appointmentId);
@@ -65,6 +87,7 @@ export default function BarberDashboard() {
 
     if (result.success) {
       await loadQueue();
+      await loadMonthOccupancy();
     } else {
       setErrorMsg(result.error || 'Erro ao atualizar status');
     }
@@ -84,7 +107,7 @@ export default function BarberDashboard() {
       case 'CANCELED':
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">Cancelado</span>;
       case 'NO_SHOW':
-        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-zinc-100 text-zinc-650 border border-zinc-800">Não Compareceu</span>;
+        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-900 text-zinc-650 border border-zinc-800">Não Compareceu</span>;
       default:
         return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-zinc-100 text-zinc-650">{status}</span>;
     }
@@ -167,7 +190,7 @@ export default function BarberDashboard() {
       <header className="sticky top-0 z-50 border-b border-zinc-900 bg-preto-classico/95 backdrop-blur-md text-white">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="José Carlos Barber Shop Logo" className="w-10 h-10 rounded-full border border-carvalho/30" />
+            <Image src="/logo.png" alt="José Carlos Barber Shop Logo" width={40} height={40} className="w-10 h-10 rounded-full border border-carvalho/30 object-cover" />
             <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent hidden sm:inline">
               José Carlos Barber Shop
             </span>
@@ -175,9 +198,11 @@ export default function BarberDashboard() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               {session?.user?.image && (
-                <img
+                <Image
                   src={session.user.image}
                   alt={session.user.name || 'Barbeiro'}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
                 />
               )}
@@ -185,6 +210,15 @@ export default function BarberDashboard() {
                 Barbeiro: <span className="text-white font-semibold">{session?.user?.name}</span>
               </span>
             </div>
+            {barberProfileId && (
+              <Link
+                href={`/admin/barbeiros/${barberProfileId}/metricas`}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                Métricas
+              </Link>
+            )}
             <Link
               href="/profile"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 transition-colors"
@@ -232,13 +266,13 @@ export default function BarberDashboard() {
                 onClick={handlePrevMonth}
                 className="p-2 bg-zinc-100 hover:bg-zinc-200 border border-zinc-800 rounded-xl text-off-white transition-colors cursor-pointer"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4 text-black" />
               </button>
               <button
                 onClick={handleNextMonth}
                 className="p-2 bg-zinc-100 hover:bg-zinc-200 border border-zinc-800 rounded-xl text-off-white transition-colors cursor-pointer"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 text-black" />
               </button>
             </div>
           </div>
@@ -256,6 +290,8 @@ export default function BarberDashboard() {
               const isSelected = isSameDay(cell.date, selectedDate);
               const isToday = isSameDay(cell.date, new Date());
               const isWeekend = cell.date.getDay() === 0 || cell.date.getDay() === 6; // Sun = 0, Sat = 6
+              const cellDateStr = formatYYYYMMDD(cell.date);
+              const cellOccupancy = monthOccupancyMap[cellDateStr] || 0;
 
               return (
                 <button
@@ -281,13 +317,33 @@ export default function BarberDashboard() {
                       : ''
                   }`}
                 >
-                  <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-zinc-500'}`}>
-                    {cell.day}
-                  </span>
+                  <div className="flex justify-between items-start w-full">
+                    <span className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-zinc-500'}`}>
+                      {cell.day}
+                    </span>
+                    {isToday && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-nogueira"></span>
+                    )}
+                  </div>
                   
-                  {/* Small decorative indicator for today */}
-                  {isToday && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-nogueira absolute bottom-2 right-2"></span>
+                  {/* Visual Occupancy Indicator (RNF / Item 7) */}
+                  {cellOccupancy > 0 && cell.isCurrentMonth && (
+                    <div className="mt-1 flex flex-col gap-1 items-start w-full">
+                      <div className={`px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 w-full justify-between ${
+                        isSelected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                      }`}>
+                        <span className="truncate">{cellOccupancy} {cellOccupancy === 1 ? 'cliente' : 'clientes'}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse flex-shrink-0"></span>
+                      </div>
+                      <div className="w-full h-1 bg-amber-400/30 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-amber-400 rounded-full transition-all" 
+                          style={{ width: `${Math.min(100, cellOccupancy * 20)}%` }}
+                        />
+                      </div>
+                    </div>
                   )}
                 </button>
               );
@@ -317,17 +373,22 @@ export default function BarberDashboard() {
                 {appointments.map((app) => {
                   const startTime = new Date(app.startTime);
                   const isCompleted = app.status === 'COMPLETED';
+                  const isCanceled = app.status === 'CANCELED';
+                  const isNoShow = app.status === 'NO_SHOW';
+                  const isPending = app.status === 'PENDING';
                   const isUpdating = updatingId === app.id;
-                  const canModify = !isCompleted || session?.user?.role === 'ADMIN';
+                  const canModify = isPending || (session?.user?.role === 'ADMIN' && !isCanceled);
 
                   return (
                     <div key={app.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-zinc-50/30 transition-colors">
                       {/* Left: Client image, details & time */}
                       <div className="flex gap-4 items-center">
                         {app.clientImage ? (
-                          <img
+                          <Image
                             src={app.clientImage}
                             alt={app.clientName}
+                            width={48}
+                            height={48}
                             className="w-12 h-12 rounded-full border border-zinc-800 object-cover flex-shrink-0"
                           />
                         ) : (
@@ -354,35 +415,102 @@ export default function BarberDashboard() {
                             <RefreshCw className="w-4 h-4 animate-spin text-azul-barbeiro" />
                             Atualizando...
                           </div>
+                        ) : isCanceled ? (
+                          <span className="px-3.5 py-2 rounded-xl bg-red-500/10 border border-red-500/25 text-red-500 font-semibold text-xs flex items-center gap-1.5 shadow-sm">
+                            <AlertOctagon className="w-4 h-4 flex-shrink-0" />
+                            Cancelado pelo cliente
+                          </span>
+                        ) : isNoShow ? (
+                          <span className="px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 font-semibold text-xs flex items-center gap-1.5 shadow-sm">
+                            <UserIcon className="w-4 h-4 flex-shrink-0" />
+                            Não Compareceu
+                          </span>
                         ) : canModify ? (
                           <>
-                            <button
-                              id={`btn-complete-${app.id}`}
-                              onClick={() => handleStatusChange(app.id, 'COMPLETED')}
-                              className="flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-bold bg-azul-barbeiro hover:bg-blue-700 text-white transition-colors cursor-pointer shadow-sm"
-                              title="Concluir Atendimento"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              Atender
-                            </button>
-                            <button
-                              id={`btn-noshow-${app.id}`}
-                              onClick={() => handleStatusChange(app.id, 'NO_SHOW')}
-                              className="flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-bold bg-zinc-100 hover:bg-zinc-200 text-off-white transition-colors border border-zinc-250 cursor-pointer"
-                              title="Cliente Não Compareceu"
-                            >
-                              <UserIcon className="w-3.5 h-3.5" />
-                              Faltou
-                            </button>
-                            <button
-                              id={`btn-cancel-${app.id}`}
-                              onClick={() => handleStatusChange(app.id, 'CANCELED')}
-                              className="flex items-center gap-1 px-3.5 py-2 rounded-xl text-xs font-bold bg-vermelho-classico/10 hover:bg-vermelho-classico/20 text-vermelho-classico transition-colors border border-vermelho-classico/20 cursor-pointer"
-                              title="Cancelar Agendamento"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                              Cancelar
-                            </button>
+<button
+  id={`btn-complete-${app.id}`}
+  onClick={() => handleStatusChange(app.id, 'COMPLETED')}
+  className="
+    flex items-center gap-1
+    px-3.5 py-2
+    rounded-xl
+    text-xs font-bold
+    bg-transparent
+    border border-green-500
+    hover:bg-green-600
+    text-green-400
+    shadow-sm
+    transition-all duration-200
+    hover:-translate-y-0.5
+    hover:shadow-md
+    active:translate-y-0
+    active:scale-95
+    focus:outline-none
+    focus:ring-2 focus:ring-green-400
+    cursor-pointer
+  "
+  title="Concluir Atendimento"
+>
+  <Check className="w-3.5 h-3.5" />
+  Atender
+</button>
+
+<button
+  id={`btn-noshow-${app.id}`}
+  onClick={() => handleStatusChange(app.id, 'NO_SHOW')}
+  className="
+    flex items-center gap-1
+    px-3.5 py-2
+    rounded-xl
+    text-xs font-bold
+    bg-transparent
+    border border-amber-500
+    hover:bg-amber-600
+    text-amber-400
+    shadow-sm
+    transition-all duration-200
+    hover:-translate-y-0.5
+    hover:shadow-md
+    active:translate-y-0
+    active:scale-95
+    focus:outline-none
+    focus:ring-2 focus:ring-amber-400
+    cursor-pointer
+  "
+  title="Cliente Não Compareceu"
+>
+  <UserIcon className="w-3.5 h-3.5" />
+  Faltou
+</button>
+
+<button
+  id={`btn-cancel-${app.id}`}
+  onClick={() => handleStatusChange(app.id, 'CANCELED')}
+  className="
+    flex items-center gap-1
+    px-3.5 py-2
+    rounded-xl
+    text-xs font-bold
+    bg-transparent
+    border border-red-500
+    text-red-400
+    shadow-sm
+    transition-all duration-200
+    hover:bg-red-500
+    hover:text-white
+    hover:-translate-y-0.5
+    hover:shadow-md
+    active:translate-y-0
+    active:scale-95
+    focus:outline-none
+    focus:ring-2 focus:ring-red-400
+    cursor-pointer
+  "
+  title="Cancelar Agendamento"
+>
+  <X className="w-3.5 h-3.5" />
+  Cancelar
+</button>
                           </>
                         ) : (
                           <span className="text-xs text-zinc-400 italic bg-zinc-800 border border-zinc-150 px-3 py-1.5 rounded-lg">

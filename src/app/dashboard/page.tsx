@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { getClientAppointmentsAction, changeAppointmentStatusAction } from '@/app/actions/appointment-actions';
 import { Calendar, Scissors, AlertCircle, RefreshCw, X, User, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface ClientAppointment {
   id: string;
@@ -84,7 +85,7 @@ export default function ClientDashboard() {
       <header className="sticky top-0 z-50 border-b border-zinc-900 bg-preto-classico/95 backdrop-blur-md text-white">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="José Carlos Barber Shop Logo" className="w-10 h-10 rounded-full border border-carvalho/30" />
+            <Image src="/logo.png" alt="José Carlos Barber Shop Logo" width={40} height={40} className="w-10 h-10 rounded-full border border-carvalho/30 object-cover" />
             <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent hidden sm:inline">
               José Carlos Barber Shop
             </span>
@@ -92,9 +93,11 @@ export default function ClientDashboard() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               {session?.user?.image && (
-                <img
+                <Image
                   src={session.user.image}
                   alt={session.user.name || 'Cliente'}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
                 />
               )}

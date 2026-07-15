@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { getFinanceDashboardAction, registerBarberAction, getBarbersAction } from '@/app/actions/admin-actions';
-import { Scissors, DollarSign, Wallet, Percent, UserPlus, RefreshCw, AlertCircle, CheckCircle2, UserCheck, Loader2, LogOut, User } from 'lucide-react';
+import { getFinanceDashboardAction, registerBarberAction, getBarbersAction, deleteBarberAction } from '@/app/actions/admin-actions';
+import { Scissors, DollarSign, Wallet, Percent, UserPlus, RefreshCw, AlertCircle, CheckCircle2, UserCheck, Loader2, LogOut, User, Users, BarChart3, Trash2, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface AdminFinanceReport {
   grossRevenue: number;
@@ -24,6 +25,8 @@ interface AdminBarberProp {
   workDays: number[];
   workStart: string;
   workEnd: string;
+  active?: boolean;
+  specialty?: string;
 }
 
 export default function AdminDashboard() {
@@ -33,6 +36,7 @@ export default function AdminDashboard() {
   const [barbers, setBarbers] = useState<AdminBarberProp[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'year' | 'all'>('all');
 
   // New Barber Form States
   const [name, setName] = useState('');
@@ -45,11 +49,11 @@ export default function AdminDashboard() {
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (selectedPeriod: 'today' | 'week' | 'month' | 'year' | 'all' = period) => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const financeRes = await getFinanceDashboardAction();
+      const financeRes = await getFinanceDashboardAction(selectedPeriod);
       if (financeRes.success && financeRes.report) {
         setReport(financeRes.report);
       } else {
@@ -73,6 +77,23 @@ export default function AdminDashboard() {
     }, 0);
     return () => clearTimeout(timer);
   }, []);
+
+  const handlePeriodChange = (newPeriod: 'today' | 'week' | 'month' | 'year' | 'all') => {
+    setPeriod(newPeriod);
+    loadData(newPeriod);
+  };
+
+  const handleDeleteBarber = async (barberId: string, barberName: string) => {
+    if (!confirm(`Tem certeza de que deseja desativar o barbeiro ${barberName}? Ele não poderá receber novos agendamentos, mas seu histórico financeiro será preservado.`)) return;
+    setIsLoading(true);
+    const res = await deleteBarberAction(barberId);
+    if (res.success) {
+      await loadData(period);
+    } else {
+      setErrorMsg(res.error || 'Erro ao desativar barbeiro.');
+      setIsLoading(false);
+    }
+  };
 
   const handleRegisterBarber = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +146,7 @@ export default function AdminDashboard() {
       <header className="sticky top-0 z-50 border-b border-zinc-900 bg-black/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="José Carlos Barber Shop Logo" className="w-10 h-10 rounded-full border border-amber-500/30" />
+            <Image src="/logo.png" alt="José Carlos Barber Shop Logo" width={40} height={40} className="w-10 h-10 rounded-full border border-amber-500/30 object-cover" />
             <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent hidden sm:inline">
               José Carlos Barber Shop
             </span>
@@ -134,9 +155,11 @@ export default function AdminDashboard() {
             {session?.user && (
               <div className="flex items-center gap-2">
                 {session.user.image && (
-                  <img
+                  <Image
                     src={session.user.image}
                     alt={session.user.name || 'Admin'}
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full border border-amber-500/20 object-cover"
                   />
                 )}
@@ -145,6 +168,27 @@ export default function AdminDashboard() {
                 </span>
               </div>
             )}
+            <Link
+              href="/admin/calendario"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 text-amber-400 border border-amber-500/40 transition-colors shadow-sm"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              Calendário Hierárquico
+            </Link>
+            <Link
+              href="/admin/clientes"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
+            >
+              <Users className="w-3.5 h-3.5" />
+              Gestão de Clientes
+            </Link>
+            <Link
+              href="/admin/servicos"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
+            >
+              <Scissors className="w-3.5 h-3.5" />
+              Gestão de Serviços
+            </Link>
             <Link
               href="/profile"
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 transition-colors"
@@ -166,9 +210,53 @@ export default function AdminDashboard() {
 
       {/* Content */}
       <main className="flex-grow container mx-auto px-4 py-8 space-y-8 max-w-5xl">
-        <div>
-          <h1 className="text-3xl font-extrabold text-preto-classico tracking-tight">Painel Administrativo</h1>
-          <p className="text-off-white text-sm">Monitore as finanças da barbearia e gerencie os funcionários.</p>
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">Painel Administrativo</h1>
+            <p className="text-slate-400 text-sm">Monitore as finanças da barbearia e gerencie os funcionários.</p>
+          </div>
+          {/* Temporal filters bar */}
+          <div className="flex flex-wrap items-center gap-1.5 bg-zinc-900/80 p-1.5 rounded-2xl border border-zinc-800">
+            {(['today', 'week', 'month', 'year', 'all'] as const).map((p) => {
+              const labels = { today: 'Hoje', week: 'Semana', month: 'Mês', year: 'Ano', all: 'Geral' };
+              return (
+                <button
+                  key={p}
+                  onClick={() => handlePeriodChange(p)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    period === p
+                      ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-zinc-800'
+                  }`}
+                >
+                  {labels[p]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Hierarchical Calendar Banner Card */}
+        <div className="bg-gradient-to-r from-zinc-900 via-zinc-900 to-amber-950/30 border border-amber-500/30 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
+              <CalendarDays className="w-3 h-3" />
+              Novo Recurso Interativo
+            </div>
+            <h2 className="text-xl font-extrabold text-white tracking-tight">
+              Visualização Hierárquica em Calendário (Drill-Down)
+            </h2>
+            <p className="text-sm text-zinc-300 max-w-2xl leading-relaxed">
+              Explore o volume de atendimentos navegando do macro para o micro: comece pelo resumo Anual (12 meses), clique no mês para ver a grade de dias com contagem de clientes, e acesse qualquer dia para ver a agenda hora a hora.
+            </p>
+          </div>
+          <Link
+            href="/admin/calendario"
+            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-zinc-950 font-black text-sm flex items-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-amber-500/20 flex-shrink-0"
+          >
+            <CalendarDays className="w-4 h-4" />
+            Abrir Calendário Interativo
+          </Link>
         </div>
 
         {errorMsg && (
@@ -268,32 +356,59 @@ export default function AdminDashboard() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {barbers.map((b) => (
-                    <div key={b.id} className="p-4 bg-zinc-50/50 border border-zinc-800 rounded-2xl flex items-center gap-4">
-                      {b.image ? (
-                        <img
-                          src={b.image}
-                          alt={b.name}
-                          className="w-12 h-12 rounded-full border border-zinc-800 object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-carvalho font-bold flex-shrink-0">
-                          {b.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="space-y-1.5 flex-grow">
-                        <div>
-                          <span className="block font-bold text-preto-classico leading-tight">{b.name}</span>
-                          <span className="text-xs text-zinc-400 block">{b.email}</span>
-                        </div>
-                        <div className="text-xs text-zinc-500 space-y-0.5">
-                          <div>
-                            <span className="font-semibold text-zinc-400">Horário:</span> {b.workStart} - {b.workEnd}
+                    <div key={b.id} className={`p-4 bg-zinc-900/60 border rounded-2xl flex flex-col justify-between gap-3 ${
+                      b.active !== false ? 'border-zinc-800' : 'border-red-900/40 opacity-70'
+                    }`}>
+                      <div className="flex items-start gap-3.5">
+                        {b.image ? (
+                          <Image
+                            src={b.image}
+                            alt={b.name}
+                            width={48}
+                            height={48}
+                            className="w-12 h-12 rounded-full border border-zinc-800 object-cover flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-amber-400 font-bold flex-shrink-0">
+                            {b.name.substring(0, 2).toUpperCase()}
                           </div>
-                          <div>
-                            <span className="font-semibold text-zinc-400">Dias:</span>{' '}
-                            {b.workDays.map((d: number) => weekdaysLabels[d]).join(', ')}
+                        )}
+                        <div className="space-y-1 flex-grow min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-slate-100 truncate block leading-tight">{b.name}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              b.active !== false ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                            }`}>
+                              {b.active !== false ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </div>
+                          <span className="text-xs text-zinc-400 block truncate">{b.email}</span>
+                          <span className="text-[11px] text-amber-400/90 font-medium block">{b.specialty || 'Especialista Premium'}</span>
+                          <div className="text-[11px] text-zinc-500 pt-1">
+                            <span className="text-zinc-400 font-semibold">Horário:</span> {b.workStart} - {b.workEnd}
                           </div>
                         </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-zinc-800/80">
+                        <Link
+                          href={`/admin/barbeiros/${b.id}/metricas`}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs font-bold transition-colors flex-1 justify-center"
+                        >
+                          <BarChart3 className="w-3.5 h-3.5" />
+                          Desempenho
+                        </Link>
+                        {b.active !== false && (
+                          <button
+                            onClick={() => handleDeleteBarber(b.id, b.name)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/20 text-xs font-bold transition-colors"
+                            title="Desativar Barbeiro (Soft Delete)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Desativar
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

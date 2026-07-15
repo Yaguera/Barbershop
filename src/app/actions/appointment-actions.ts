@@ -7,6 +7,8 @@ import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberReposit
 import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
 import { CreateAppointmentUseCase } from '@/core/usecases/CreateAppointmentUseCase';
 import { ChangeAppointmentStatusUseCase } from '@/core/usecases/ChangeAppointmentStatusUseCase';
+import { GetBarberMonthScheduleUseCase } from '@/core/usecases/GetBarberMonthScheduleUseCase';
+import { GetDailyAppointmentsUseCase } from '@/core/usecases/GetDailyAppointmentsUseCase';
 
 // Action to create a new appointment (RF03/RF04)
 export async function createAppointmentAction(data: {
@@ -152,13 +154,11 @@ export async function getBarberAppointmentsAction(dateStr?: string) {
       barberId = barbers[0].id;
     }
 
-    const targetDate = dateStr ? new Date(dateStr) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const appointments = await appointmentRepo.findByBarberAndDate(barberId, startOfDay, endOfDay);
+    const useCase = new GetDailyAppointmentsUseCase(appointmentRepo);
+    const appointments = await useCase.execute({
+      barberId,
+      dateStr,
+    });
 
     // Populate client and service details
     const userRepo = new PrismaUserRepository();
@@ -177,10 +177,39 @@ export async function getBarberAppointmentsAction(dateStr?: string) {
       })
     );
 
-    return { success: true, appointments: appointmentsWithDetails };
+    return { success: true, appointments: appointmentsWithDetails, barberId };
   } catch (error: unknown) {
     console.error('Error fetching barber appointments:', error);
     const err = error as Error;
     return { success: false, error: err.message || 'Erro ao buscar agendamentos.' };
+  }
+}
+
+export async function getBarberMonthScheduleAction(year: number, month: number, barberIdParam?: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: 'Não autenticado.' };
+    }
+
+    let barberId = barberIdParam;
+    if (!barberId) {
+      const barberRepo = new PrismaBarberRepository();
+      const barber = await barberRepo.findByUserId(session.user.id);
+      if (!barber) {
+        return { success: false, error: 'Perfil de barbeiro não encontrado.' };
+      }
+      barberId = barber.id;
+    }
+
+    const appointmentRepo = new PrismaAppointmentRepository();
+    const useCase = new GetBarberMonthScheduleUseCase(appointmentRepo);
+    const occupancy = await useCase.execute({ barberId, year, month });
+
+    return { success: true, occupancy, barberId };
+  } catch (error: unknown) {
+    console.error('Error fetching barber month schedule:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao buscar agenda do mês.' };
   }
 }

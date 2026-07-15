@@ -23,22 +23,31 @@ export default async function Home() {
   const barberRepo = new PrismaBarberRepository();
   const serviceRepo = new PrismaServiceRepository();
 
-  const barbersResult = await barberRepo.findAll();
-  const servicesResult = await serviceRepo.findAll();
+  const barbersResult = await barberRepo.findAll({ activeOnly: true });
+  const servicesResult = await serviceRepo.findAll({ activeOnly: true });
 
-  const barbers = barbersResult.map((b) => ({
-    id: b.id,
-    name: b.user?.name || 'Barbeiro',
-    workDays: b.workDays,
-    workStart: b.workStart,
-    workEnd: b.workEnd,
-  }));
+  const barbers = await Promise.all(
+    barbersResult.map(async (b) => {
+      const specialty = await barberRepo.getBarberSpecialty(b.id);
+      return {
+        id: b.id,
+        name: b.user?.name || 'Barbeiro',
+        workDays: b.workDays,
+        workStart: b.workStart,
+        workEnd: b.workEnd,
+        image: b.user?.image || null,
+        active: b.user?.active ?? true,
+        specialty: specialty || 'Especialista em Cortes & Barba',
+      };
+    })
+  );
 
   const services = servicesResult.map((s) => ({
     id: s.id,
     name: s.name,
     price: s.price,
     durationMinutes: s.durationMinutes,
+    image: s.image || null,
   }));
 
   return (

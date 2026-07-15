@@ -49,6 +49,7 @@ describe('App Barbearia Core Use Cases', () => {
       findByUserId: vi.fn(),
       findAll: vi.fn(),
       create: vi.fn(),
+      getBarberSpecialty: vi.fn(),
     };
 
     appointmentRepo = {
@@ -59,20 +60,24 @@ describe('App Barbearia Core Use Cases', () => {
       createTransactional: vi.fn(),
       updateStatus: vi.fn(),
       getFinanceReport: vi.fn(),
+      getBarberPerformanceReport: vi.fn(),
+      getAdminCalendarMetrics: vi.fn(),
+      getBarberMonthOccupancy: vi.fn(),
     };
 
     serviceRepo = {
       findById: vi.fn().mockResolvedValue(mockService),
       findAll: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     };
   });
 
   describe('GetBarberAvailabilityUseCase', () => {
     it('should calculate free slots correctly for a work day', async () => {
       const useCase = new GetBarberAvailabilityUseCase(barberRepo, appointmentRepo, serviceRepo);
-      // June 15, 2026 is a Monday (weekday 1)
-      const testDate = new Date('2026-06-15T12:00:00');
+      // June 14, 2027 is a Monday (weekday 1)
+      const testDate = new Date('2027-06-14T12:00:00');
       
       const slots = await useCase.execute({
         barberId: 'barber-1',
@@ -88,8 +93,8 @@ describe('App Barbearia Core Use Cases', () => {
 
     it('should return empty slots if date is not a working day', async () => {
       const useCase = new GetBarberAvailabilityUseCase(barberRepo, appointmentRepo, serviceRepo);
-      // June 14, 2026 is a Sunday (weekday 0) which is not in mockBarber.workDays
-      const testDate = new Date('2026-06-14T12:00:00');
+      // June 13, 2027 is a Sunday (weekday 0) which is not in mockBarber.workDays
+      const testDate = new Date('2027-06-13T12:00:00');
 
       const slots = await useCase.execute({
         barberId: 'barber-1',
@@ -104,8 +109,8 @@ describe('App Barbearia Core Use Cases', () => {
   describe('CreateAppointmentUseCase', () => {
     it('should throw an error if booking is outside working hours', async () => {
       const useCase = new CreateAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
-      // Book at 08:00 AM (workStart is 09:00 AM)
-      const bookingTime = new Date('2026-06-15T08:00:00');
+      // Book at 08:00 AM (workStart is 09:00 AM) on future weekday Monday June 14, 2027
+      const bookingTime = new Date('2027-06-14T08:00:00');
 
       await expect(
         useCase.execute({
@@ -122,7 +127,7 @@ describe('App Barbearia Core Use Cases', () => {
       appointmentRepo.createTransactional = vi.fn().mockResolvedValue(null);
 
       const useCase = new CreateAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
-      const bookingTime = new Date('2026-06-15T10:00:00');
+      const bookingTime = new Date('2027-06-14T10:00:00');
 
       try {
         await useCase.execute({
@@ -199,6 +204,61 @@ describe('App Barbearia Core Use Cases', () => {
 
       expect(result.status).toBe('CANCELED');
       expect(appointmentRepo.updateStatus).toHaveBeenCalledWith('app-1', 'CANCELED');
+    });
+
+    it('should throw error when changing status to NO_SHOW before appointment startTime (Premature NO_SHOW)', async () => {
+      const futureDate = new Date(Date.now() + 3600 * 1000 * 24); // Tomorrow
+      const mockAppointment = {
+        id: 'app-future',
+        clientId: 'client-1',
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        startTime: futureDate,
+        endTime: new Date(futureDate.getTime() + 1800 * 1000),
+        status: 'PENDING',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      appointmentRepo.findById = vi.fn().mockResolvedValue(mockAppointment);
+
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+
+      await expect(
+        useCase.execute({
+          appointmentId: 'app-future',
+          newStatus: 'NO_SHOW',
+          userId: 'user-barber-1',
+          userRole: 'BARBER',
+        })
+      ).rejects.toThrow("Não é possível marcar como 'Não compareceu' antes do horário agendado.");
+    });
+
+    it('should throw error when attempting to modify an already CANCELED appointment (State Transition Lock)', async () => {
+      const mockAppointment = {
+        id: 'app-canceled',
+        clientId: 'client-1',
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        startTime: new Date(),
+        endTime: new Date(),
+        status: 'CANCELED',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      appointmentRepo.findById = vi.fn().mockResolvedValue(mockAppointment);
+
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+
+      await expect(
+        useCase.execute({
+          appointmentId: 'app-canceled',
+          newStatus: 'COMPLETED',
+          userId: 'user-barber-1',
+          userRole: 'BARBER',
+        })
+      ).rejects.toThrow("Operação inválida: Este agendamento já foi cancelado e não pode sofrer novas alterações.");
     });
   });
 });

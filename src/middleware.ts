@@ -9,7 +9,7 @@ export async function middleware(req: NextRequest) {
 
   const url = req.nextUrl;
   const isAdminRoute = url.pathname.startsWith('/admin');
-  const isBarberRoute = url.pathname.startsWith('/barber');
+  const isBarberRoute = url.pathname.startsWith('/barber') || url.pathname.startsWith('/barbeiro');
   const isDashboardRoute = url.pathname.startsWith('/dashboard');
   const isProfileRoute = url.pathname.startsWith('/profile');
 
@@ -38,6 +38,7 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/barber/:path*',
+    '/barbeiro/:path*',
     '/dashboard/:path*',
     '/profile/:path*',
   ],

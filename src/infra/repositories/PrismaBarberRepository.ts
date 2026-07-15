@@ -16,8 +16,9 @@ export class PrismaBarberRepository implements BarberRepository {
     });
   }
 
-  async findAll(): Promise<BarberWithUser[]> {
+  async findAll(options?: { activeOnly?: boolean }): Promise<BarberWithUser[]> {
     return await prisma.barber.findMany({
+      where: options?.activeOnly ? { user: { active: true } } : undefined,
       include: { user: true },
     }) as BarberWithUser[];
   }
@@ -36,5 +37,35 @@ export class PrismaBarberRepository implements BarberRepository {
         workEnd: data.workEnd,
       },
     });
+  }
+
+  async getBarberSpecialty(barberId: string): Promise<string | null> {
+    const grouped = await prisma.appointment.groupBy({
+      by: ['serviceId'],
+      where: {
+        barberId,
+        status: 'COMPLETED',
+      },
+      _count: {
+        serviceId: true,
+      },
+      orderBy: {
+        _count: {
+          serviceId: 'desc',
+        },
+      },
+      take: 1,
+    });
+
+    if (!grouped || grouped.length === 0) {
+      return null;
+    }
+
+    const topServiceId = grouped[0].serviceId;
+    const service = await prisma.service.findUnique({
+      where: { id: topServiceId },
+    });
+
+    return service ? service.name : null;
   }
 }
