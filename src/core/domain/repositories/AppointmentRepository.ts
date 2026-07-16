@@ -49,6 +49,16 @@ export interface AdminCalendarDayResult {
   appointments: DayAppointmentDetail[];
 }
 
+export interface AdminDashboardMetricsReport {
+  totalRevenue: number;
+  completedCount: number;
+  canceledCount: number;
+  newClientsCount: number;
+  growthPercentage: string;
+  revenueByTime: { timeLabel: string; revenue: number; completed: number }[];
+  servicesDistribution: { name: string; value: number; percentage: number; fill: string }[];
+}
+
 export interface AppointmentRepository {
   findById(id: string): Promise<Appointment | null>;
   findByIdWithRelations(id: string): Promise<AppointmentWithRelations | null>;
@@ -69,4 +79,6 @@ export interface AppointmentRepository {
   getBarberPerformanceReport(barberId: string, startDate?: Date, endDate?: Date): Promise<BarberPerformanceReport>;
   getAdminCalendarMetrics(year: number, month?: number, day?: number): Promise<{ metrics: CalendarMetric[]; dayDetails?: AdminCalendarDayResult }>;
   getBarberMonthOccupancy(barberId: string, year: number, month: number): Promise<{ date: string; count: number }[]>;
+  getAdminDashboardMetrics(startDate: Date, endDate: Date, barberId?: string): Promise<AdminDashboardMetricsReport>;
 }
+

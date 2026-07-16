@@ -1,4 +1,4 @@
-import { AppointmentRepository, AppointmentWithRelations, BarberCommission, FinanceReport, BarberPerformanceReport, CalendarMetric, DayAppointmentDetail, AdminCalendarDayResult } from '@/core/domain/repositories/AppointmentRepository';
+import { AppointmentRepository, AppointmentWithRelations, BarberCommission, FinanceReport, BarberPerformanceReport, CalendarMetric, DayAppointmentDetail, AdminCalendarDayResult, AdminDashboardMetricsReport } from '@/core/domain/repositories/AppointmentRepository';
 import { Appointment, Prisma } from '@/generated/prisma/client';
 import { prisma } from '../db/prisma-client';
 import { startOfDay, endOfDay } from '@/core/utils/date-utils';
@@ -406,5 +406,143 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       date: r.date,
       count: Number(r.count),
     }));
+  }
+
+  async getAdminDashboardMetrics(
+    startDate: Date,
+    endDate: Date,
+    barberId?: string
+  ): Promise<AdminDashboardMetricsReport> {
+    const baseWhere: Prisma.AppointmentWhereInput = {
+      startTime: {
+        gte: startDate,
+        lte: endDate,
+      },
+      ...(barberId && barberId !== 'all' ? { barberId } : {}),
+    };
+
+    const durationMs = endDate.getTime() - startDate.getTime();
+    const prevStartDate = new Date(startDate.getTime() - durationMs);
+    const prevEndDate = new Date(startDate.getTime());
+
+    const prevWhere: Prisma.AppointmentWhereInput = {
+      startTime: {
+        gte: prevStartDate,
+        lt: prevEndDate,
+      },
+      status: 'COMPLETED',
+      ...(barberId && barberId !== 'all' ? { barberId } : {}),
+    };
+
+    // Parallel aggregation queries without blocking Node Event Loop
+    const [
+      completedAppointments,
+      prevCompletedAppointments,
+      statusCounts,
+      newClientsCount,
+      serviceGroups,
+      allServices,
+    ] = await Promise.all([
+      prisma.appointment.findMany({
+        where: { ...baseWhere, status: 'COMPLETED' },
+        include: { service: true },
+        orderBy: { startTime: 'asc' },
+      }),
+      prisma.appointment.findMany({
+        where: prevWhere,
+        include: { service: true },
+      }),
+      prisma.appointment.groupBy({
+        by: ['status'],
+        where: baseWhere,
+        _count: { _all: true },
+      }),
+      prisma.user.count({
+        where: {
+          role: 'CLIENT',
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+      }),
+      prisma.appointment.groupBy({
+        by: ['serviceId'],
+        where: { ...baseWhere, status: 'COMPLETED' },
+        _count: { _all: true },
+      }),
+      prisma.service.findMany(),
+    ]);
+
+    const totalRevenue = completedAppointments.reduce((sum, app) => sum + (app.service?.price || 0), 0);
+    const prevTotalRevenue = prevCompletedAppointments.reduce((sum, app) => sum + (app.service?.price || 0), 0);
+    
+    let growthPercentage = '+0.0%';
+    if (prevTotalRevenue > 0) {
+      const growth = ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100;
+      growthPercentage = `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
+    } else if (totalRevenue > 0) {
+      growthPercentage = '+100%';
+    }
+
+    const completedStatus = statusCounts.find((s) => s.status === 'COMPLETED');
+    const completedCount = completedStatus ? completedStatus._count._all : completedAppointments.length;
+
+    const canceledOrNoShow = statusCounts
+      .filter((s) => s.status === 'CANCELED' || s.status === 'NO_SHOW')
+      .reduce((sum, s) => sum + s._count._all, 0);
+
+    const durationDays = durationMs / (1000 * 60 * 60 * 24);
+    const timeMap = new Map<string, { revenue: number; completed: number }>();
+
+    completedAppointments.forEach((app) => {
+      let label: string;
+      if (durationDays <= 2) {
+        label = app.startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      } else if (durationDays <= 90) {
+        label = app.startTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      } else {
+        label = app.startTime.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      }
+
+      const cur = timeMap.get(label) || { revenue: 0, completed: 0 };
+      timeMap.set(label, {
+        revenue: cur.revenue + (app.service?.price || 0),
+        completed: cur.completed + 1,
+      });
+    });
+
+    const revenueByTime = Array.from(timeMap.entries()).map(([timeLabel, data]) => ({
+      timeLabel,
+      revenue: data.revenue,
+      completed: data.completed,
+    }));
+
+    const serviceMap = new Map(allServices.map((s) => [s.id, s.name]));
+    const totalServiceCount = serviceGroups.reduce((sum, g) => sum + g._count._all, 0);
+    const colors = ['#10b981', '#06b6d4', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6', '#ef4444'];
+
+    const servicesDistribution = serviceGroups
+      .map((g, index) => {
+        const count = g._count._all;
+        const percentage = totalServiceCount > 0 ? Number(((count / totalServiceCount) * 100).toFixed(1)) : 0;
+        return {
+          name: serviceMap.get(g.serviceId) || 'Outros',
+          value: count,
+          percentage,
+          fill: colors[index % colors.length],
+        };
+      })
+      .sort((a, b) => b.value - a.value);
+
+    return {
+      totalRevenue,
+      completedCount,
+      canceledCount: canceledOrNoShow,
+      newClientsCount,
+      growthPercentage,
+      revenueByTime,
+      servicesDistribution,
+    };
   }
 }

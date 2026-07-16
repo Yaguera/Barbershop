@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GetBarberAvailabilityUseCase } from './GetBarberAvailabilityUseCase';
 import { CreateAppointmentUseCase } from './CreateAppointmentUseCase';
 import { ChangeAppointmentStatusUseCase } from './ChangeAppointmentStatusUseCase';
+import { GetAdminDashboardMetricsUseCase } from './GetAdminDashboardMetricsUseCase';
 import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
@@ -63,6 +64,7 @@ describe('App Barbearia Core Use Cases', () => {
       getBarberPerformanceReport: vi.fn(),
       getAdminCalendarMetrics: vi.fn(),
       getBarberMonthOccupancy: vi.fn(),
+      getAdminDashboardMetrics: vi.fn(),
     };
 
     serviceRepo = {
@@ -261,4 +263,59 @@ describe('App Barbearia Core Use Cases', () => {
       ).rejects.toThrow("Operação inválida: Este agendamento já foi cancelado e não pode sofrer novas alterações.");
     });
   });
+
+  describe('GetAdminDashboardMetricsUseCase', () => {
+    it('should execute successfully when requester is ADMIN and dates are valid', async () => {
+      const mockReport = {
+        totalRevenue: 1500,
+        completedCount: 30,
+        canceledCount: 2,
+        newClientsCount: 5,
+        growthPercentage: '+15.4%',
+        revenueByTime: [{ timeLabel: '2026-07-01', revenue: 1500, completed: 30 }],
+        servicesDistribution: [{ name: 'Corte', value: 30, percentage: 100, fill: '#10b981' }],
+      };
+
+      appointmentRepo.getAdminDashboardMetrics = vi.fn().mockResolvedValue(mockReport);
+      const useCase = new GetAdminDashboardMetricsUseCase(appointmentRepo);
+
+      const result = await useCase.execute({
+        requesterRole: 'ADMIN',
+        startDate: new Date('2026-07-01'),
+        endDate: new Date('2026-07-31'),
+      });
+
+      expect(result).toEqual(mockReport);
+      expect(appointmentRepo.getAdminDashboardMetrics).toHaveBeenCalledWith(
+        expect.any(Date),
+        expect.any(Date),
+        undefined
+      );
+    });
+
+    it('should throw error when requester is not ADMIN', async () => {
+      const useCase = new GetAdminDashboardMetricsUseCase(appointmentRepo);
+
+      await expect(
+        useCase.execute({
+          requesterRole: 'BARBER',
+          startDate: new Date('2026-07-01'),
+          endDate: new Date('2026-07-31'),
+        })
+      ).rejects.toThrow('Acesso negado. Apenas administradores podem acessar o painel analítico de alta densidade.');
+    });
+
+    it('should throw error when startDate >= endDate', async () => {
+      const useCase = new GetAdminDashboardMetricsUseCase(appointmentRepo);
+
+      await expect(
+        useCase.execute({
+          requesterRole: 'ADMIN',
+          startDate: new Date('2026-07-31'),
+          endDate: new Date('2026-07-01'),
+        })
+      ).rejects.toThrow('A data inicial deve ser anterior à data final.');
+    });
+  });
 });
+

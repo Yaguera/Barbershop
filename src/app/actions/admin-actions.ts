@@ -11,6 +11,7 @@ import { DeleteBarberUseCase } from '@/core/usecases/DeleteBarberUseCase';
 import { GetClientManagementDashboardUseCase } from '@/core/usecases/GetClientManagementDashboardUseCase';
 import { GetBarberPerformanceUseCase } from '@/core/usecases/GetBarberPerformanceUseCase';
 import { GetAdminCalendarMetricsUseCase } from '@/core/usecases/GetAdminCalendarMetricsUseCase';
+import { GetAdminDashboardMetricsUseCase } from '@/core/usecases/GetAdminDashboardMetricsUseCase';
 
 export async function registerBarberAction(data: {
   name: string;
@@ -99,7 +100,7 @@ export async function getClientManagementAction() {
 }
 
 export async function getBarberMetricsAction(
-  barberId: string,
+  barberId?: string,
   period?: 'day' | 'week' | 'month' | 'all'
 ) {
   try {
@@ -116,13 +117,18 @@ export async function getBarberMetricsAction(
       requesterBarberId = b ? b.id : null;
     }
 
+    const targetBarberId = barberId || requesterBarberId;
+    if (!targetBarberId) {
+      return { success: false, error: 'Perfil de barbeiro não encontrado para este usuário.' };
+    }
+
     const appointmentRepo = new PrismaAppointmentRepository();
     const useCase = new GetBarberPerformanceUseCase(appointmentRepo);
 
     const report = await useCase.execute({
       requesterRole: session.user.role,
       requesterBarberId,
-      barberId,
+      barberId: targetBarberId,
       period,
     });
 
@@ -198,6 +204,59 @@ export async function getServicesAction() {
     return { success: false, error: err.message || 'Erro ao buscar serviços.' };
   }
 }
+
+export async function getAdminDashboardAnalyticsAction(
+  period: 'today' | 'yesterday' | 'week' | 'month' | 'year' = 'month',
+  barberId?: string
+) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return { success: false, error: 'Acesso negado. Apenas administradores.' };
+    }
+
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date;
+
+    if (period === 'today') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    } else if (period === 'yesterday') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
+    } else if (period === 'week') {
+      const dayOfWeek = now.getDay();
+      const diffToSunday = now.getDate() - dayOfWeek;
+      startDate = new Date(now.getFullYear(), now.getMonth(), diffToSunday, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth(), diffToSunday + 6, 23, 59, 59);
+    } else if (period === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+    } else {
+      // month (default)
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    }
+
+    const appointmentRepo = new PrismaAppointmentRepository();
+    const useCase = new GetAdminDashboardMetricsUseCase(appointmentRepo);
+
+    const report = await useCase.execute({
+      requesterRole: session.user.role,
+      startDate,
+      endDate,
+      barberId: barberId === 'all' ? undefined : barberId,
+    });
+
+    return { success: true, report };
+  } catch (error: unknown) {
+    console.error('Error in getAdminDashboardAnalyticsAction:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao carregar dados analíticos do dashboard.' };
+  }
+}
+
 
 export async function getAdminCalendarMetricsAction(year: number, month?: number, day?: number) {
   try {

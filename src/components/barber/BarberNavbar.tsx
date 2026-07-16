@@ -62,22 +62,20 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
           </div>
 
           <Link
-            href="/barber/dashboard"
+            href="/barber/agenda"
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 transition-colors"
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
             Agenda
           </Link>
 
-          {barberProfileId && (
-            <Link
-              href={`/admin/barbeiros/${barberProfileId}/metricas`}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              Métricas
-            </Link>
-          )}
+          <Link
+            href="/barber/metricas"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            Métricas
+          </Link>
 
           <Link
             href="/profile"
@@ -158,7 +156,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
               {/* Navigation Links Stacked Vertically */}
               <nav className="flex flex-col gap-2.5">
                 <Link
-                  href="/barber/dashboard"
+                  href="/barber/agenda"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-200 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
                 >
@@ -166,16 +164,14 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                   Minha Agenda & Calendário
                 </Link>
 
-                {barberProfileId && (
-                  <Link
-                    href={`/admin/barbeiros/${barberProfileId}/metricas`}
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-amber-500/15 text-amber-400 border border-amber-500/40 transition-all"
-                  >
-                    <BarChart3 className="w-4 h-4 text-amber-400" />
-                    Minhas Métricas
-                  </Link>
-                )}
+                <Link
+                  href="/barber/metricas"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-amber-500/15 text-amber-400 border border-amber-500/40 transition-all"
+                >
+                  <BarChart3 className="w-4 h-4 text-amber-400" />
+                  Minhas Métricas
+                </Link>
 
                 <Link
                   href="/profile"

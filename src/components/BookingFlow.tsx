@@ -213,16 +213,39 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setBookingSuccess(null);
-            setStep(0);
-            router.push('/dashboard');
-          }}
-          className="w-full py-4 rounded-2xl font-bold bg-dourado-premium hover:bg-dourado-dark text-preto-profundo transition-all shadow-[0_0_20px_rgba(245,197,66,0.4)]"
-        >
-          Meus Agendamentos
-        </button>
+        <div className="w-full space-y-3.5">
+          {(() => {
+            const nomeCliente = session?.user?.name || 'Cliente';
+            const dataAgendamento = new Date(bookingSuccess.startTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+            const nomeBarbeiro = initialBarbers.find((b) => b.id === bookingSuccess.barberId)?.name || 'Barbeiro';
+
+            const mensagemText = `Olá! Sou o(a) ${nomeCliente}, acabei de realizar um agendamento para ${dataAgendamento} com o barbeiro ${nomeBarbeiro}. Gostaria de confirmar/tirar uma dúvida.`;
+            const whatsappUrl = `https://wa.me/5585986279194?text=${encodeURIComponent(mensagemText)}`;
+
+            return (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 px-6 rounded-2xl font-bold text-base sm:text-lg bg-green-500 hover:bg-green-600 text-white transition-all shadow-[0_0_20px_rgba(34,197,94,0.35)] flex items-center justify-center gap-2.5 cursor-pointer"
+              >
+                <span className="text-xl leading-none">💬</span>
+                Falar com a barbearia no WhatsApp
+              </a>
+            );
+          })()}
+
+          <button
+            onClick={() => {
+              setBookingSuccess(null);
+              setStep(0);
+              router.push('/dashboard');
+            }}
+            className="w-full py-4 rounded-2xl font-bold text-base sm:text-lg bg-dourado-premium hover:bg-dourado-dark text-preto-profundo transition-all shadow-[0_0_20px_rgba(245,197,66,0.35)] cursor-pointer"
+          >
+            Meus Agendamentos
+          </button>
+        </div>
       </div>
     );
   }
@@ -273,18 +296,52 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             )}
           </div>
 
-          {/* Banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-cinza-grafite to-cinza-chumbo p-6 shadow-lg border border-branco/5">
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-dourado-premium/20 rounded-full blur-3xl"></div>
-            <div className="relative z-10">
-              <span className="inline-block px-3 py-1 bg-dourado-premium/20 text-dourado-premium text-xs font-bold rounded-full mb-3">OFERTA VIP</span>
-              <h3 className="text-2xl font-bold text-branco mb-2 w-2/3 leading-tight">Agende agora e ganhe hidratação grátis.</h3>
-              <button 
-                onClick={() => setStep(1)}
-                className="mt-4 bg-dourado-premium text-preto-profundo px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-dourado-dark transition-all"
-              >
-                Agendar Agora
-              </button>
+          {/* Hero Section Institucional */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-cinza-grafite/90 to-cinza-chumbo/90 p-8 shadow-2xl border border-branco/10 text-center flex flex-col items-center justify-center">
+            <div className="absolute -right-12 -top-12 w-48 h-48 bg-dourado-premium/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-green-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div className="relative z-10 flex flex-col items-center max-w-sm mx-auto space-y-5">
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-dourado-premium/50 p-1 bg-preto-profundo shadow-[0_0_30px_rgba(245,197,66,0.25)] flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/logo.png"
+                  alt="José Carlos Barber Shop Logo"
+                  width={112}
+                  height={112}
+                  className="w-full h-full object-cover rounded-full"
+                  priority
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-2xl sm:text-3xl font-black text-branco tracking-tight">
+                  José Carlos Barber Shop
+                </h3>
+                <p className="text-xs sm:text-sm text-branco/70 font-medium">
+                  Tradição, precisão e estilo de alta performance para o seu visual.
+                </p>
+              </div>
+
+              <div className="w-full flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="w-full py-3.5 px-6 rounded-2xl font-bold text-sm bg-dourado-premium hover:bg-dourado-dark text-preto-profundo transition-all shadow-[0_0_20px_rgba(245,197,66,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Scissors className="w-4 h-4" />
+                  Agendar Horário VIP
+                </button>
+
+                <a
+                  href="https://wa.me/5585986279194"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3.5 px-6 rounded-2xl font-bold text-sm bg-green-500 hover:bg-green-600 text-white transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span className="text-base leading-none">💬</span>
+                  Contato via WhatsApp
+                </a>
+              </div>
             </div>
           </div>
 
