@@ -1,475 +1,343 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import { getBarberAppointmentsAction, changeAppointmentStatusAction, getBarberMonthScheduleAction } from '@/app/actions/appointment-actions';
-import { Clock, Check, X, AlertOctagon, RefreshCw, ChevronLeft, ChevronRight, Calendar, User as UserIcon, LogOut, BarChart3 } from 'lucide-react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { 
+  Sparkles, 
+  CheckCircle2, 
+  DollarSign, 
+  Calendar, 
+  Clock, 
+  Star, 
+  TrendingUp, 
+  ChevronRight, 
+  User as UserIcon,
+  Quote,
+  ShieldCheck,
+  RefreshCw
+} from 'lucide-react';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
+import { getBarberMetricsDetailedAction, getBarberAppointmentsAction } from '@/app/actions/appointment-actions';
 
-interface BarberAppointment {
+interface ReviewItem {
   id: string;
-  status: string;
-  startTime: string | Date;
-  serviceName: string;
-  servicePrice: number;
-  clientName: string;
-  clientEmail: string;
-  clientImage: string | null;
+  name: string;
+  date: string;
+  stars: number;
+  comment: string;
+  avatar?: string;
 }
 
-export default function BarberDashboard() {
+const mockReviews: ReviewItem[] = [
+  {
+    id: 'rev-1',
+    name: 'Dr. Roberto Mendonça',
+    date: 'Ontem',
+    stars: 5,
+    comment: 'Atendimento de altíssimo padrão! Corte impecável e pontualidade britânica. Melhor barbearia da cidade.'
+  },
+  {
+    id: 'rev-2',
+    name: 'Fernando Vasconcelos',
+    date: 'Há 3 dias',
+    stars: 5,
+    comment: 'Profissionalismo fantástico. O ambiente é extremamente elegante e o barbeiro sabe exatamente o que faz. Recomendo 100%.'
+  },
+  {
+    id: 'rev-3',
+    name: 'Lucas Sampaio',
+    date: '15 de Julho',
+    stars: 5,
+    comment: 'O ritual de barba na toalha quente foi espetacular. Acabamento perfeito e ótimo bate-papo.'
+  }
+];
+
+export default function BarberDashboardHome() {
   const { data: session } = useSession();
-  const [appointments, setAppointments] = useState<BarberAppointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [currentMonthDate, setCurrentMonthDate] = useState<Date>(new Date());
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<{
+    totalAppointments: number;
+    totalRevenue: number;
+  }>({ totalAppointments: 0, totalRevenue: 0 });
+  const [todayCount, setTodayCount] = useState<number>(0);
   const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
-  const [monthOccupancyMap, setMonthOccupancyMap] = useState<Record<string, number>>({});
 
-  const formatYYYYMMDD = (d: Date): string => {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const loadQueue = async () => {
+  const loadDashboardData = async () => {
     setIsLoading(true);
-    setErrorMsg(null);
-    const dateStr = formatYYYYMMDD(selectedDate);
-    const result = await getBarberAppointmentsAction(dateStr);
-    if (result.success && result.appointments) {
-      setAppointments(result.appointments);
-      if (result.barberId) setBarberProfileId(result.barberId);
-    } else {
-      setErrorMsg(result.error || 'Erro ao carregar fila.');
-    }
-    setIsLoading(false);
-  };
+    try {
+      const [metricsRes, todayRes] = await Promise.all([
+        getBarberMetricsDetailedAction('month'),
+        getBarberAppointmentsAction(new Date().toISOString().split('T')[0])
+      ]);
 
-  const loadMonthOccupancy = async () => {
-    const year = currentMonthDate.getFullYear();
-    const month = currentMonthDate.getMonth() + 1;
-    const result = await getBarberMonthScheduleAction(year, month, barberProfileId || undefined);
-    if (result.success && result.occupancy) {
-      const map: Record<string, number> = {};
-      result.occupancy.forEach((item) => {
-        map[item.date] = item.count;
-      });
-      setMonthOccupancyMap(map);
+      if (metricsRes.success && metricsRes.report) {
+        setMetrics({
+          totalAppointments: metricsRes.report.totalAppointments,
+          totalRevenue: metricsRes.report.totalRevenue
+        });
+        if (metricsRes.barberId) setBarberProfileId(metricsRes.barberId);
+      }
+
+      if (todayRes.success && todayRes.appointments) {
+        setTodayCount(todayRes.appointments.length);
+        if (todayRes.barberId && !barberProfileId) {
+          setBarberProfileId(todayRes.barberId);
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard do barbeiro:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadQueue();
-    }, 0);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate]);
+    loadDashboardData();
+  }, [session?.user]);
 
-  useEffect(() => {
-    loadMonthOccupancy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMonthDate, barberProfileId]);
-
-  const handleStatusChange = async (appointmentId: string, newStatus: 'PENDING' | 'COMPLETED' | 'CANCELED' | 'NO_SHOW') => {
-    setUpdatingId(appointmentId);
-    setErrorMsg(null);
-
-    const result = await changeAppointmentStatusAction({
-      appointmentId,
-      newStatus,
-    });
-
-    if (result.success) {
-      await loadQueue();
-      await loadMonthOccupancy();
-    } else {
-      setErrorMsg(result.error || 'Erro ao atualizar status');
-    }
-    setUpdatingId(null);
+  const formatPrice = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
-  const formatPrice = (p: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'PENDING':
-        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 border border-amber-200">Pendente</span>;
-      case 'COMPLETED':
-        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Finalizado</span>;
-      case 'CANCELED':
-        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">Cancelado</span>;
-      case 'NO_SHOW':
-        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-red-900 text-zinc-650 border border-zinc-800">Não Compareceu</span>;
-      default:
-        return <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-zinc-100 text-zinc-650">{status}</span>;
-    }
-  };
-
-  // 1. Calendar Helper Logic
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    
-    // JS getDay(): 0 = Sunday, 1 = Monday, etc.
-    // Shift to make Monday = 0 and Sunday = 6 (conforming to the image)
-    let startingDayIndex = firstDay.getDay() - 1;
-    if (startingDayIndex === -1) startingDayIndex = 6;
-    
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrevMonth = new Date(year, month, 0).getDate();
-    
-    const grid: { day: number; date: Date; isCurrentMonth: boolean }[] = [];
-    
-    // Trailing days from previous month
-    for (let i = startingDayIndex - 1; i >= 0; i--) {
-      const dayNum = daysInPrevMonth - i;
-      grid.push({
-        day: dayNum,
-        date: new Date(year, month - 1, dayNum),
-        isCurrentMonth: false
-      });
-    }
-    
-    // Current month days
-    for (let i = 1; i <= daysInMonth; i++) {
-      grid.push({
-        day: i,
-        date: new Date(year, month, i),
-        isCurrentMonth: true
-      });
-    }
-    
-    // Trailing days from next month to make exactly 42 cells (6 rows)
-    const remaining = 42 - grid.length;
-    for (let i = 1; i <= remaining; i++) {
-      grid.push({
-        day: i,
-        date: new Date(year, month + 1, i),
-        isCurrentMonth: false
-      });
-    }
-    
-    return grid;
-  };
-
-  const calendarGrid = getDaysInMonth(currentMonthDate);
-  const weekdaysLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-
-  const handlePrevMonth = () => {
-    const d = new Date(currentMonthDate);
-    d.setMonth(d.getMonth() - 1);
-    setCurrentMonthDate(d);
-  };
-
-  const handleNextMonth = () => {
-    const d = new Date(currentMonthDate);
-    d.setMonth(d.getMonth() + 1);
-    setCurrentMonthDate(d);
-  };
-
-  const isSameDay = (d1: Date, d2: Date) => {
-    return d1.getFullYear() === d2.getFullYear() &&
-           d1.getMonth() === d2.getMonth() &&
-           d1.getDate() === d2.getDate();
-  };
-
-  const monthName = currentMonthDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+  const userName = session?.user?.name || 'Barbeiro Master';
+  const userImage = session?.user?.image;
+  const initials = userName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-preto-classico text-off-white flex flex-col">
-      {/* Header */}
-      {/* Header */}
+    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col selection:bg-[#D4AF37]/30 font-sans pb-24">
       <BarberNavbar barberProfileId={barberProfileId || undefined} />
 
-      {/* Content */}
-      <main className="flex-grow container mx-auto px-4 py-8 max-w-4xl space-y-8">
-        <div>
-          <h1 className="text-3xl font-extrabold text-preto-classico tracking-tight">Fila de Atendimento</h1>
-          <p className="text-off-white text-sm">Visualize a agenda mensal e controle os seus atendimentos diários.</p>
-        </div>
+      <main className="flex-grow max-w-6xl mx-auto px-6 py-8 w-full space-y-10">
+        
+        {/* Header de Perfil do Barbeiro */}
+        <section className="bg-gradient-to-br from-[#151515] via-[#151515] to-[#1C1C1C] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-fade-in">
+          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-5">
+              {/* Profile Image / Fallback Initials */}
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl border-2 border-[#D4AF37] p-1 bg-[#1C1C1C] shadow-[0_0_25px_rgba(212,175,55,0.25)] shrink-0 flex items-center justify-center overflow-hidden">
+                {userImage ? (
+                  <Image 
+                    src={userImage} 
+                    alt={userName} 
+                    width={96} 
+                    height={96} 
+                    className="w-full h-full object-cover rounded-2xl"
+                  />
+                ) : (
+                  <span className="text-2xl sm:text-3xl font-black text-[#D4AF37] tracking-wider">
+                    {initials}
+                  </span>
+                )}
+              </div>
 
-        {errorMsg && (
-          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl p-4 text-red-700 text-sm">
-            <AlertOctagon className="w-5 h-5 flex-shrink-0 text-vermelho-classico" />
-            <p>{errorMsg}</p>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] text-xs font-black uppercase tracking-wider border border-[#D4AF37]/30">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Barbeiro Profissional</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-xs font-bold border border-[#22C55E]/30">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Ativo</span>
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight pt-1">
+                  Olá, {userName}!
+                </h1>
+                <p className="text-white/60 text-xs sm:text-sm">
+                  Bem-vindo ao seu painel executivo. Confira seus desempenhos e agenda de hoje.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick action button to Agenda */}
+            <div className="flex items-center gap-3 self-start sm:self-center">
+              <Link
+                href="/barber/agenda"
+                className="px-6 py-3.5 rounded-2xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-xs sm:text-sm shadow-xl hover:shadow-[#D4AF37]/20 transition-all flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5"
+              >
+                <Calendar className="w-4 h-4 stroke-[2.5]" />
+                <span>Ver Agenda Completa</span>
+                <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+              </Link>
+            </div>
           </div>
-        )}
+        </section>
 
-        {/* 2. Interactive Monthly Calendar (Screenshot inspired) */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-150 pb-4">
-            <h2 className="text-lg font-bold text-preto-classico uppercase tracking-wider flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-carvalho" />
-              {monthName}
+        {/* Cards de Resumo (Mês Atual) */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+              <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
+              <span>Resumo do Mês Atual</span>
             </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={handlePrevMonth}
-                className="p-2 bg-zinc-100 hover:bg-zinc-200 border border-zinc-800 rounded-xl text-off-white transition-colors cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4 text-black" />
-              </button>
-              <button
-                onClick={handleNextMonth}
-                className="p-2 bg-zinc-100 hover:bg-zinc-200 border border-zinc-800 rounded-xl text-off-white transition-colors cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4 text-black" />
-              </button>
+            <Link 
+              href="/barber/metricas" 
+              className="text-xs text-[#D4AF37] hover:underline font-bold flex items-center gap-1"
+            >
+              <span>Relatórios Detalhados</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Card 1: Total de Atendimentos */}
+            <div className="bg-[#151515] hover:bg-[#1C1C1C] border border-white/10 rounded-3xl p-6 shadow-2xl transition-all relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#22C55E]/5 rounded-full blur-2xl group-hover:bg-[#22C55E]/10 transition-all pointer-events-none" />
+              
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-widest text-white/50 block">
+                    Total de Atendimentos
+                  </span>
+                  <div className="text-3xl sm:text-4xl font-black text-white mt-2 tracking-tight">
+                    {isLoading ? (
+                      <RefreshCw className="w-6 h-6 animate-spin text-white/40 my-2" />
+                    ) : (
+                      metrics.totalAppointments
+                    )}
+                  </div>
+                  <p className="text-xs text-[#22C55E] font-semibold mt-2 flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Serviços com status Finalizado</span>
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-[#22C55E]/15 text-[#22C55E] flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6 stroke-[2]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Faturamento Acumulado */}
+            <div className="bg-[#151515] hover:bg-[#1C1C1C] border border-white/10 rounded-3xl p-6 shadow-2xl transition-all relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/10 rounded-full blur-2xl group-hover:bg-[#D4AF37]/15 transition-all pointer-events-none" />
+              
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-widest text-white/50 block">
+                    Faturamento Acumulado
+                  </span>
+                  <div className="text-3xl sm:text-4xl font-black text-[#D4AF37] mt-2 tracking-tight">
+                    {isLoading ? (
+                      <RefreshCw className="w-6 h-6 animate-spin text-[#D4AF37]/60 my-2" />
+                    ) : (
+                      formatPrice(metrics.totalRevenue)
+                    )}
+                  </div>
+                  <p className="text-xs text-white/60 font-medium mt-2">
+                    Soma total dos serviços realizados no mês
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center shrink-0">
+                  <DollarSign className="w-6 h-6 stroke-[2]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Atendimentos Hoje */}
+            <div className="bg-[#151515] hover:bg-[#1C1C1C] border border-white/10 rounded-3xl p-6 shadow-2xl transition-all relative overflow-hidden group sm:col-span-2 lg:col-span-1">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all pointer-events-none" />
+              
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-widest text-white/50 block">
+                    Atendimentos Hoje
+                  </span>
+                  <div className="text-3xl sm:text-4xl font-black text-white mt-2 tracking-tight">
+                    {isLoading ? (
+                      <RefreshCw className="w-6 h-6 animate-spin text-white/40 my-2" />
+                    ) : (
+                      todayCount
+                    )}
+                  </div>
+                  <p className="text-xs text-white/60 font-medium mt-2 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    <span>Clientes agendados para a data atual</span>
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-2xl bg-white/10 text-white flex items-center justify-center shrink-0">
+                  <Calendar className="w-6 h-6 stroke-[2]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Seção de Avaliações (Mock/Simulação) */}
+        <section className="bg-[#151515] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#D4AF37]">
+                  Reputação & Qualidade
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
+                Feedback dos Clientes
+              </h2>
+            </div>
+
+            {/* Média Simulação Card */}
+            <div className="flex items-center gap-4 bg-[#1C1C1C] border border-white/10 px-5 py-3 rounded-2xl">
+              <div className="text-3xl font-black text-[#D4AF37] tracking-tighter">
+                4.8
+              </div>
+              <div className="space-y-0.5 border-l border-white/10 pl-4">
+                <div className="flex items-center text-[#D4AF37]">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} className="w-4 h-4 fill-[#D4AF37]" />
+                  ))}
+                </div>
+                <span className="text-[11px] text-white/60 font-medium block">
+                  Média de 142 avaliações verificadas
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 gap-1 text-center font-bold text-xs uppercase tracking-wider text-zinc-400 pb-1">
-            {weekdaysLabels.map((day) => (
-              <div key={day} className="py-2">{day}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+            {mockReviews.map((rev) => (
+              <div
+                key={rev.id}
+                className="bg-[#1C1C1C]/80 hover:bg-[#1C1C1C] border border-white/5 rounded-2xl p-6 transition-all flex flex-col justify-between space-y-4 relative group"
+              >
+                <Quote className="w-8 h-8 text-[#D4AF37]/15 absolute top-4 right-4 pointer-events-none group-hover:text-[#D4AF37]/30 transition-all" />
+                
+                <div className="space-y-3 relative z-10">
+                  <div className="flex items-center gap-1 text-[#D4AF37]">
+                    {Array.from({ length: rev.stars }).map((_, idx) => (
+                      <Star key={idx} className="w-3.5 h-3.5 fill-[#D4AF37]" />
+                    ))}
+                  </div>
+                  <p className="text-xs sm:text-sm text-white/80 leading-relaxed italic">
+                    &ldquo;{rev.comment}&rdquo;
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-3 border-t border-white/5 relative z-10">
+                  <div className="w-9 h-9 rounded-full bg-[#151515] border border-white/10 flex items-center justify-center text-xs font-black text-[#D4AF37]">
+                    {rev.name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-bold text-white truncate">{rev.name}</h4>
+                    <span className="text-[10px] text-white/40 block">{rev.date}</span>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
+        </section>
 
-          {/* Calendar grid cells */}
-          <div className="grid grid-cols-7 gap-1">
-            {calendarGrid.map((cell, idx) => {
-              const isSelected = isSameDay(cell.date, selectedDate);
-              const isToday = isSameDay(cell.date, new Date());
-              const isWeekend = cell.date.getDay() === 0 || cell.date.getDay() === 6; // Sun = 0, Sat = 6
-              const cellDateStr = formatYYYYMMDD(cell.date);
-              const cellOccupancy = monthOccupancyMap[cellDateStr] || 0;
-
-              return (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    setSelectedDate(cell.date);
-                    // Automatically switch month view if clicked day is outside active month
-                    if (!cell.isCurrentMonth) {
-                      setCurrentMonthDate(cell.date);
-                    }
-                  }}
-                  className={`relative aspect-square min-h-[40px] min-w-[40px] p-1.5 sm:p-2 rounded-xl text-center border transition-all flex flex-col items-center justify-between cursor-pointer ${
-                    isSelected
-                      ? 'bg-azul-barbeiro text-white border-azul-barbeiro shadow-md shadow-blue-500/10 font-bold'
-                      : isToday
-                      ? 'bg-carvalho/10 text-nogueira border-carvalho/50 hover:bg-carvalho/20 font-bold'
-                      : cellOccupancy > 0 && cell.isCurrentMonth
-                      ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40 hover:bg-yellow-500/30 font-bold'
-                      : cell.isCurrentMonth
-                      ? 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800/50 text-off-white'
-                      : 'bg-transparent border-transparent text-zinc-300 opacity-40'
-                  } ${
-                    isWeekend && !isSelected && cell.isCurrentMonth && !(cellOccupancy > 0)
-                      ? 'bg-zinc-50/55 text-zinc-500' 
-                      : ''
-                  }`}
-                >
-                  <div className="flex justify-center items-center w-full relative">
-                    <span className={`text-xs sm:text-sm font-bold ${isSelected ? 'text-white' : cellOccupancy > 0 && cell.isCurrentMonth ? 'text-yellow-400' : 'text-zinc-400'}`}>
-                      {cell.day}
-                    </span>
-                    {isToday && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-nogueira absolute right-0.5 top-0.5"></span>
-                    )}
-                  </div>
-                  
-                  {/* Minimalist Occupancy Indicator (Mobile-First) */}
-                  {cellOccupancy > 0 && cell.isCurrentMonth && (
-                    <div className="mt-0.5 flex flex-col items-center justify-center w-full">
-                      {/* Small centered dot */}
-                      <div className={`w-1.5 h-1.5 rounded-full mt-0.5 mx-auto ${isSelected ? 'bg-white' : 'bg-yellow-500'}`} />
-                      {/* Subtle count only on larger screens */}
-                      <span className={`hidden sm:block text-[9px] font-bold mt-0.5 ${isSelected ? 'text-white/90' : 'text-yellow-400/90'}`}>
-                        {cellOccupancy} {cellOccupancy === 1 ? 'atend.' : 'atend.'}
-                      </span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 3. Daily Appointments List */}
-        <div className="space-y-4">
-          <h3 className="font-bold text-preto-classico text-lg flex items-center gap-2">
-            <Clock className="w-5 h-5 text-carvalho" />
-            Agenda para o dia {selectedDate.toLocaleDateString('pt-BR', { dateStyle: 'long' })}
-          </h3>
-
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 text-zinc-400 gap-3">
-                <RefreshCw className="w-7 h-7 animate-spin text-azul-barbeiro" />
-                <span>Carregando fila...</span>
-              </div>
-            ) : appointments.length === 0 ? (
-              <div className="text-center py-16 text-zinc-400 font-medium">
-                Nenhum agendamento encontrado para este dia.
-              </div>
-            ) : (
-              <div className="divide-y divide-zinc-150">
-                {appointments.map((app) => {
-                  const startTime = new Date(app.startTime);
-                  const isCompleted = app.status === 'COMPLETED';
-                  const isCanceled = app.status === 'CANCELED';
-                  const isNoShow = app.status === 'NO_SHOW';
-                  const isPending = app.status === 'PENDING';
-                  const isUpdating = updatingId === app.id;
-                  const canModify = isPending || (session?.user?.role === 'ADMIN' && !isCanceled);
-
-                  return (
-                    <div key={app.id} className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-zinc-50/30 transition-colors">
-                      {/* Left: Client image, details & time */}
-                      <div className="flex gap-4 items-center">
-                        {app.clientImage ? (
-                          <Image
-                            src={app.clientImage}
-                            alt={app.clientName}
-                            width={48}
-                            height={48}
-                            className="w-12 h-12 rounded-full border border-zinc-800 object-cover flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-zinc-100 border border-zinc-800 flex items-center justify-center text-carvalho font-bold flex-shrink-0">
-                            {app.clientName.substring(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-preto-classico leading-tight">{app.clientName}</span>
-                            {getStatusBadge(app.status)}
-                          </div>
-                          <span className="block text-sm text-zinc-500">{app.serviceName} (<span className="text-azul-barbeiro font-semibold">{formatPrice(app.servicePrice)}</span>)</span>
-                          <span className="block text-xs font-semibold text-carvalho">
-                            Horário: {startTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Right: Actions */}
-                      <div className="flex items-center gap-2 self-start md:self-center">
-                        {isUpdating ? (
-                          <div className="flex items-center gap-2 text-xs text-zinc-400">
-                            <RefreshCw className="w-4 h-4 animate-spin text-azul-barbeiro" />
-                            Atualizando...
-                          </div>
-                        ) : isCanceled ? (
-                          <span className="px-3.5 py-2 rounded-xl bg-red-500/10 border border-red-500/25 text-red-500 font-semibold text-xs flex items-center gap-1.5 shadow-sm">
-                            <AlertOctagon className="w-4 h-4 flex-shrink-0" />
-                            Cancelado pelo cliente
-                          </span>
-                        ) : isNoShow ? (
-                          <span className="px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 font-semibold text-xs flex items-center gap-1.5 shadow-sm">
-                            <UserIcon className="w-4 h-4 flex-shrink-0" />
-                            Não Compareceu
-                          </span>
-                        ) : canModify ? (
-                          <>
-<button
-  id={`btn-complete-${app.id}`}
-  onClick={() => handleStatusChange(app.id, 'COMPLETED')}
-  className="
-    flex items-center gap-1
-    px-3.5 py-2
-    rounded-xl
-    text-xs font-bold
-    bg-transparent
-    border border-green-500
-    hover:bg-green-600
-    text-green-400
-    shadow-sm
-    transition-all duration-200
-    hover:-translate-y-0.5
-    hover:shadow-md
-    active:translate-y-0
-    active:scale-95
-    focus:outline-none
-    focus:ring-2 focus:ring-green-400
-    cursor-pointer
-  "
-  title="Concluir Atendimento"
->
-  <Check className="w-3.5 h-3.5" />
-  Atender
-</button>
-
-<button
-  id={`btn-noshow-${app.id}`}
-  onClick={() => handleStatusChange(app.id, 'NO_SHOW')}
-  className="
-    flex items-center gap-1
-    px-3.5 py-2
-    rounded-xl
-    text-xs font-bold
-    bg-transparent
-    border border-amber-500
-    hover:bg-amber-600
-    text-amber-400
-    shadow-sm
-    transition-all duration-200
-    hover:-translate-y-0.5
-    hover:shadow-md
-    active:translate-y-0
-    active:scale-95
-    focus:outline-none
-    focus:ring-2 focus:ring-amber-400
-    cursor-pointer
-  "
-  title="Cliente Não Compareceu"
->
-  <UserIcon className="w-3.5 h-3.5" />
-  Faltou
-</button>
-
-<button
-  id={`btn-cancel-${app.id}`}
-  onClick={() => handleStatusChange(app.id, 'CANCELED')}
-  className="
-    flex items-center gap-1
-    px-3.5 py-2
-    rounded-xl
-    text-xs font-bold
-    bg-transparent
-    border border-red-500
-    text-red-400
-    shadow-sm
-    transition-all duration-200
-    hover:bg-red-500
-    hover:text-white
-    hover:-translate-y-0.5
-    hover:shadow-md
-    active:translate-y-0
-    active:scale-95
-    focus:outline-none
-    focus:ring-2 focus:ring-red-400
-    cursor-pointer
-  "
-  title="Cancelar Agendamento"
->
-  <X className="w-3.5 h-3.5" />
-  Cancelar
-</button>
-                          </>
-                        ) : (
-                          <span className="text-xs text-zinc-400 italic bg-zinc-800 border border-zinc-150 px-3 py-1.5 rounded-lg">
-                            Faturamento Imutável (Apenas Admin)
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
       </main>
     </div>
   );

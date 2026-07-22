@@ -9,6 +9,7 @@ import { CreateAppointmentUseCase } from '@/core/usecases/CreateAppointmentUseCa
 import { ChangeAppointmentStatusUseCase } from '@/core/usecases/ChangeAppointmentStatusUseCase';
 import { GetBarberMonthScheduleUseCase } from '@/core/usecases/GetBarberMonthScheduleUseCase';
 import { GetDailyAppointmentsUseCase } from '@/core/usecases/GetDailyAppointmentsUseCase';
+import { GetBarberMetricsUseCase } from '@/core/usecases/GetBarberMetricsUseCase';
 
 // Action to create a new appointment (RF03/RF04)
 export async function createAppointmentAction(data: {
@@ -213,3 +214,39 @@ export async function getBarberMonthScheduleAction(year: number, month: number, 
     return { success: false, error: err.message || 'Erro ao buscar agenda do mês.' };
   }
 }
+
+export async function getBarberMetricsDetailedAction(period: 'day' | 'week' | 'month' | 'all' = 'month') {
+  try {
+    const session = await auth();
+    if (!session?.user?.id || (session.user.role !== 'BARBER' && session.user.role !== 'ADMIN')) {
+      return { success: false, error: 'Não autorizado ou sessão inválida.' };
+    }
+
+    const barberRepo = new PrismaBarberRepository();
+    let barberId = '';
+    if (session.user.role === 'BARBER') {
+      const barber = await barberRepo.findByUserId(session.user.id);
+      if (!barber) {
+        return { success: false, error: 'Perfil profissional do barbeiro não encontrado.' };
+      }
+      barberId = barber.id;
+    } else {
+      const barbers = await barberRepo.findAll();
+      if (barbers.length === 0) {
+        return { success: true, report: null };
+      }
+      barberId = barbers[0].id;
+    }
+
+    const appointmentRepo = new PrismaAppointmentRepository();
+    const useCase = new GetBarberMetricsUseCase(appointmentRepo);
+    const report = await useCase.execute({ barberId, period });
+
+    return { success: true, report, barberId };
+  } catch (error: unknown) {
+    console.error('Error fetching detailed barber metrics:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao buscar métricas detalhadas do barbeiro.' };
+  }
+}
+

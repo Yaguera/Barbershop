@@ -47,11 +47,11 @@ export function ClientLuxDashboard({
   const handleTabChange = (tab: NavTab) => {
     setActiveTab(tab);
     if (tab === 'agendamentos') {
-      onStartBooking && onStartBooking();
+      router.push('/agenda');
     } else if (tab === 'historico') {
-      onOpenHistory && onOpenHistory();
-    } else if (tab === 'mais') {
-      router.push('/profile');
+      router.push('/historico');
+    } else if (tab === 'inicio') {
+      // already on home
     }
   };
 
@@ -70,11 +70,12 @@ export function ClientLuxDashboard({
 
         {/* Próximo Agendamento */}
         <AppointmentCard
-          date="Hoje, 22 de Julho"
-          time="16:30"
-          barberName={barbers.length > 0 ? barbers[0].name : 'José Carlos - Master Barber'}
+          autoFetch={true}
+          date="Sábado, 18 de Maio"
+          time="10:00"
+          barberName={barbers.length > 0 ? barbers[0].name : 'Lucas'}
           serviceName="Corte & Estilo VIP"
-          onDetailsClick={onStartBooking}
+          onDetailsClick={() => router.push('/agenda')}
         />
 
         {/* Nossos Serviços */}

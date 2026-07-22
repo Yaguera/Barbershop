@@ -23,6 +23,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   appointments  Appointment[]   @relation("ClientAppointments")
+  notifications Notification[]
   barber        Barber?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -89,16 +90,31 @@ model Service {
 }
 
 model Appointment {
-  id          String    @id @default(cuid())
-  clientId    String
-  client      User      @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
-  barberId    String
-  barber      Barber    @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  serviceId   String
-  service     Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  startTime   DateTime
-  endTime     DateTime
-  status      String    @default("PENDING") // PENDING, COMPLETED, CANCELED, NO_SHOW (RN07.1)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  clientId      String
+  client        User      @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  barberId      String
+  barber        Barber    @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  serviceId     String
+  service       Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  startTime     DateTime
+  endTime       DateTime
+  status        String    @default("PENDING") // PENDING, COMPLETED, CANCELED, NO_SHOW (RN07.1)
+  reminded24h   Boolean   @default(false)
+  reminded1h    Boolean   @default(false)
+  reminded15m   Boolean   @default(false)
+  remindedStart Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  type        String   @default("INFO") // INFO, REMINDER, ALERT, CANCEL, NO_SHOW
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }

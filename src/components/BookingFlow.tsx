@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useBookingStore } from '@/store/booking-store';
 import { createAppointmentAction } from '@/app/actions/appointment-actions';
 import { Calendar, Clock, Scissors, User as UserIcon, CheckCircle2, AlertTriangle, Loader2, Star, ChevronRight } from 'lucide-react';
@@ -45,6 +45,7 @@ interface BookingSuccessProp {
 export default function BookingFlow({ initialServices, initialBarbers }: BookingFlowProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Zustand Store
   const {
@@ -63,6 +64,12 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
   // Local state
   const [showSplash, setShowSplash] = useState(false);
   const [step, setStep] = useState(0); // 0 = Home, 1 = Services, 2 = Barber, 3 = DateTime, 4 = Confirm
+
+  useEffect(() => {
+    if (searchParams?.get('action') === 'agendar' && step === 0) {
+      setStep(1);
+    }
+  }, [searchParams]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [availableSlots, setAvailableSlots] = useState<{ time: string; dateTime: string; available: boolean }[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);

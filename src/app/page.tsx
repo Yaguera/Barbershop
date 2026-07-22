@@ -1,3 +1,4 @@
+import React, { Suspense } from 'react';
 import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
 import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { auth } from '@/auth';
@@ -54,7 +55,9 @@ export default async function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-[#0D0D0D] text-[#FFFFFF] selection:bg-[#D4AF37]/30 font-sans">
       <main className="flex-grow w-full">
-        <BookingFlow initialServices={services} initialBarbers={barbers} />
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-[#D4AF37] font-bold">Carregando experiência VIP...</div>}>
+          <BookingFlow initialServices={services} initialBarbers={barbers} />
+        </Suspense>
       </main>
     </div>
   );

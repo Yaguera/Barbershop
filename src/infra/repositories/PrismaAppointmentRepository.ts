@@ -1,4 +1,4 @@
-import { AppointmentRepository, AppointmentWithRelations, BarberCommission, FinanceReport, BarberPerformanceReport, CalendarMetric, DayAppointmentDetail, AdminCalendarDayResult, AdminDashboardMetricsReport } from '@/core/domain/repositories/AppointmentRepository';
+import { AppointmentRepository, AppointmentWithRelations, BarberCommission, FinanceReport, BarberPerformanceReport, BarberDetailedMetricsReport, CalendarMetric, DayAppointmentDetail, AdminCalendarDayResult, AdminDashboardMetricsReport } from '@/core/domain/repositories/AppointmentRepository';
 import { Appointment, Prisma } from '@/generated/prisma/client';
 import { prisma } from '../db/prisma-client';
 import { startOfDay, endOfDay } from '@/core/utils/date-utils';
@@ -218,6 +218,103 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
     return {
       chartData,
       topServices,
+    };
+  }
+
+  async getBarberDetailedMetrics(
+    barberId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<BarberDetailedMetricsReport> {
+    const baseWhere: Prisma.AppointmentWhereInput = {
+      barberId,
+      status: 'COMPLETED',
+      startTime: {
+        gte: startDate,
+        lte: endDate,
+      },
+    };
+
+    // Total completed appointments via aggregate
+    const aggregateResult = await prisma.appointment.aggregate({
+      where: baseWhere,
+      _count: {
+        _all: true,
+      },
+    });
+    const totalAppointments = aggregateResult._count._all;
+
+    // Group by serviceId using groupBy
+    const serviceGroups = await prisma.appointment.groupBy({
+      by: ['serviceId'],
+      where: baseWhere,
+      _count: {
+        _all: true,
+      },
+    });
+
+    const allServices = await prisma.service.findMany({
+      where: {
+        id: {
+          in: serviceGroups.map((g) => g.serviceId),
+        },
+      },
+    });
+    const serviceMap = new Map(allServices.map((s) => [s.id, s]));
+
+    let totalRevenue = 0;
+    const colors = ['#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#ec4899', '#3b82f6', '#ef4444'];
+    const servicesDistribution = serviceGroups
+      .map((g, index) => {
+        const count = g._count._all;
+        const svc = serviceMap.get(g.serviceId);
+        const name = svc?.name || 'Serviço';
+        const price = svc?.price || 0;
+        const revenue = count * price;
+        totalRevenue += revenue;
+        const percentage = totalAppointments > 0 ? Number(((count / totalAppointments) * 100).toFixed(1)) : 0;
+        return {
+          name,
+          count,
+          revenue,
+          percentage,
+          fill: colors[index % colors.length],
+        };
+      })
+      .sort((a, b) => b.count - a.count);
+
+    // Fetch appointments with service price for daily chart evolution
+    const completedApps = await prisma.appointment.findMany({
+      where: baseWhere,
+      include: {
+        service: true,
+      },
+      orderBy: {
+        startTime: 'asc',
+      },
+    });
+
+    const dailyMap = new Map<string, { count: number; revenue: number }>();
+    completedApps.forEach((app) => {
+      const dateStr = app.startTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const cur = dailyMap.get(dateStr) || { count: 0, revenue: 0 };
+      dailyMap.set(dateStr, {
+        count: cur.count + 1,
+        revenue: cur.revenue + (app.service?.price || 0),
+      });
+    });
+
+    const dailyRevenueChart = Array.from(dailyMap.entries()).map(([date, data]) => ({
+      date,
+      revenue: data.revenue,
+      count: data.count,
+    }));
+
+    return {
+      totalAppointments,
+      totalRevenue,
+      dailyRevenueChart,
+      servicesDistribution,
     };
   }
 

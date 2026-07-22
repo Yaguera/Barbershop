@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,10 +8,27 @@ import {
   BarChart3, 
   User as UserIcon, 
   LogOut, 
-  Menu, 
-  X,
-  LayoutDashboard
+  LayoutDashboard,
+  Bell,
+  Check,
+  CheckCheck,
+  Sparkles,
+  Clock,
+  AlertTriangle,
+  CalendarCheck,
+  Settings
 } from 'lucide-react';
+import { getNotificationsAction, markAsReadAction, markAllAsReadAction } from '@/app/actions/notification-actions';
+import { BarberBottomNavigation } from '@/components/barber/BarberBottomNavigation';
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  createdAt: string | Date;
+}
 
 interface BarberNavbarProps {
   barberProfileId?: string;
@@ -20,184 +36,341 @@ interface BarberNavbarProps {
 
 export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
   const { data: session } = useSession();
-  const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const navRef = useRef<HTMLDivElement>(null);
+
+  const fetchNotifications = async () => {
+    if (!session?.user) return;
+    const res = await getNotificationsAction();
+    if (res.success && res.notifications) {
+      setNotifications(res.notifications as NotificationItem[]);
+      setUnreadCount(res.unreadCount || 0);
+    }
+  };
 
   useEffect(() => {
-    setMounted(true);
+    if (session?.user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.user]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+        setIsAccountMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+    await markAsReadAction(id);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadCount(0);
+    await markAllAsReadAction();
+  };
+
+  const formatNotifTime = (dateStr: string | Date) => {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const userName = session?.user?.name || 'Barbeiro Profissional';
+  const userEmail = session?.user?.email || 'barbeiro@vip.com';
+  const userImage = session?.user?.image;
+  const initials = userName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-900 bg-preto-classico/95 backdrop-blur-md text-white">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Logo / Brand */}
-        <Link href="/" className="flex items-center gap-3">
-          <Image 
-            src="/logo.png" 
-            alt="José Carlos Barber Shop Logo" 
-            width={40} 
-            height={40} 
-            className="w-10 h-10 rounded-full border border-carvalho/30 object-cover" 
-          />
-          <span className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
-            José Carlos Barber Shop
-          </span>
-        </Link>
-
-        {/* Desktop Navigation (hidden on mobile) */}
-        <div className="hidden md:flex items-center gap-2.5">
-          <div className="flex items-center gap-2 mr-2 pr-3 border-r border-zinc-800">
-            {session?.user?.image && (
-              <Image
-                src={session.user.image}
-                alt={session.user.name || 'Barbeiro'}
-                width={32}
-                height={32}
-                className="w-8 h-8 rounded-full border border-dourado-premium/20 object-cover"
-              />
-            )}
-            <span className="text-sm text-zinc-350">
-              Barbeiro: <span className="text-white font-semibold">{session?.user?.name}</span>
-            </span>
-          </div>
-
-          <Link
-            href="/barber/agenda"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            Agenda
+    <>
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/95 backdrop-blur-xl text-white">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between" ref={navRef}>
+          {/* Logo / Brand */}
+          <Link href="/barber/dashboard" className="flex items-center gap-3">
+            <Image 
+              src="/logo.png" 
+              alt="Barber Logo" 
+              width={36} 
+              height={36} 
+              className="w-9 h-9 rounded-full border border-[#D4AF37]/40 object-cover shadow-lg" 
+            />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-[#D4AF37] uppercase leading-none">
+                ÁREA PROFISSIONAL
+              </span>
+              <span className="text-sm font-black tracking-wider text-white uppercase leading-tight mt-0.5">
+                Barbeiro Master
+              </span>
+            </div>
           </Link>
 
-          <Link
-            href="/barber/metricas"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-dourado-premium border border-dourado-premium/40 shadow-[0_0_15px_rgba(245,197,66,0.15)] transition-all motion-btn"
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            Métricas
-          </Link>
+          {/* Right Area: Links + Notifications + Profile Dropdown */}
+          <div className="flex items-center gap-3 relative">
+            <div className="hidden md:flex items-center gap-1.5 mr-2 pr-4 border-r border-white/10">
+              <Link
+                href="/barber/dashboard"
+                className="px-3 py-1.5 rounded-xl bg-transparent hover:bg-[#151515] text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-transparent hover:border-white/10 transition-all flex items-center gap-1.5"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span>Início</span>
+              </Link>
+              <Link
+                href="/barber/agenda"
+                className="px-3 py-1.5 rounded-xl bg-transparent hover:bg-[#151515] text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-transparent hover:border-white/10 transition-all flex items-center gap-1.5"
+              >
+                <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span>Meus Atendimentos</span>
+              </Link>
+              <Link
+                href="/barber/metricas"
+                className="px-3 py-1.5 rounded-xl bg-transparent hover:bg-[#151515] text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-transparent hover:border-white/10 transition-all flex items-center gap-1.5"
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span>Minhas Métricas</span>
+              </Link>
+            </div>
 
-          <Link
-            href="/profile"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
-          >
-            <UserIcon className="w-3.5 h-3.5" />
-            Perfil
-          </Link>
-          
-          <button
-            onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-all motion-btn cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Sair
-          </button>
-        </div>
-
-        {/* Hamburger Menu Button (Mobile) */}
-        <button
-          onClick={() => setIsOpen(true)}
-          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-dourado-premium hover:bg-zinc-800 transition-all motion-btn md:hidden focus:outline-none cursor-pointer"
-          aria-label="Abrir menu lateral"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-      </div>
-
-      {/* Mobile Drawer via Portal */}
-      {mounted && isOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] md:hidden">
-          {/* Backdrop Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Drawer Sidebar */}
-          <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-zinc-950 border-l border-zinc-800 z-10 p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-200 overflow-y-auto text-white">
-            <div className="space-y-6">
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
-                <span className="text-base font-bold text-amber-400">
-                  Menu do Barbeiro
+            {/* Notification Bell */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen);
+                setIsAccountMenuOpen(false);
+                if (!isNotificationsOpen) fetchNotifications();
+              }}
+              className="p-2 rounded-full text-white/70 hover:text-white hover:bg-[#151515] transition-all relative cursor-pointer"
+              aria-label="Notificações do Barbeiro"
+            >
+              <Bell className="w-5 h-5 stroke-[2]" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 px-1.5 min-w-[16px] h-4 rounded-full bg-[#D4AF37] text-[#0D0D0D] text-[10px] font-black flex items-center justify-center animate-pulse shadow-md">
+                  {unreadCount}
                 </span>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                  aria-label="Fechar menu"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              )}
+            </button>
 
-              {/* Profile Summary in Drawer */}
-              {session?.user && (
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-                  {session.user.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name || 'Barbeiro'}
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 rounded-full border border-carvalho/30 object-cover"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-carvalho/20 flex items-center justify-center text-carvalho font-bold">
-                      {session.user.name?.charAt(0) || 'B'}
-                    </div>
-                  )}
-                  <div className="flex flex-col overflow-hidden">
-                    <span className="text-xs text-zinc-400">Barbeiro</span>
-                    <span className="text-sm font-bold text-white truncate">{session.user.name}</span>
+            {/* Notifications Dropdown */}
+            {isNotificationsOpen && (
+              <div className="absolute right-0 top-14 w-80 sm:w-96 bg-[#151515] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
+                <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#1C1C1C]">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#D4AF37]" />
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">
+                      Alertas do Profissional
+                    </span>
                   </div>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllAsRead}
+                      className="text-[11px] text-[#D4AF37] hover:underline font-semibold flex items-center gap-1"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" /> Ler todas
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-white/5 selection:bg-[#D4AF37]/30">
+                  {notifications.length === 0 ? (
+                    <div className="p-8 text-center text-white/40 text-xs">
+                      Nenhum alerta de atendimento por enquanto.
+                    </div>
+                  ) : (
+                    notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        onClick={(e) => !notif.read && handleMarkAsRead(notif.id, e)}
+                        className={`p-4 transition-colors cursor-pointer flex gap-3 ${
+                          notif.read ? 'bg-transparent opacity-60 hover:opacity-100' : 'bg-[#D4AF37]/5 hover:bg-[#D4AF37]/10'
+                        }`}
+                      >
+                        <div className="shrink-0 pt-0.5">
+                          {notif.type === 'ALERT' || notif.type === 'NO_SHOW' ? (
+                            <div className="w-8 h-8 rounded-full bg-[#EF4444]/15 text-[#EF4444] flex items-center justify-center">
+                              <AlertTriangle className="w-4 h-4" />
+                            </div>
+                          ) : notif.type === 'REMINDER' ? (
+                            <div className="w-8 h-8 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center">
+                              <Clock className="w-4 h-4" />
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center">
+                              <Bell className="w-4 h-4" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-xs font-bold text-white truncate">{notif.title}</h4>
+                            <span className="text-[10px] text-white/40 shrink-0">
+                              {formatNotifTime(notif.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-white/70 mt-1 line-clamp-2 leading-relaxed">
+                            {notif.message}
+                          </p>
+                          {!notif.read && (
+                            <button
+                              onClick={(e) => handleMarkAsRead(notif.id, e)}
+                              className="mt-2 text-[10px] text-[#D4AF37] hover:underline font-bold flex items-center gap-1"
+                            >
+                              <Check className="w-3 h-3" /> Marcar como lida
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Profile Photo / Account Menu Trigger (Semelhante ao Google) */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsAccountMenuOpen(!isAccountMenuOpen);
+                  setIsNotificationsOpen(false);
+                }}
+                className="w-10 h-10 rounded-full bg-[#1C1C1C] border-2 border-white/10 hover:border-[#D4AF37] overflow-hidden flex items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                aria-label="Conta do Google / Opções de Perfil"
+              >
+                {userImage ? (
+                  <Image
+                    src={userImage}
+                    alt={userName}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs font-black text-[#D4AF37]">
+                    {initials}
+                  </span>
+                )}
+              </button>
+
+              {/* Google-Style Account Dropdown Menu */}
+              {isAccountMenuOpen && (
+                <div className="absolute right-0 top-14 w-72 sm:w-80 bg-[#151515] border border-white/10 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 overflow-hidden animate-fade-in">
+                  
+                  {/* Account Header */}
+                  <div className="p-6 bg-gradient-to-b from-[#1C1C1C] to-[#151515] border-b border-white/10 flex flex-col items-center text-center">
+                    <div className="w-16 h-16 rounded-full border-2 border-[#D4AF37] p-0.5 bg-[#0D0D0D] mb-3 shadow-md overflow-hidden flex items-center justify-center">
+                      {userImage ? (
+                        <Image
+                          src={userImage}
+                          alt={userName}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <span className="text-lg font-black text-[#D4AF37]">
+                          {initials}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-bold text-base text-white truncate max-w-full">
+                      {userName}
+                    </span>
+                    <span className="text-xs text-white/50 truncate max-w-full mt-0.5">
+                      {userEmail}
+                    </span>
+                    <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] text-[10px] font-black uppercase tracking-wider border border-[#D4AF37]/30">
+                      <Sparkles className="w-3 h-3" />
+                      <span>Conta Profissional VIP</span>
+                    </div>
+                  </div>
+
+                  {/* Options List */}
+                  <div className="p-2 space-y-1">
+                    <Link
+                      href="/barber/dashboard"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Início / Painel Executivo</span>
+                    </Link>
+
+                    <Link
+                      href="/barber/agenda"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
+                    >
+                      <Clock className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Meus Atendimentos & Fila</span>
+                    </Link>
+
+                    <Link
+                      href="/barber/metricas"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
+                    >
+                      <BarChart3 className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Minhas Métricas & Rendimento</span>
+                    </Link>
+
+                    {barberProfileId && (
+                      <Link
+                        href={`/barber/dashboard/schedule/${barberProfileId}`}
+                        onClick={() => setIsAccountMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
+                      >
+                        <CalendarCheck className="w-4 h-4 text-[#D4AF37]" />
+                        <span>Configurar Meus Horários</span>
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Configurações do Perfil</span>
+                    </Link>
+                  </div>
+
+                  {/* Sign Out Footer */}
+                  <div className="p-2 border-t border-white/10 bg-[#1C1C1C]/40">
+                    <button
+                      onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-xs font-extrabold bg-[#EF4444]/10 hover:bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 transition-all cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sair da Conta</span>
+                    </button>
+                  </div>
+
                 </div>
               )}
-
-              {/* Navigation Links Stacked Vertically */}
-              <nav className="flex flex-col gap-2.5">
-                <Link
-                  href="/barber/agenda"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-200 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
-                >
-                  <LayoutDashboard className="w-4 h-4 text-amber-400" />
-                  Minha Agenda & Calendário
-                </Link>
-
-                <Link
-                  href="/barber/metricas"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-amber-500/15 text-amber-400 border border-amber-500/40 transition-all"
-                >
-                  <BarChart3 className="w-4 h-4 text-amber-400" />
-                  Minhas Métricas
-                </Link>
-
-                <Link
-                  href="/profile"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80 transition-all"
-                >
-                  <UserIcon className="w-4 h-4 text-slate-400" />
-                  Meu Perfil
-                </Link>
-              </nav>
-            </div>
-
-            {/* Drawer Footer with Sign Out */}
-            <div className="pt-4 border-t border-zinc-900">
-              <button
-                onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl text-sm font-bold bg-red-650/15 hover:bg-red-650/25 text-red-400 border border-red-500/30 transition-colors cursor-pointer"
-              >
-                <LogOut className="w-4 h-4" />
-                Sair da Conta
-              </button>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
-    </header>
+        </div>
+      </header>
+
+      {/* Bottom Navigation for Mobile / Tablet */}
+      <BarberBottomNavigation barberProfileId={barberProfileId} />
+    </>
   );
 }
