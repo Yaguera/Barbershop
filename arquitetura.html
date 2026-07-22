@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documento de Arquitetura e Engenharia de Software | Barber Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    
+    /* Glowing Effects */
+    .glow-emerald {
+      box-shadow: 0 0 30px -5px rgba(16, 185, 129, 0.2);
+    }
+    .glow-amber {
+      box-shadow: 0 0 30px -5px rgba(245, 158, 11, 0.2);
+    }
+    .glow-blue {
+      box-shadow: 0 0 30px -5px rgba(59, 130, 246, 0.2);
+    }
+    
+    /* Code Token Syntax Highlighting */
+    .token-keyword { color: #f472b6; font-weight: 600; }
+    .token-func { color: #60a5fa; }
+    .token-string { color: #34d399; }
+    .token-comment { color: #64748b; font-style: italic; }
+    .token-type { color: #fbbf24; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-300 font-sans antialiased selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- Header Mobile -->
+  <header class="lg:hidden sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center font-black text-slate-950 text-sm">
+        BS
+      </div>
+      <span class="font-bold text-slate-100 text-sm">Doc de Arquitetura</span>
+    </div>
+    <button id="mobile-menu-btn" class="p-2 text-slate-400 hover:text-slate-100 focus:outline-none">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Shell da Aplicação com Sidebar Fixa e Conteúdo Principal -->
+  <div class="flex min-h-screen">
+
+    <!-- Sidebar de Navegação Fixa -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-80 bg-slate-900/95 border-r border-slate-800/80 p-6 flex flex-col justify-between transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out backdrop-blur-xl">
+      <div class="space-y-6">
+        <!-- Brand Header -->
+        <div class="flex items-center space-x-3 pb-6 border-b border-slate-800/80">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 flex items-center justify-center font-black text-slate-950 text-lg shadow-lg shadow-amber-500/20 flex-shrink-0">
+            BS
+          </div>
+          <div>
+            <h1 class="font-black text-slate-100 text-base tracking-tight leading-none">BarberApp</h1>
+            <p class="text-[11px] text-amber-500 font-semibold uppercase tracking-wider mt-1">Arquitetura de Software</p>
+          </div>
+        </div>
+
+        <!-- Links de Navegação -->
+        <nav class="space-y-1.5" id="nav-menu">
+          <a href="#sumario-executivo" class="nav-item group flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+            <svg class="w-4 h-4 mr-3 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Sumário Executivo
+          </a>
+
+          <a href="#visao-geral" class="nav-item group flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+            <svg class="w-4 h-4 mr-3 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+            1. Visão Geral da Stack
+          </a>
+
+          <a href="#estrutura-pastas" class="nav-item group flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+            <svg class="w-4 h-4 mr-3 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
+            </svg>
+            2. Estrutura de Pastas
+          </a>
+
+          <a href="#padroes-arquiteturais" class="nav-item group flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+            <svg class="w-4 h-4 mr-3 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+            3. Clean Arch & SOLID
+          </a>
+
+          <a href="#seguranca-concorrencia" class="nav-item group flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+            <svg class="w-4 h-4 mr-3 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            4. Segurança & Concorrência
+          </a>
+
+          <a href="#fluxos-criticos" class="nav-item group flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+            <svg class="w-4 h-4 mr-3 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            5. Lazy Registration
+          </a>
+
+          <a href="#conclusao-arquitetural" class="nav-item group flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800/60">
+            <svg class="w-4 h-4 mr-3 text-slate-500 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Conclusão Arquitetural
+          </a>
+        </nav>
+      </div>
+
+      <!-- Rodapé Status Sidebar -->
+      <div class="pt-6 border-t border-slate-800/80 space-y-3">
+        <div class="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 flex items-center space-x-3">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></div>
+          <div>
+            <p class="text-[11px] font-bold text-slate-200">Versão 1.0.0 — Produção</p>
+            <p class="text-[10px] text-slate-500">Documento Técnico Exaustivo</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Área de Conteúdo Principal -->
+    <main class="flex-1 lg:ml-80 p-6 sm:p-10 md:p-12 max-w-6xl mx-auto space-y-16 overflow-x-hidden">
+
+      <!-- Meta Document Header -->
+      <header class="space-y-6 border-b border-slate-800/80 pb-8">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold">
+            Especificação Técnica Oficial
+          </span>
+          <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400 text-xs font-mono">
+            Versão 1.0.0 — 22 de Julho de 2026
+          </span>
+          <span class="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
+            Confidencial / Exportação Google Docs
+          </span>
+        </div>
+
+        <div>
+          <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-100 tracking-tight leading-tight">
+            Documento de Arquitetura e Engenharia de Software
+          </h1>
+          <h2 class="text-lg sm:text-xl text-amber-400 font-bold mt-2">
+            Sistema de Gestão de Barbearia (Barber Management System)
+          </h2>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-6 text-xs text-slate-400 border-t border-slate-800/60 pt-4">
+          <div>
+            <span class="text-slate-500 block">Autor:</span>
+            <span class="text-slate-200 font-semibold">Arquiteto de Software Sênior & Engenharia de Sistemas</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Stack Principal:</span>
+            <span class="text-slate-200 font-semibold">Next.js 16 (App Router), Prisma 7, PostgreSQL</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Padrão Arquitetural:</span>
+            <span class="text-slate-200 font-semibold">Clean Architecture & SOLID</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- SUMÁRIO EXECUTIVO -->
+      <section id="sumario-executivo" class="scroll-mt-12 space-y-4">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <h2 class="text-2xl font-bold text-slate-100 tracking-tight">Sumário Executivo</h2>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 leading-relaxed text-sm text-slate-300 space-y-3">
+          <p>
+            Este documento técnico descreve formal e exaustivamente a arquitetura, as decisões de design, a topologia do código e as salvaguardas de segurança implementadas no <strong>Sistema de Gestão de Barbearia</strong>. O sistema foi concebido sob rigorosos padrões de engenharia moderna, utilizando <strong>Clean Architecture</strong>, <strong>SOLID</strong> e mecanismos avançados de controle de concorrência e integridade relacional. A separação clara entre a camada de entrega visual e as regras de negócio garante que a aplicação seja altamente testável, escalável e agnóstica a frameworks externos.
+          </p>
+        </div>
+      </section>
+
+      <!-- 1. VISÃO GERAL DA STACK TECNOLÓGICA -->
+      <section id="visao-geral" class="scroll-mt-12 space-y-6">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono font-bold text-sm">01</div>
+          <h2 class="text-2xl font-bold text-slate-100 tracking-tight">1. Visão Geral da Stack Tecnológica</h2>
+        </div>
+
+        <p class="text-sm text-slate-300 leading-relaxed">
+          O ecossistema do projeto é construído sobre uma pilha tecnológica moderna, orientada a tipagem estática ponta a ponta (<em>End-to-End Type Safety</em>) e altíssima performance:
+        </p>
+
+        <!-- Diagrama Arquitetural de Camadas -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl p-6 space-y-4">
+          <div class="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider font-bold">Diagrama de Camadas da Arquitetura</div>
+          <pre class="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed"><code>+-------------------------------------------------------------------------------+
+|                        CAMADA DE APRESENTAÇÃO & ENTREGA                       |
+|         Next.js 16 (App Router) + React 19 + Tailwind CSS + Zustand          |
++-------------------------------------------------------------------------------+
+                                        |
+                             Server Actions & Routes
+                                        v
++-------------------------------------------------------------------------------+
+|                       CAMADA DE CASOS DE USO (BUSINESS)                       |
+|      Clean Architecture UseCases (Puros, Sem Dependência do Framework)        |
++-------------------------------------------------------------------------------+
+                                        |
+                          Contratos (Domain Interfaces)
+                                        v
++-------------------------------------------------------------------------------+
+|                     CAMADA DE PERSISTÊNCIA & INFRAESTRUTURA                   |
+|       Prisma ORM 7 + PostgreSQL (Row-Level Locking & ACID Transactions)       |
++-------------------------------------------------------------------------------+</code></pre>
+        </div>
+
+        <!-- Subseções 1.1, 1.2, 1.3 -->
+        <div class="space-y-6 pt-2">
+          
+          <!-- 1.1 Next.js 16 -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-3">
+            <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
+              1.1. Next.js 16 (App Router) — Camada de Entrega (Delivery Layer)
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              O Next.js atua estritamente como o mecanismo de entrega visual e transporte HTTP/Server Action da aplicação. Através do modelo de App Router (<code class="text-amber-400 font-mono">src/app/</code>), ele provê:
+            </p>
+            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside pl-2">
+              <li>
+                <strong class="text-slate-100">Server Components (RSC):</strong> Renderização no lado do servidor para carregamento quase instantâneo do catálogo de barbeiros, serviços e dados analíticos, reduzindo o bundle do cliente e otimizando o SEO institucional.
+              </li>
+              <li>
+                <strong class="text-slate-100">Client Components:</strong> Ocupam-se apenas das interfaces altamente interativas e de gerenciamento de estado local (como o funil de agendamento multi-etapa no <code class="text-slate-200 font-mono">BookingFlow.tsx</code> e o painel analítico interativo em <code class="text-slate-200 font-mono">src/app/admin/dashboard/page.tsx</code>).
+              </li>
+              <li>
+                <strong class="text-slate-100">Server Actions:</strong> Atuam como Controllers que recebem requisições em chamadas RPC tipadas, executam a validação de sanitização na borda e delegam a execução para as regras de negócio na camada de UseCases.
+              </li>
+            </ul>
+          </div>
+
+          <!-- 1.2 Prisma ORM 7 -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-3">
+            <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+              1.2. Prisma ORM 7 — Camada de Persistência Abstrata
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              O Prisma ORM funciona como o mapeador objeto-relacional (ORM) do sistema, provendo:
+            </p>
+            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside pl-2">
+              <li>
+                <strong class="text-slate-100">Controle DDL e Esquema Único (<code class="text-amber-400 font-mono">prisma/schema.prisma</code>):</strong> Declaração centralizada do modelo relacional, gerando clientes fortemente tipados (<code class="text-cyan-300 font-mono">@prisma/client</code>).
+              </li>
+              <li>
+                <strong class="text-slate-100">Abstração de Acesso a Dados (<code class="text-cyan-300 font-mono">PrismaClient</code>):</strong> Implementa concretamente os contratos (interfaces) definidos na camada de domínio (<code class="text-amber-400 font-mono">src/core/domain/repositories/</code>), permitindo que a aplicação execute consultas complexas, agregações analíticas e transações sem expor detalhes SQL para a camada de negócios.
+              </li>
+            </ul>
+          </div>
+
+          <!-- 1.3 PostgreSQL -->
+          <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-3">
+            <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              1.3. PostgreSQL — Banco de Dados Relacional e Transacional
+            </h3>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              O PostgreSQL é o motor de banco de dados ACID da aplicação, escolhido por sua robustez em concorrência, integridade referencial e suporte a travas físicas de linha (Row-Level Locking):
+            </p>
+            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside pl-2">
+              <li>
+                <strong class="text-slate-100">Integridade Relacional:</strong> Relacionamentos entre Usuários (<code class="text-slate-200 font-mono">User</code>), Barbeiros (<code class="text-slate-200 font-mono">Barber</code>), Serviços (<code class="text-slate-200 font-mono">Service</code>) e Agendamentos (<code class="text-slate-200 font-mono">Appointment</code>) protegidos por chaves estrangeiras, índices de unicidade e regras de exclusão controlada.
+              </li>
+              <li>
+                <strong class="text-slate-100">Mecanismos de Concorrência Pessimista:</strong> Suporte a comandos SQL nativos (<code class="text-emerald-400 font-mono">SELECT ... FOR UPDATE</code>) executados dentro de transações interativas para neutralizar disputas por horários na agenda de forma agnóstica à memória da aplicação.
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 2. ESTRUTURA DE PASTAS (DIRECTORY TREE) -->
+      <section id="estrutura-pastas" class="scroll-mt-12 space-y-6">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono font-bold text-sm">02</div>
+          <h2 class="text-2xl font-bold text-slate-100 tracking-tight">2. Estrutura de Pastas (Directory Tree)</h2>
+        </div>
+
+        <p class="text-sm text-slate-300 leading-relaxed">
+          A organização dos arquivos respeita os limites arquiteturais da Clean Architecture, isolando totalmente o framework de front-end das regras de domínio.
+        </p>
+
+        <!-- Árvore de Diretórios Completa -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+          <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <span class="text-xs font-mono text-slate-400 font-bold">Topologia de Diretórios do Projeto</span>
+            <span class="text-[11px] font-mono text-amber-400">Clean Architecture</span>
+          </div>
+          <pre class="p-6 text-xs font-mono text-slate-300 leading-relaxed overflow-x-auto"><code>barberApp/
+├── <span class="token-string">prisma/</span>
+│   ├── schema.prisma           <span class="token-comment"># Declaração central das tabelas, enums e relacionamentos</span>
+│   └── seed.ts                 <span class="token-comment"># Povoamento inicial de dados (serviços e admin padrão)</span>
+├── <span class="token-string">src/</span>
+│   ├── <span class="token-keyword">app/</span>                    <span class="token-comment"># CAMADA DE ENTREGA (Next.js App Router)</span>
+│   │   ├── actions/            <span class="token-comment"># Controllers / Server Actions (validam input e chamam UseCases)</span>
+│   │   │   ├── admin-actions.ts
+│   │   │   ├── appointment-actions.ts
+│   │   │   ├── auth-actions.ts
+│   │   │   └── service-actions.ts
+│   │   ├── admin/              <span class="token-comment"># Rotas e páginas do painel administrativo</span>
+│   │   ├── barber/             <span class="token-comment"># Rotas e páginas do painel do barbeiro</span>
+│   │   ├── auth/               <span class="token-comment"># Páginas de login e registro do cliente</span>
+│   │   ├── dashboard/          <span class="token-comment"># Rotas de gerenciamento para clientes (meus agendamentos)</span>
+│   │   └── page.tsx            <span class="token-comment"># Landing page institucional e funil de agendamento</span>
+│   ├── <span class="token-func">components/</span>             <span class="token-comment"># Componentes visuais de UI (React)</span>
+│   │   ├── admin/              <span class="token-comment"># Navbar e widgets do admin</span>
+│   │   ├── barber/             <span class="token-comment"># Navbar e widgets do barbeiro</span>
+│   │   └── BookingFlow.tsx     <span class="token-comment"># Máquina de estados visual do agendamento (funil 5 etapas)</span>
+│   ├── <span class="token-type">core/</span>                   <span class="token-comment"># NÚCLEO DA APLICAÇÃO (Regras de Negócio Puras & Domínio)</span>
+│   │   ├── domain/             <span class="token-comment"># Contratos abstratos e entidades de domínio</span>
+│   │   │   └── repositories/   <span class="token-comment"># Interfaces abstratas de Repositórios (Inversão de Dependência)</span>
+│   │   │       ├── AppointmentRepository.ts
+│   │   │       ├── BarberRepository.ts
+│   │   │       ├── ServiceRepository.ts
+│   │   │       └── UserRepository.ts
+│   │   └── usecases/           <span class="token-comment"># Casos de Uso (Orquestração pura sem dependência de framework)</span>
+│   │       ├── ChangeAppointmentStatusUseCase.ts
+│   │       ├── CreateAppointmentUseCase.ts
+│   │       ├── GetAdminDashboardMetricsUseCase.ts
+│   │       ├── GetBarberAvailabilityUseCase.ts
+│   │       ├── RegisterBarberUseCase.ts
+│   │       └── usecases.test.ts <span class="token-comment"># Suíte completa de testes unitários do núcleo</span>
+│   ├── <span class="token-string">infra/</span>                  <span class="token-comment"># IMPLEMENTAÇÕES CONCRETAS DE INFRAESTRUTURA</span>
+│   │   ├── db/                 <span class="token-comment"># Conexão singleton com o banco de dados (prisma-client.ts)</span>
+│   │   └── repositories/       <span class="token-comment"># Implementação dos contratos do domínio usando Prisma ORM</span>
+│   │       ├── PrismaAppointmentRepository.ts
+│   │       ├── PrismaBarberRepository.ts
+│   │       ├── PrismaServiceRepository.ts
+│   │       └── PrismaUserRepository.ts
+│   ├── store/                  <span class="token-comment"># Estado global no cliente via Zustand (booking-store.ts)</span>
+│   ├── utils/                  <span class="token-comment"># Utilitários puros (compressão de imagem, formatação)</span>
+│   ├── auth.ts                 <span class="token-comment"># Configuração centralizada do NextAuth.js v5 + PrismaAdapter</span>
+│   └── middleware.ts           <span class="token-comment"># Barreira de segurança e autorização de borda (Edge RBAC)</span>
+└── next.config.ts              <span class="token-comment"># Configurações do compilador Next.js e limites físicos (bodySizeLimit)</span></code></pre>
+        </div>
+
+        <!-- 2.1 Responsabilidade -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <h3 class="text-lg font-bold text-slate-100">
+            2.1. Responsabilidade de Cada Diretório Raiz e Isolamento do Framework
+          </h3>
+          <div class="space-y-4 text-sm text-slate-300">
+            <div>
+              <strong class="text-amber-400 font-mono block mb-1">src/app/ (Delivery Layer / Camada de Entrega):</strong>
+              Contém estritamente código acoplado ao Next.js (rotas, layouts, metadados e Server Actions). Nenhuma regra de negócio de agendamento ou cálculo de disponibilidade reside aqui. Se o Next.js for substituído no futuro por outro framework (ex: Express, Fastify ou NestJS), esta pasta inteira pode ser reescrita sem alterar uma única linha do núcleo (<code class="text-amber-300 font-mono">src/core/</code>).
+            </div>
+
+            <div>
+              <strong class="text-amber-400 font-mono block mb-1">src/core/ (Core Layer / Núcleo de Negócios):</strong>
+              O coração da aplicação. Não importa bibliotecas de UI, Next.js ou Prisma ORM direto nas suas lógicas.
+              <ul class="list-disc list-inside mt-2 space-y-1 pl-4 text-slate-400">
+                <li><code class="text-slate-200 font-mono">src/core/domain/repositories/</code>: Define os contratos abstratos (interface) que o sistema exige para ler/gravar dados.</li>
+                <li><code class="text-slate-200 font-mono">src/core/usecases/</code>: Classes puras em TypeScript que recebem os repositórios via construtor, orquestram as regras de negócio (ex: checagem de horários de trabalho, regras de cancelamento, transições de status) e lançam exceções de domínio em caso de violação.</li>
+              </ul>
+            </div>
+
+            <div>
+              <strong class="text-amber-400 font-mono block mb-1">src/infra/ (Infrastructure Layer / Camada de Infraestrutura):</strong>
+              Contém os adaptadores que conectam o mundo externo (banco de dados, ORM, APIs) ao núcleo. Os arquivos em <code class="text-amber-300 font-mono">src/infra/repositories/</code> implementam concretamente os contratos definidos em <code class="text-amber-300 font-mono">src/core/domain/repositories/</code>.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. PADRÕES ARQUITETURAIS E PRINCÍPIOS DE DESIGN -->
+      <section id="padroes-arquiteturais" class="scroll-mt-12 space-y-6">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono font-bold text-sm">03</div>
+          <h2 class="text-2xl font-bold text-slate-100 tracking-tight">3. Padrões Arquiteturais e Princípios de Design</h2>
+        </div>
+
+        <!-- 3.1 Clean Architecture -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <h3 class="text-lg font-bold text-slate-100">
+            3.1. Clean Architecture: O Fluxo de uma Requisição
+          </h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            A arquitetura do sistema adota estritamente a Regra de Dependência da Clean Architecture: os fluxos apontam sempre de fora (interface/infraestrutura) para dentro (núcleo/domínio).
+          </p>
+
+          <!-- Diagrama de Fluxo ASCII -->
+          <pre class="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed"><code>[Cliente / Navegador]
+        │ (1) Envia formulário / RPC
+        ▼
+[src/app/actions/appointment-actions.ts] ──(Controller / Server Action)
+        │ (2) Valida input, checa sessão auth e instancia UseCase com repositórios
+        ▼
+[src/core/usecases/CreateAppointmentUseCase.ts] ──(Regra de Negócio Pura)
+        │ (3) Checa dias/horários de trabalho do barbeiro e solicita criação transacional
+        ▼
+[src/core/domain/repositories/AppointmentRepository.ts] ──(Interface Abstrata)
+        ▲
+        │ (4) Inversão de Dependência (Implementa o contrato)
+[src/infra/repositories/PrismaAppointmentRepository.ts] ──(Adaptador de Infraestrutura)
+        │ (5) Executa SQL interativo no PostgreSQL (SELECT ... FOR UPDATE + INSERT)
+        ▼
+[PostgreSQL Database]</code></pre>
+
+          <!-- Rastreabilidade CreateAppointment -->
+          <div class="space-y-4 pt-2">
+            <h4 class="text-base font-bold text-amber-400">Rastreabilidade e Detalhamento do Fluxo (CreateAppointment):</h4>
+
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-slate-100 block">1. Controller / Entrada (<code class="text-amber-300 font-mono">src/app/actions/appointment-actions.ts:L14-L60</code>):</span>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                A função <code class="text-amber-300 font-mono">createAppointmentAction</code> atua como o Controller. Ela verifica se a sessão do usuário está ativa (<code class="text-slate-200 font-mono">await auth()</code>), valida os dados de entrada recebidos (<code class="text-slate-200 font-mono">barberId</code>, <code class="text-slate-200 font-mono">serviceId</code>, <code class="text-slate-200 font-mono">startTimeStr</code>) e converte strings em objetos <code class="text-slate-200 font-mono">Date</code>.
+                Em seguida, ela instancia os adaptadores concretos (<code class="text-cyan-300 font-mono">PrismaAppointmentRepository</code>, <code class="text-cyan-300 font-mono">PrismaServiceRepository</code>, <code class="text-cyan-300 font-mono">PrismaBarberRepository</code>) e os injeta na classe <code class="text-amber-400 font-mono">CreateAppointmentUseCase</code>.
+              </p>
+            </div>
+
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-slate-100 block">2. UseCase / Orquestração (<code class="text-amber-300 font-mono">src/core/usecases/CreateAppointmentUseCase.ts:L20-L83</code>):</span>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                O método <code class="text-amber-300 font-mono">execute</code> processa a regra de negócio sem conhecer o banco de dados:
+              </p>
+              <ul class="text-xs text-slate-400 space-y-1 list-disc list-inside pl-2">
+                <li>Valida que a data não está no passado (<code class="text-slate-200 font-mono">L24</code>).</li>
+                <li>Consulta os dados do barbeiro e do serviço via contratos abstratos (<code class="text-slate-200 font-mono">L29-L38</code>).</li>
+                <li>Verifica matematicamente se o dia da semana está na lista <code class="text-slate-200 font-mono">barber.workDays</code> (<code class="text-slate-200 font-mono">L41-L44</code>) e se o intervalo de tempo calculated (<code class="text-slate-200 font-mono">appStartMinutes</code> a <code class="text-slate-200 font-mono">appEndMinutes</code>) está estritamente dentro de <code class="text-slate-200 font-mono">workStart</code> e <code class="text-slate-200 font-mono">workEnd</code> (<code class="text-slate-200 font-mono">L47-L59</code>).</li>
+                <li>Invoca o método abstrato <code class="text-slate-200 font-mono">this.appointmentRepository.createTransactional(...)</code> informando que os status <code class="text-emerald-400 font-mono">['PENDING', 'COMPLETED']</code> representam conflito (<code class="text-slate-200 font-mono">L64-L73</code>).</li>
+              </ul>
+            </div>
+
+            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-slate-100 block">3. Repositório / Persistência (<code class="text-amber-300 font-mono">src/infra/repositories/PrismaAppointmentRepository.ts:L56-L89</code>):</span>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                O método concreto <code class="text-amber-300 font-mono">createTransactional</code> encapsula a operação em <code class="text-cyan-300 font-mono">prisma.$transaction</code>.
+                Aplica a trava física na linha do barbeiro, busca sobreposições na agenda e, caso o horário esteja livre, insere o registro com status <code class="text-emerald-400 font-mono">PENDING</code>, retornando a entidade ao UseCase.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 3.2 Princípios SOLID -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <h3 class="text-lg font-bold text-slate-100">
+            3.2. Princípios SOLID Aplicados
+          </h3>
+
+          <!-- SRP -->
+          <div class="space-y-3">
+            <h4 class="text-base font-bold text-amber-400">Single Responsibility Principle (SRP — Princípio da Responsabilidade Única)</h4>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Cada classe de UseCase e de Repository possui um único motivo para mudar:
+            </p>
+            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside pl-2">
+              <li>
+                <strong class="text-slate-100">Rastreabilidade (<code class="text-amber-300 font-mono">src/core/usecases/ChangeAppointmentStatusUseCase.ts</code>):</strong> Esta classe é responsável apenas por validar e efetuar a transição de status de um agendamento. Ela encapsula a máquina de estados (impedindo, por exemplo, que um agendamento já <code class="text-red-400 font-mono">CANCELED</code> seja alterado para <code class="text-emerald-400 font-mono">COMPLETED</code> ou que um cliente marque como <code class="text-yellow-400 font-mono">NO_SHOW</code>). Não se mistura com cálculo de métricas ou envio de notificações.
+              </li>
+              <li>
+                <strong class="text-slate-100">Rastreabilidade (<code class="text-amber-300 font-mono">src/infra/repositories/PrismaUserRepository.ts</code>):</strong> Ocupa-se unicamente de persistir, buscar e aplicar Soft Delete em registros da tabela User.
+              </li>
+            </ul>
+          </div>
+
+          <!-- DIP -->
+          <div class="space-y-3 pt-2">
+            <h4 class="text-base font-bold text-amber-400">Dependency Inversion Principle (DIP — Princípio da Inversão de Dependência)</h4>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Módulos de alto nível (casos de uso) não dependem de módulos de baixo nível (Prisma ORM ou bancos de dados concretos). Ambos dependem de abstrações (interfaces).
+            </p>
+            <ul class="text-sm text-slate-300 space-y-2 list-disc list-inside pl-2">
+              <li>
+                <strong class="text-slate-100">Rastreabilidade (<code class="text-amber-300 font-mono">src/core/usecases/CreateAppointmentUseCase.ts:L14-L18</code>):</strong> O construtor do <code class="text-amber-400 font-mono">CreateAppointmentUseCase</code> recebe estritamente as interfaces <code class="text-slate-200 font-mono">AppointmentRepository</code>, <code class="text-slate-200 font-mono">ServiceRepository</code> e <code class="text-slate-200 font-mono">BarberRepository</code> definidas em <code class="text-amber-300 font-mono">src/core/domain/repositories/</code>.
+              </li>
+            </ul>
+            <p class="text-sm text-slate-300 leading-relaxed pl-2">
+              Isso permite que a suíte de testes unitários (<code class="text-amber-300 font-mono">src/core/usecases/usecases.test.ts:L46-L66</code>) instancie os casos de uso injetando repositórios mockados (<code class="text-cyan-300 font-mono">vi.fn()</code>), testando complexas regras transacionais e de bloqueio em milissegundos sem precisar de uma conexão ativa com o PostgreSQL.
+            </p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 4. SEGURANÇA, CONCORRÊNCIA E INTEGRIDADE -->
+      <section id="seguranca-concorrencia" class="scroll-mt-12 space-y-6">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono font-bold text-sm">04</div>
+          <h2 class="text-2xl font-bold text-slate-100 tracking-tight">4. Segurança, Concorrência e Integridade</h2>
+        </div>
+
+        <!-- 4.1 Autenticação e Autorização -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <h3 class="text-lg font-bold text-slate-100">
+            4.1. Autenticação e Autorização (Edge RBAC & NextAuth v5)
+          </h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            O sistema implementa uma arquitetura de segurança baseada em tokens JWT assinados, sessões de servidor e cookies HttpOnly:
+          </p>
+          <ul class="text-sm text-slate-300 space-y-3 list-disc list-inside pl-2">
+            <li>
+              <strong class="text-slate-100">Autenticação Centralizada (<code class="text-amber-300 font-mono">src/auth.ts:L9-L56</code>):</strong> Configuração do NextAuth.js v5 (Beta) integrado ao <code class="text-cyan-300 font-mono">PrismaAdapter</code>. Suporta login social (Google OAuth) e credenciais manuais via <code class="text-cyan-300 font-mono">bcrypt.compare</code>. Quando autenticado, o token JWT recebe o <code class="text-slate-200 font-mono">id</code>, <code class="text-slate-200 font-mono">role</code> (<code class="text-amber-400 font-mono">CLIENT</code>, <code class="text-cyan-400 font-mono">BARBER</code> ou <code class="text-emerald-400 font-mono">ADMIN</code>) e foto higienizada do usuário.
+            </li>
+            <li>
+              <strong class="text-slate-100">Barreira de Borda / Edge RBAC (<code class="text-amber-300 font-mono">src/middleware.ts:L5-L35</code>):</strong> O <code class="text-slate-200 font-mono">middleware.ts</code> roda no nível de borda (Edge Runtime) interceptando todas as requisições antes mesmo da renderização de páginas:
+              <ul class="list-circle list-inside mt-2 space-y-1 pl-6 text-slate-400">
+                <li>Rotas <code class="text-amber-400 font-mono">/admin/:path*</code> exigem estritamente <code class="text-slate-200 font-mono">userRole === 'ADMIN'</code> (<code class="text-slate-200 font-mono">L25-L27</code>).</li>
+                <li>Rotas <code class="text-amber-400 font-mono">/barber/:path*</code> exigem <code class="text-slate-200 font-mono">userRole === 'BARBER' || userRole === 'ADMIN'</code> (<code class="text-slate-200 font-mono">L30-L32</code>).</li>
+                <li>Rotas protegidas de cliente (<code class="text-slate-200 font-mono">/dashboard</code>, <code class="text-slate-200 font-mono">/profile</code>) redirecionam para <code class="text-slate-200 font-mono">/auth/login?callbackUrl=...</code> caso o usuário não possua token ativo (<code class="text-slate-200 font-mono">L17-L22</code>).</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 4.2 Proteção de Dados, Sanitização e Soft Delete -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <h3 class="text-lg font-bold text-slate-100">
+            4.2. Proteção de Dados, Sanitização e Soft Delete
+          </h3>
+          <ul class="text-sm text-slate-300 space-y-3 list-disc list-inside pl-2">
+            <li>
+              <strong class="text-slate-100">Sanitização de Privilege Escalation via Zod (<code class="text-amber-300 font-mono">src/app/actions/auth-actions.ts:L10-L55</code>):</strong>
+              No fluxo de cadastro (<code class="text-amber-300 font-mono">signUpAction</code>), o esquema Zod <code class="text-slate-200 font-mono">signUpSchema</code> valida formato de e-mail e força de senha (<code class="text-slate-200 font-mono">L10-L15</code>).
+              Para evitar ataques de Privilege Escalation onde um invasor injeta <code class="text-red-400 font-mono">"role": "ADMIN"</code> no FormData, a Server Action extrai os campos validados e descarta qualquer requisição de perfil, forçando em código a criação com <code class="text-emerald-400 font-mono">role: 'CLIENT'</code> (<code class="text-slate-200 font-mono">L52</code>).
+            </li>
+            <li>
+              <strong class="text-slate-100">Criptografia de Senhas (<code class="text-amber-300 font-mono">src/app/actions/auth-actions.ts:L44</code>):</strong> Todas as senhas são cifradas usando o algoritmo bcrypt com work factor 10 (<code class="text-cyan-300 font-mono">await bcrypt.hash(password, 10)</code>), garantindo resistência a ataques de força bruta e tabelas arco-íris (Rainbow Tables).
+            </li>
+            <li>
+              <strong class="text-slate-100">Estratégia de Soft Delete (<code class="text-amber-300 font-mono">src/infra/repositories/PrismaBarberRepository.ts</code> & <code class="text-amber-300 font-mono">PrismaUserRepository.ts:L64</code>):</strong>
+              Excluir fisicamente um barbeiro do banco de dados causaria a remoção em cascata (ou violação de chave estrangeira) de todo o histórico de agendamentos (<code class="text-slate-200 font-mono">Appointment</code>) e relatórios financeiros passados.
+              O sistema resolve isso através de um Soft Delete (<code class="text-amber-300 font-mono">src/core/usecases/DeleteBarberUseCase.ts:L28</code>): o barbeiro tem seu usuário associado marcado como <code class="text-slate-200 font-mono">active: false</code>. Nos repositórios, consultas públicas de agenda filtram automaticamente por <code class="text-slate-200 font-mono">activeOnly: true</code> (<code class="text-amber-300 font-mono">PrismaBarberRepository.ts:L21</code>), impedindo novos agendamentos enquanto preserva integralmente as métricas analíticas e comissões históricas.
+            </li>
+          </ul>
+        </div>
+
+        <!-- 4.3 Prevenção de Anomalias e Trava de Concorrência -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <h3 class="text-lg font-bold text-slate-100">
+            4.3. Prevenção de Anomalias e Trava de Concorrência (Race Conditions)
+          </h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            O problema de Double-Booking (dois clientes reservando exatamente o mesmo horário no mesmo milissegundo) é neutralizado na camada de infraestrutura transacional do PostgreSQL:
+          </p>
+
+          <!-- Código Pessimista Row-Level Lock -->
+          <div class="space-y-3">
+            <h4 class="text-sm font-bold text-emerald-400">Mecanismo Pessimista de Row-Level Locking (<code class="text-amber-300 font-mono">PrismaAppointmentRepository.ts:L56-L89</code>)</h4>
+            <pre class="p-4 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed"><code>return await prisma.$transaction(async (tx) => {
+
+  // 1. Bloqueia a linha do barbeiro no PostgreSQL (SELECT ... FOR UPDATE)
+  // Qualquer outra transação concorrente para o mesmo barbeiro aguardará na fila
+  await tx.$executeRaw`
+    SELECT 1 FROM "Barber" WHERE id = ${data.barberId} FOR UPDATE
+  `;
+
+  // 2. Consulta sobreposições com a certeza absoluta de isolamento
+  const conflict = await tx.appointment.findFirst({
+    where: {
+      barberId: data.barberId,
+      status: { in: ['PENDING', 'COMPLETED'] },
+      startTime: { lt: data.endTime },
+      endTime: { gt: data.startTime },
+    },
+  });
+
+  if (conflict) return null; // Retorna nulo, informando ao UseCase o erro 409 Conflict
+
+  // 3. Efetua a inserção segura do agendamento
+  return await tx.appointment.create({ ... });
+});</code></pre>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2 text-xs text-slate-300 leading-relaxed">
+            <strong class="text-amber-400 block text-sm">Por que SELECT ... FOR UPDATE?</strong>
+            Sem o bloqueio físico da linha na tabela Barber, duas requisições concorrentes poderiam executar a verificação de sobreposição (<code class="text-slate-200 font-mono">findFirst</code>) ao mesmo tempo, lerem que a agenda está livre, e ambas executarem o <code class="text-slate-200 font-mono">create</code> em seguida. O comando SQL <code class="text-emerald-400 font-mono">FOR UPDATE</code> obriga o banco de dados a serializar o acesso à agenda do barbeiro específico, tornando impossível a ocorrência de Race Conditions.
+          </div>
+
+          <!-- DDoS Upload Limit -->
+          <div class="space-y-3 pt-2">
+            <h4 class="text-sm font-bold text-slate-100">Proteção Contra DDoS de Payload em Uploads (<code class="text-amber-300 font-mono">next.config.ts:L4-L8</code> & <code class="text-amber-300 font-mono">src/utils/compress-image.ts</code>)</h4>
+            <ul class="text-sm text-slate-300 space-y-3 list-disc list-inside pl-2">
+              <li>
+                <strong class="text-slate-100">Barreira Física no Servidor:</strong> Para evitar sobrecarga de memória e ataques de negação de serviço provocados no envio de Server Actions gigantes, o compilador do Next.js é configurado para travar o payload no limite máximo de segurança:
+                <pre class="p-3 mt-2 bg-slate-950 rounded-xl border border-slate-800 text-xs font-mono text-amber-300 overflow-x-auto"><code>experimental: {
+  serverActions: { bodySizeLimit: '5mb' }
+}</code></pre>
+              </li>
+              <li>
+                <strong class="text-slate-100">Compressão no Cliente (<code class="text-amber-300 font-mono">compress-image.ts:L13-L40</code>):</strong> Para economizar largura de banda e armazenamento, o sistema utiliza <code class="text-cyan-300 font-mono">browser-image-compression</code> via Web Worker no navegador do cliente antes de enviar fotos de perfil ou de serviços. O arquivo é redimensionado para no máximo 800px e comprimido para &lt; 500KB em segundo plano sem travar a thread principal da UI.
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 5. FLUXOS DE NEGÓCIO CRÍTICOS (LAZY REGISTRATION & DIAGRAMA COMPONENTIZADO) -->
+      <section id="fluxos-criticos" class="scroll-mt-12 space-y-8">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 font-mono font-bold text-sm">05</div>
+          <h2 class="text-2xl font-bold text-slate-100 tracking-tight">5. Fluxos de Negócio Críticos</h2>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <h3 class="text-lg font-bold text-slate-100">
+            5.1. Estratégia de "Lazy Registration" (Cadastro no Fim do Funil)
+          </h3>
+          <p class="text-sm text-slate-300 leading-relaxed">
+            Um dos maiores pontos de atrito no booking online é exigir que o usuário crie uma conta antes mesmo de ver os horários ou preços disponíveis. O sistema implementa o fluxo de Lazy Registration (Cadastro Sob Demanda):
+          </p>
+
+          <!-- COMPONENTE VISUAL DO DIAGRAMA LAZY REGISTRATION (Substituindo o ASCII puro por UI HTML/CSS Rica) -->
+          <div class="bg-slate-950 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-8 shadow-2xl relative overflow-hidden">
+            
+            <div class="flex items-center justify-between border-b border-slate-800/80 pb-4">
+              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                Diagrama de Sequência Visual: Funil de Lazy Registration
+              </span>
+              <span class="text-[11px] font-mono text-slate-500">Fluxo Continuo + Decision Branch</span>
+            </div>
+
+            <!-- FASE 1: ETAPAS HORIZONTAIS DE SELEÇÃO DE DADOS -->
+            <div class="space-y-3">
+              <span class="text-[11px] font-mono text-slate-400 font-bold uppercase">1. Fase de Seleção de Dados (Navegação Livre / Guest)</span>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Etapa 1 -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
+                  <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                    <span>ETAPA 01</span>
+                    <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-100 mt-2">Etapa 1: Serviços</h4>
+                  <p class="text-[11px] text-slate-400 mt-1">Seleção do serviço e combo</p>
+                </div>
+
+                <!-- Etapa 2 -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
+                  <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                    <span>ETAPA 02</span>
+                    <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-100 mt-2">Etapa 2: Barbeiro</h4>
+                  <p class="text-[11px] text-slate-400 mt-1">Seleção do profissional</p>
+                </div>
+
+                <!-- Etapa 3 -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between hover:border-slate-700 transition-all">
+                  <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+                    <span>ETAPA 03</span>
+                    <span class="w-2 h-2 rounded-full bg-slate-700"></span>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-100 mt-2">Etapa 3: Data e Hora</h4>
+                  <p class="text-[11px] text-slate-400 mt-1">Grade de horários livres</p>
+                </div>
+
+                <!-- Etapa 4 -->
+                <div class="bg-slate-900 border-2 border-amber-500/50 rounded-2xl p-4 flex flex-col justify-between glow-amber">
+                  <div class="flex items-center justify-between text-[10px] font-mono text-amber-400 font-bold">
+                    <span>ETAPA 04</span>
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                  </div>
+                  <h4 class="text-sm font-bold text-slate-100 mt-2">Etapa 4: Resumo</h4>
+                  <p class="text-[11px] text-amber-400/90 mt-1 font-semibold">Ponto de Decisão da Sessão</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEPARADOR COM CONECTOR DE DECISÃO -->
+            <div class="flex items-center justify-center my-4">
+              <div class="h-px bg-slate-800 flex-1"></div>
+              <span class="px-4 py-1.5 rounded-full bg-slate-900 border border-slate-700 text-xs font-bold text-slate-300 font-mono uppercase">
+                Verificação de Sessão (useSession)
+              </span>
+              <div class="h-px bg-slate-800 flex-1"></div>
+            </div>
+
+            <!-- FASE 2: BIFURCAÇÃO (AUTENTICADO VS NÃO AUTENTICADO) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- Caminho Esquerdo (Autenticado / Emerald) -->
+              <div class="bg-slate-900/90 border-2 border-emerald-500/50 rounded-2xl p-5 space-y-3 glow-emerald">
+                <div class="flex items-center justify-between border-b border-emerald-500/20 pb-2">
+                  <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    Sessão Ativa: Autenticado
+                  </span>
+                  <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Caminho Direto</span>
+                </div>
+                <div class="p-3 bg-slate-950 rounded-xl border border-emerald-500/20 text-xs font-mono text-emerald-300">
+                  Executa RPC `createAppointmentAction`
+                </div>
+                <p class="text-xs text-slate-400">
+                  Validação transacional direta no PostgreSQL via Server Action sem interrupções.
+                </p>
+              </div>
+
+              <!-- Caminho Direito (Não Autenticado / Amber) -->
+              <div class="bg-slate-900/90 border-2 border-amber-500/50 rounded-2xl p-5 space-y-3 glow-amber">
+                <div class="flex items-center justify-between border-b border-amber-500/20 pb-2">
+                  <span class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    Não Autenticado (Visitante)
+                  </span>
+                  <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">Lazy Registration</span>
+                </div>
+                <div class="p-3 bg-slate-950 rounded-xl border border-amber-500/20 text-xs font-mono text-amber-300">
+                  Exibe Modal/Aba "Login ou Cadastro"
+                </div>
+                <div class="p-2.5 bg-slate-950/80 rounded-lg border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
+                  Após Cadastro/Login, retoma estado do Zustand e agenda automaticamente.
+                </div>
+              </div>
+
+            </div>
+
+            <!-- FASE 3: CONVERGÊNCIA PARA A ETAPA DE SUCESSO -->
+            <div class="pt-2 flex flex-col items-center">
+              <div class="w-full max-w-xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-emerald-950/80 border-2 border-emerald-500/60 rounded-2xl p-5 text-center shadow-xl space-y-2 glow-emerald">
+                <div class="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto font-bold text-base">
+                  ✓
+                </div>
+                <h4 class="text-base font-black text-slate-100 tracking-tight">
+                  Etapa 5: Sucesso / Tela Final de Agendamento Confirmado
+                </h4>
+                <p class="text-xs text-slate-300">
+                  Convergência de ambos os fluxos com persistência completa da reserva na base de dados.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Arquitetura de Estado -->
+          <div class="space-y-4 pt-2">
+            <h4 class="text-base font-bold text-amber-400">
+              Arquitetura de Estado (<code class="text-slate-200 font-mono">src/components/BookingFlow.tsx</code> & <code class="text-slate-200 font-mono">src/store/booking-store.ts</code>)
+            </h4>
+            <ul class="text-sm text-slate-300 space-y-3 list-disc list-inside pl-2">
+              <li>
+                <strong class="text-slate-100">Armazenamento Temporário Desacoplado:</strong> O cliente navega por todo o catálogo, seleciona serviço (<code class="text-slate-200 font-mono">serviceId</code>), barbeiro (<code class="text-slate-200 font-mono">barberId</code>) e horário (<code class="text-slate-200 font-mono">startTime</code>). Esse estado é mantido no cliente através do Zustand (<code class="text-amber-400 font-mono">useBookingStore</code>), com persistência opcional no localStorage (<code class="text-amber-300 font-mono">booking-store.ts:L18</code>).
+              </li>
+              <li>
+                <strong class="text-slate-100">Checagem no Momento da Confirmação (<code class="text-amber-300 font-mono">BookingFlow.tsx</code>):</strong> Ao clicar em "Confirmar Agendamento" na Etapa 4, o componente checa o hook de sessão (<code class="text-cyan-300 font-mono">useSession()</code>).
+                <ul class="list-circle list-inside mt-2 space-y-1 pl-6 text-slate-400">
+                  <li>Se o usuário estiver autenticado (<code class="text-slate-200 font-mono">status === 'authenticated'</code>), a Server Action de agendamento é enviada imediatamente.</li>
+                  <li>Se o usuário for um visitante (<code class="text-slate-200 font-mono">status === 'unauthenticated'</code>), a interface abre em tempo real o modal/aba de autenticação rápida dentro do próprio fluxo.</li>
+                </ul>
+              </li>
+              <li>
+                <strong class="text-slate-100">Retomada Sem Perda de Contexto:</strong> Assim que o cliente conclui o cadastro rápido ou login social, a aplicação reidrata o estado perfeitamente preservado no Zustand e dispara a reserva do horário, enviando o usuário para a Etapa 5 (Sucesso) de forma fluida.
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- CONCLUSÃO ARQUITETURAL -->
+      <section id="conclusao-arquitetural" class="scroll-mt-12 space-y-4">
+        <div class="flex items-center space-x-3">
+          <div class="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          </div>
+          <h2 class="text-2xl font-bold text-slate-100 tracking-tight">Conclusão Arquitetural</h2>
+        </div>
+        <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-6 leading-relaxed text-sm text-slate-300 space-y-3">
+          <p>
+            A arquitetura detalhada neste documento estabelece que o <strong>Sistema de Gestão de Barbearia</strong> atende e supera os padrões da engenharia de software de nível corporativo. A conjugação do Next.js App Router com a pureza da Clean Architecture, o isolamento do Prisma ORM/PostgreSQL e o controle transacional por Pessimistic Locking (FOR UPDATE) resulta em uma plataforma à prova de regressões, imune a anomalias de agendamento e pronta para expansão contínua em escala de produção.
+          </p>
+        </div>
+      </section>
+
+      <!-- Footer Institucional -->
+      <footer class="pt-12 border-t border-slate-800/80 text-center text-xs text-slate-500 space-y-2">
+        <p>Sistema de Gestão de Barbearia (Barber Management System) — Documento de Arquitetura de Software</p>
+        <p class="text-[10px] text-slate-600">Arquiteto de Software Sênior & Engenharia de Sistemas — Todos os direitos reservados © 2026</p>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- SCRIPT EM JS NATIVO COM INTERSECTION OBSERVER PARA HIGHLIGHT AUTOMÁTICO DA SIDEBAR -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const sections = document.querySelectorAll('section[id]');
+      const navItems = document.querySelectorAll('#nav-menu .nav-item');
+
+      const observerOptions = {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: 0.1
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('id');
+            
+            navItems.forEach(item => {
+              const href = item.getAttribute('href').replace('#', '');
+              if (href === id) {
+                item.classList.add('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/20');
+                item.classList.remove('text-slate-400');
+              } else {
+                item.classList.remove('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/20');
+                item.classList.add('text-slate-400');
+              }
+            });
+          }
+        });
+      }, observerOptions);
+
+      sections.forEach(section => observer.observe(section));
+
+      // Mobile Menu Toggle logic
+      const mobileBtn = document.getElementById('mobile-menu-btn');
+      const sidebar = document.getElementById('sidebar');
+
+      if (mobileBtn && sidebar) {
+        mobileBtn.addEventListener('click', () => {
+          sidebar.classList.toggle('-translate-x-full');
+        });
+
+        navItems.forEach(item => {
+          item.addEventListener('click', () => {
+            if (window.innerWidth < 1024) {
+              sidebar.classList.add('-translate-x-full');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
