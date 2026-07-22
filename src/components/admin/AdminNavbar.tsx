@@ -56,7 +56,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   alt={session.user.name || 'Admin'}
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-full border border-amber-500/20 object-cover"
+                  className="w-8 h-8 rounded-full border border-dourado-premium/20 object-cover"
                 />
               )}
               <span className="text-sm text-slate-400">
@@ -67,10 +67,10 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/dashboard"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'dashboard'
-                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border border-amber-500/50 shadow-sm'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800'
+                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
             }`}
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
@@ -79,10 +79,10 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/calendario"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'calendario'
-                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border border-amber-500/50 shadow-sm'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800'
+                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
             }`}
           >
             <CalendarDays className="w-3.5 h-3.5" />
@@ -91,10 +91,10 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/clientes"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'clientes'
-                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border border-amber-500/50 shadow-sm'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800'
+                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -103,10 +103,10 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/servicos"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'servicos'
-                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border border-amber-500/50 shadow-sm'
-                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800'
+                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
             }`}
           >
             <Scissors className="w-3.5 h-3.5" />
@@ -115,7 +115,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/profile"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
           >
             <User className="w-3.5 h-3.5" />
             Perfil
@@ -123,7 +123,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <button
             onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-all motion-btn cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             Sair
@@ -133,7 +133,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
         {/* Hamburger Menu Button (Mobile) */}
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 hover:bg-zinc-800 transition-colors md:hidden focus:outline-none cursor-pointer"
+          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-dourado-premium hover:bg-zinc-800 transition-all motion-btn md:hidden focus:outline-none cursor-pointer"
           aria-label="Abrir menu lateral"
         >
           <Menu className="w-6 h-6" />

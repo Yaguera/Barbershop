@@ -45,7 +45,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
         </Link>
 
         {/* Desktop Navigation (hidden on mobile) */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2.5">
           <div className="flex items-center gap-2 mr-2 pr-3 border-r border-zinc-800">
             {session?.user?.image && (
               <Image
@@ -53,7 +53,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                 alt={session.user.name || 'Barbeiro'}
                 width={32}
                 height={32}
-                className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
+                className="w-8 h-8 rounded-full border border-dourado-premium/20 object-cover"
               />
             )}
             <span className="text-sm text-zinc-350">
@@ -63,7 +63,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
 
           <Link
             href="/barber/agenda"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
             Agenda
@@ -71,7 +71,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
 
           <Link
             href="/barber/metricas"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 hover:bg-amber-500/25 text-dourado-premium border border-dourado-premium/40 shadow-[0_0_15px_rgba(245,197,66,0.15)] transition-all motion-btn"
           >
             <BarChart3 className="w-3.5 h-3.5" />
             Métricas
@@ -79,7 +79,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
 
           <Link
             href="/profile"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-slate-200 border border-zinc-700 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
           >
             <UserIcon className="w-3.5 h-3.5" />
             Perfil
@@ -87,7 +87,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
           
           <button
             onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-650/15 hover:bg-red-650/25 text-red-400 border border-red-500/25 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-all motion-btn cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             Sair
@@ -97,7 +97,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
         {/* Hamburger Menu Button (Mobile) */}
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-amber-400 hover:bg-zinc-800 transition-colors md:hidden focus:outline-none cursor-pointer"
+          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-dourado-premium hover:bg-zinc-800 transition-all motion-btn md:hidden focus:outline-none cursor-pointer"
           aria-label="Abrir menu lateral"
         >
           <Menu className="w-6 h-6" />

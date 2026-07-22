@@ -9,6 +9,7 @@ import { Calendar, Clock, Scissors, User as UserIcon, CheckCircle2, AlertTriangl
 import SplashScreen from './SplashScreen';
 import Image from 'next/image';
 import { useDragScroll } from '@/hooks/useDragScroll';
+import { ClientLuxDashboard } from './lux/ClientLuxDashboard';
 
 interface ServiceProp {
   id: string;
@@ -194,7 +195,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
           <CheckCircle2 className="w-12 h-12 text-dourado-premium" />
         </div>
         <h1 className="text-3xl font-bold text-branco mb-3">Reserva Confirmada</h1>
-        <p className="text-branco/60 mb-10">Seu horário VIP foi garantido com sucesso.</p>
+        <p className="text-branco/60 mb-10">Seu horário foi garantido com sucesso.</p>
 
         <div className="w-full glass-heavy rounded-3xl p-6 mb-10 text-left space-y-4 border border-branco/10">
           <div className="flex justify-between items-center border-b border-branco/5 pb-3">
@@ -278,130 +279,34 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         </div>
       )}
 
-      {/* STEP 0: HOME DASHBOARD */}
+      {/* STEP 0: LUXURY APP STORE DASHBOARD */}
       {step === 0 && (
-        <div className="space-y-8 animate-fade-in-up">
-          {/* Header */}
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-branco/60 text-xs uppercase tracking-widest font-semibold mb-1">Bem-vindo de volta</h2>
-              <h1 className="text-2xl font-black text-branco tracking-tight">{session?.user?.name || 'Visitante VIP'}</h1>
-            </div>
-            {session?.user?.image ? (
-              <Image src={session.user.image} alt="Profile" width={48} height={48} className="w-12 h-12 rounded-full border-2 border-dourado-premium/50 object-cover shadow-[0_0_15px_rgba(245,197,66,0.3)] transition-transform hover:scale-105" />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-cinza-grafite flex items-center justify-center border border-branco/10 shadow-md">
-                <UserIcon className="w-6 h-6 text-branco/50" />
-              </div>
-            )}
-          </div>
-
-          {/* Hero Section Institucional com UI Motion & Floating Badge */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-cinza-grafite/90 to-cinza-chumbo/90 p-8 shadow-2xl border border-branco/10 text-center flex flex-col items-center justify-center motion-card">
-            <div className="absolute -right-12 -top-12 w-56 h-56 bg-dourado-premium/15 rounded-full blur-3xl pointer-events-none"></div>
-            <div className="absolute -left-12 -bottom-12 w-56 h-56 bg-green-500/10 rounded-full blur-3xl pointer-events-none"></div>
-            
-            <div className="relative z-10 flex flex-col items-center max-w-sm mx-auto space-y-5">
-              {/* Floating Logo Badge */}
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-dourado-premium/60 p-1 bg-preto-profundo shadow-[0_0_35px_rgba(245,197,66,0.3)] flex items-center justify-center overflow-hidden animate-float">
-                <Image
-                  src="/logo.png"
-                  alt="José Carlos Barber Shop Logo"
-                  width={112}
-                  height={112}
-                  className="w-full h-full object-cover rounded-full"
-                  priority
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <h3 className="text-2xl sm:text-3xl font-black text-branco tracking-tight">
-                  José Carlos Barber Shop
-                </h3>
-                <p className="text-xs sm:text-sm text-branco/75 font-medium leading-relaxed">
-                  Tradição, precisão e estilo de alta performance para o seu visual.
-                </p>
-              </div>
-
-              <div className="w-full flex flex-col sm:flex-row gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="w-full py-3.5 px-6 rounded-2xl font-bold text-sm bg-dourado-premium text-preto-profundo transition-all animate-pulse-glow motion-btn flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-                >
-                  <Scissors className="w-4 h-4" />
-                  Agendar Horário VIP
-                </button>
-
-                <a
-                  href="https://wa.me/5585986279194"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-3.5 px-6 rounded-2xl font-bold text-sm bg-green-500 hover:bg-green-600 text-white transition-all motion-btn shadow-[0_0_20px_rgba(34,197,94,0.3)] flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span className="text-base leading-none">💬</span>
-                  Contato WhatsApp
-                </a>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div>
-            <div className="flex justify-between items-end mb-4">
-              <h3 className="text-lg font-bold text-branco">Serviços Destaque</h3>
-              <button onClick={() => setStep(1)} className="text-dourado-premium text-sm font-semibold">Ver Todos</button>
-            </div>
-            <div 
-              {...servicesScroll}
-              className={`flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x ${servicesScroll.className}`}
-            >
-              {initialServices.slice(0, 3).map((service) => (
-                <div key={service.id} onClick={() => { setService(service.id, service.name, service.price); setStep(2); }} 
-                     className="snap-center shrink-0 w-64 glass rounded-3xl p-4 border border-branco/5 cursor-pointer hover:bg-cinza-grafite/50 transition-all">
-                  <div className="h-32 rounded-2xl mb-4 overflow-hidden relative">
-                    <Image src={service.image || "/images/service_image.png"} alt="Service" fill className="object-cover" />
-                  </div>
-                  <h4 className="font-bold text-branco text-lg">{service.name}</h4>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-dourado-premium font-bold">{formatPrice(service.price)}</span>
-                    <span className="text-branco/50 text-xs flex items-center"><Clock className="w-3 h-3 mr-1"/> {service.durationMinutes} min</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Barbers */}
-          <div>
-            <h3 className="text-lg font-bold text-branco mb-4">Nossos Barbeiros</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {initialBarbers.filter((b) => b.active !== false).slice(0, 4).map((barber) => (
-                <div key={barber.id} onClick={() => { setBarber(barber.id, barber.name); setStep(3); }} 
-                     className="glass rounded-3xl p-4 flex flex-col items-center cursor-pointer hover:bg-cinza-grafite/50 transition-all text-center">
-                  <div className="w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-dourado-premium/30">
-                    <Image src={barber.image || "/images/barber_portrait.png"} alt="Barber" width={64} height={64} className="object-cover w-full h-full" />
-                  </div>
-                  <h4 className="font-bold text-branco text-sm">{barber.name}</h4>
-                  <p className="text-branco/50 text-[10px] mt-0.5 line-clamp-1">{barber.specialty || 'Especialista Premium'}</p>
-                  <div className="flex items-center mt-1 text-dourado-premium text-xs">
-                    <Star className="w-3 h-3 fill-current mr-1" /> 4.9
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ClientLuxDashboard
+          services={initialServices}
+          barbers={initialBarbers}
+          onStartBooking={() => setStep(1)}
+          onServiceSelect={(srv) => {
+            setService(srv.id, srv.name, srv.price);
+            setStep(2);
+          }}
+          onOpenHistory={() => {
+            if (!session?.user) {
+              router.push('/auth/login');
+            } else {
+              router.push('/profile');
+            }
+          }}
+        />
       )}
 
       {/* STEP 1: SERVICES */}
       {step === 1 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <h1 className="text-3xl font-black text-branco mb-2 tracking-tight">Qual o serviço?</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-branco mb-2 tracking-tight">Qual o serviço?</h1>
             <p className="text-branco/60 text-sm">Escolha um dos nossos serviços de alta performance.</p>
           </div>
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {initialServices.map((service) => (
               <button
                 key={service.id}
@@ -410,16 +315,16 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                   serviceId === service.id ? 'border-dourado-premium bg-dourado-premium/15 shadow-[0_0_25px_rgba(245,197,66,0.25)] animate-scale-pop' : 'border-branco/10 glass hover:border-dourado-premium/40'
                 }`}
               >
-                <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 mr-4 border border-branco/10 shadow-md">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden shrink-0 mr-4 border border-branco/10 shadow-md">
                   <Image src={service.image || "/images/service_image.png"} alt="Service" width={80} height={80} className="object-cover w-full h-full transition-transform hover:scale-110" />
                 </div>
-                <div className="flex-grow">
-                  <h3 className="font-bold text-branco text-lg">{service.name}</h3>
+                <div className="flex-grow min-w-0 pr-2">
+                  <h3 className="font-bold text-branco text-base sm:text-lg truncate">{service.name}</h3>
                   <div className="flex items-center text-branco/60 text-xs mt-1 font-medium">
-                    <Clock className="w-3.5 h-3.5 mr-1 text-dourado-premium" /> {service.durationMinutes} min
+                    <Clock className="w-3.5 h-3.5 mr-1 text-dourado-premium shrink-0" /> {service.durationMinutes} min
                   </div>
                 </div>
-                <div className="text-dourado-premium font-black text-xl tracking-tight">
+                <div className="text-dourado-premium font-black text-lg sm:text-xl tracking-tight shrink-0">
                   {formatPrice(service.price)}
                 </div>
               </button>
@@ -432,10 +337,10 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
       {step === 2 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <h1 className="text-3xl font-black text-branco mb-2 tracking-tight">Com quem?</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-branco mb-2 tracking-tight">Com quem?</h1>
             <p className="text-branco/60 text-sm">Selecione o barbeiro especialista de sua preferência.</p>
           </div>
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {initialBarbers.filter((b) => b.active !== false).map((barber) => (
               <button
                 key={barber.id}
@@ -447,14 +352,14 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 mr-4 border-2 border-dourado-premium/30 shadow-md">
                   <Image src={barber.image || "/images/barber_portrait.png"} alt="Barber" width={64} height={64} className="object-cover w-full h-full" />
                 </div>
-                <div className="flex-grow">
-                  <h3 className="font-bold text-branco text-lg">{barber.name}</h3>
-                  <p className="text-dourado-premium/90 text-xs font-semibold mt-0.5">{barber.specialty || 'Especialista Premium'}</p>
+                <div className="flex-grow min-w-0 pr-2">
+                  <h3 className="font-bold text-branco text-base sm:text-lg truncate">{barber.name}</h3>
+                  <p className="text-dourado-premium/90 text-xs font-semibold mt-0.5 truncate">{barber.specialty || 'Especialista Premium'}</p>
                   <div className="flex items-center mt-1 text-dourado-premium text-xs font-bold">
-                    <Star className="w-3.5 h-3.5 fill-current mr-1 text-dourado-premium" /> 4.9 <span className="text-branco/40 ml-1 font-normal">(120+ avaliações)</span>
+                    <Star className="w-3.5 h-3.5 fill-current mr-1 text-dourado-premium shrink-0" /> 4.9 <span className="text-branco/40 ml-1 font-normal">(120+)</span>
                   </div>
                 </div>
-                <ChevronRight className={`w-5 h-5 transition-transform group-hover:translate-x-1 ${barberId === barber.id ? 'text-dourado-premium' : 'text-branco/30'}`} />
+                <ChevronRight className={`w-5 h-5 shrink-0 transition-transform group-hover:translate-x-1 ${barberId === barber.id ? 'text-dourado-premium' : 'text-branco/30'}`} />
               </button>
             ))}
           </div>
@@ -465,13 +370,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
       {step === 3 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <h1 className="text-3xl font-black text-branco mb-2 tracking-tight">Quando?</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-branco mb-2 tracking-tight">Quando?</h1>
             <p className="text-branco/60 text-sm">Encontre o melhor horário na agenda do profissional.</p>
           </div>
 
           <div 
             {...daysScroll}
-            className={`flex gap-3 overflow-x-auto pb-2 scrollbar-none snap-x ${daysScroll.className}`}
+            className={`flex gap-3 sm:gap-4 overflow-x-auto pb-3 scrollbar-none snap-x ${daysScroll.className}`}
           >
             {daysList.map((day, idx) => {
               const isSelected = formatYYYYMMDD(day) === formatYYYYMMDD(selectedDate);
@@ -482,7 +387,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                   key={idx}
                   onClick={() => { setSelectedDate(day); setStartTime(null); }}
                   disabled={!isWorkday}
-                  className={`snap-center shrink-0 w-20 py-4 rounded-3xl flex flex-col items-center justify-center transition-all motion-btn cursor-pointer ${
+                  className={`snap-center shrink-0 w-20 sm:w-24 py-4 rounded-3xl flex flex-col items-center justify-center transition-all motion-btn cursor-pointer ${
                     isSelected
                       ? 'bg-dourado-premium text-preto-profundo shadow-[0_0_25px_rgba(245,197,66,0.35)] animate-scale-pop font-black'
                       : isWorkday
@@ -491,7 +396,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                   }`}
                 >
                   <span className="text-[11px] uppercase font-bold tracking-wider mb-1">{formatWeekDay(day)}</span>
-                  <span className="text-2xl font-black">{day.getDate()}</span>
+                  <span className="text-2xl sm:text-3xl font-black">{day.getDate()}</span>
                 </button>
               );
             })}
@@ -511,7 +416,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             ) : availableSlots.length === 0 ? (
               <div className="glass p-6 rounded-3xl text-center text-branco/50 border border-branco/5 text-sm">Nenhum horário disponível nesta data.</div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {availableSlots.map((slot, idx) => (
                   <button
                     key={idx}
@@ -538,7 +443,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
       {step === 4 && (
         <div className="space-y-6 animate-fade-in-up">
           <div>
-            <h1 className="text-3xl font-black text-branco mb-2 tracking-tight">Revisão</h1>
+            <h1 className="text-2xl sm:text-3xl font-black text-branco mb-2 tracking-tight">Revisão</h1>
             <p className="text-branco/60 text-sm">Confirme os dados do agendamento VIP.</p>
           </div>
 
@@ -550,45 +455,52 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
           )}
 
           <div className="glass-heavy rounded-3xl p-1 border border-branco/10 shadow-2xl motion-card">
-            <div className="bg-cinza-grafite/40 rounded-[22px] p-6 space-y-6">
-              
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-dourado-premium/10 border border-dourado-premium/20 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                  <Scissors className="w-6 h-6 text-dourado-premium" />
+            <div className="bg-cinza-grafite/40 rounded-[22px] p-6 sm:p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:divide-x divide-branco/10">
+                
+                {/* Service Column */}
+                <div className="flex items-center sm:items-start gap-4 sm:flex-col sm:gap-3">
+                  <div className="w-12 h-12 bg-dourado-premium/10 border border-dourado-premium/20 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                    <Scissors className="w-5 h-5 text-dourado-premium" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-branco/50 uppercase tracking-widest font-bold mb-1">Serviço</p>
+                    <p className="font-extrabold text-branco text-base sm:text-lg leading-tight">{serviceName}</p>
+                    <p className="text-dourado-premium font-black text-lg mt-1">{formatPrice(servicePrice || 0)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-branco/50 uppercase tracking-widest font-semibold mb-1">Serviço</p>
-                  <p className="font-bold text-branco text-lg leading-none">{serviceName}</p>
-                  <p className="text-dourado-premium font-black text-lg mt-1">{formatPrice(servicePrice || 0)}</p>
+
+                {/* Barber Column */}
+                <div className="flex items-center sm:items-start gap-4 sm:flex-col sm:gap-3 sm:pl-6 pt-4 sm:pt-0 border-t sm:border-t-0 border-branco/5">
+                  <div className="w-12 h-12 bg-branco/5 border border-branco/10 rounded-2xl flex items-center justify-center shrink-0">
+                    <UserIcon className="w-5 h-5 text-branco/80" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-branco/50 uppercase tracking-widest font-bold mb-1">Barbeiro</p>
+                    <p className="font-extrabold text-branco text-base sm:text-lg leading-tight">{barberName}</p>
+                    <p className="text-emerald-400 text-xs font-semibold mt-1 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Confirmado
+                    </p>
+                  </div>
                 </div>
+
+                {/* Date & Time Column */}
+                <div className="flex items-center sm:items-start gap-4 sm:flex-col sm:gap-3 sm:pl-6 pt-4 sm:pt-0 border-t sm:border-t-0 border-branco/5">
+                  <div className="w-12 h-12 bg-branco/5 border border-branco/10 rounded-2xl flex items-center justify-center shrink-0">
+                    <Calendar className="w-5 h-5 text-branco/80" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-branco/50 uppercase tracking-widest font-bold mb-1">Data e Hora</p>
+                    <p className="font-extrabold text-branco text-base sm:text-lg leading-tight capitalize">
+                      {startTime && new Date(startTime).toLocaleString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })}
+                    </p>
+                    <p className="text-dourado-premium font-black text-base mt-0.5">
+                      {startTime && new Date(startTime).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+
               </div>
-
-              <div className="h-px bg-branco/5 w-full" />
-
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-branco/5 border border-branco/10 rounded-2xl flex items-center justify-center shrink-0">
-                  <UserIcon className="w-6 h-6 text-branco/80" />
-                </div>
-                <div>
-                  <p className="text-xs text-branco/50 uppercase tracking-widest font-semibold mb-1">Barbeiro</p>
-                  <p className="font-bold text-branco text-lg leading-none">{barberName}</p>
-                </div>
-              </div>
-
-              <div className="h-px bg-branco/5 w-full" />
-
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-branco/5 border border-branco/10 rounded-2xl flex items-center justify-center shrink-0">
-                  <Calendar className="w-6 h-6 text-branco/80" />
-                </div>
-                <div>
-                  <p className="text-xs text-branco/50 uppercase tracking-widest font-semibold mb-1">Data e Hora</p>
-                  <p className="font-bold text-branco text-lg leading-tight">
-                    {startTime && new Date(startTime).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}
-                  </p>
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -596,9 +508,9 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             <button
               onClick={handleConfirm}
               disabled={isSubmitting}
-              className="w-full py-4 rounded-2xl font-black text-lg bg-dourado-premium text-preto-profundo transition-all animate-pulse-glow motion-btn shadow-[0_0_25px_rgba(245,197,66,0.3)] disabled:opacity-50 flex items-center justify-center cursor-pointer"
+              className="w-full py-4.5 rounded-2xl font-black text-lg bg-dourado-premium text-preto-profundo transition-all animate-pulse-glow motion-btn shadow-[0_0_25px_rgba(245,197,66,0.3)] disabled:opacity-50 flex items-center justify-center cursor-pointer"
             >
-              {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Confirmar Reserva'}
+              {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin" /> : 'Confirmar Reserva VIP'}
             </button>
             {status !== 'authenticated' && (
               <p className="text-center text-branco/50 text-xs mt-4 leading-relaxed">
