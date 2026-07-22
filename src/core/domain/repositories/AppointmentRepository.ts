@@ -81,6 +81,12 @@ export interface AppointmentRepository {
     },
     conflictingStatuses: string[]
   ): Promise<Appointment | null>;
+  rescheduleTransactional(
+    id: string,
+    newStartTime: Date,
+    newEndTime: Date,
+    conflictingStatuses: string[]
+  ): Promise<Appointment | null>;
   updateStatus(id: string, status: string): Promise<Appointment>;
   getFinanceReport(startDate?: Date, endDate?: Date): Promise<FinanceReport>;
   getBarberPerformanceReport(barberId: string, startDate?: Date, endDate?: Date): Promise<BarberPerformanceReport>;

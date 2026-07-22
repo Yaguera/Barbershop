@@ -2,6 +2,7 @@ import { AppointmentRepository } from '../domain/repositories/AppointmentReposit
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
 import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { Appointment } from '@/generated/prisma/client';
+import { getLocalDayOfWeek, getLocalHoursMinutes } from '../utils/date-utils';
 
 export interface CreateAppointmentRequest {
   clientId: string;
@@ -37,8 +38,8 @@ export class CreateAppointmentUseCase {
       throw new Error('Barber not found');
     }
 
-    // Check if the appointment day is a work day
-    const dayOfWeek = startTime.getDay();
+    // Check if the appointment day is a work day in local timezone
+    const dayOfWeek = getLocalDayOfWeek(startTime);
     if (!barber.workDays.includes(dayOfWeek)) {
       throw new Error('Barber does not work on this day of the week');
     }
@@ -50,9 +51,11 @@ export class CreateAppointmentUseCase {
     const workStartMinutes = startHour * 60 + startMin;
     const workEndMinutes = endHour * 60 + endMin;
 
-    const appStartMinutes = startTime.getHours() * 60 + startTime.getMinutes();
+    const { hours: startH, minutes: startM } = getLocalHoursMinutes(startTime);
+    const appStartMinutes = startH * 60 + startM;
     const endTime = new Date(startTime.getTime() + service.durationMinutes * 60 * 1000);
-    const appEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+    const { hours: endH, minutes: endM } = getLocalHoursMinutes(endTime);
+    const appEndMinutes = endH * 60 + endM;
 
     if (appStartMinutes < workStartMinutes || appEndMinutes > workEndMinutes) {
       throw new Error('Appointment time is outside of barber working hours');

@@ -3,6 +3,7 @@ import { GetBarberAvailabilityUseCase } from './GetBarberAvailabilityUseCase';
 import { CreateAppointmentUseCase } from './CreateAppointmentUseCase';
 import { ChangeAppointmentStatusUseCase } from './ChangeAppointmentStatusUseCase';
 import { GetAdminDashboardMetricsUseCase } from './GetAdminDashboardMetricsUseCase';
+import { RescheduleAppointmentUseCase } from './RescheduleAppointmentUseCase';
 import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
@@ -59,6 +60,7 @@ describe('App Barbearia Core Use Cases', () => {
       findByBarberAndDate: vi.fn().mockResolvedValue([]),
       findByClient: vi.fn(),
       createTransactional: vi.fn(),
+      rescheduleTransactional: vi.fn(),
       updateStatus: vi.fn(),
       getFinanceReport: vi.fn(),
       getBarberPerformanceReport: vi.fn(),
@@ -318,5 +320,71 @@ describe('App Barbearia Core Use Cases', () => {
       ).rejects.toThrow('A data inicial deve ser anterior à data final.');
     });
   });
+
+  describe('RescheduleAppointmentUseCase', () => {
+    it('should reschedule successfully when valid', async () => {
+      const useCase = new RescheduleAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
+      const existing = {
+        id: 'app-1',
+        clientId: 'client-1',
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        status: 'CONFIRMED',
+        startTime: new Date(Date.now() + 86400000), // tomorrow
+        endTime: new Date(Date.now() + 86400000 + 1800000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      vi.mocked(appointmentRepo.findById).mockResolvedValue(existing as any);
+      vi.mocked(serviceRepo.findById).mockResolvedValue(mockService as any);
+      vi.mocked(barberRepo.findById).mockResolvedValue(mockBarber as any);
+
+      // Pick next Wednesday at 14:00 (-03:00) to ensure valid workday and working hours
+      const nextWednesday = new Date('2026-07-29T14:00:00.000-03:00');
+      vi.mocked(appointmentRepo.rescheduleTransactional).mockResolvedValue({
+        ...existing,
+        startTime: nextWednesday,
+      } as any);
+
+      const res = await useCase.execute({
+        appointmentId: 'app-1',
+        clientId: 'client-1',
+        newStartTime: nextWednesday,
+      });
+
+      expect(res.startTime).toEqual(nextWednesday);
+      expect(appointmentRepo.rescheduleTransactional).toHaveBeenCalledWith(
+        'app-1',
+        nextWednesday,
+        expect.any(Date),
+        ['PENDING', 'COMPLETED']
+      );
+    });
+
+    it('should throw error if appointment past or not active', async () => {
+      const useCase = new RescheduleAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
+      const existing = {
+        id: 'app-1',
+        clientId: 'client-1',
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        status: 'CANCELED',
+        startTime: new Date(Date.now() + 86400000),
+        endTime: new Date(Date.now() + 86400000 + 1800000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      vi.mocked(appointmentRepo.findById).mockResolvedValue(existing as any);
+
+      await expect(
+        useCase.execute({
+          appointmentId: 'app-1',
+          clientId: 'client-1',
+          newStartTime: new Date('2026-07-29T14:00:00.000-03:00'),
+        })
+      ).rejects.toThrow('Apenas agendamentos ativos podem ser reagendados.');
+    });
+  });
 });
+
 

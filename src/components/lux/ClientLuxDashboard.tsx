@@ -75,7 +75,6 @@ export function ClientLuxDashboard({
           time="10:00"
           barberName={barbers.length > 0 ? barbers[0].name : 'Lucas'}
           serviceName="Corte & Estilo VIP"
-          onDetailsClick={() => router.push('/agenda')}
         />
 
         {/* Nossos Serviços */}

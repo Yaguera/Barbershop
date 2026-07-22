@@ -156,13 +156,21 @@ export default async function HistoricoPage() {
                       R$ {appt.service.price.toFixed(2)}
                     </span>
 
-                    <Link
-                      href="/?action=agendar"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#D4AF37]/15 text-xs font-bold text-white hover:text-[#D4AF37] border border-white/10 hover:border-[#D4AF37]/40 transition-all"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>Agendar de novo</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/agenda/${appt.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#D4AF37]/15 text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-white/10 hover:border-[#D4AF37]/40 transition-all"
+                      >
+                        <span>Ver detalhes</span>
+                      </Link>
+                      <Link
+                        href="/?action=agendar"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#D4AF37]/15 text-xs font-bold text-[#D4AF37] border border-white/10 hover:border-[#D4AF37]/40 transition-all"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Agendar de novo</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );

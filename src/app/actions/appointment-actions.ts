@@ -10,6 +10,7 @@ import { ChangeAppointmentStatusUseCase } from '@/core/usecases/ChangeAppointmen
 import { GetBarberMonthScheduleUseCase } from '@/core/usecases/GetBarberMonthScheduleUseCase';
 import { GetDailyAppointmentsUseCase } from '@/core/usecases/GetDailyAppointmentsUseCase';
 import { GetBarberMetricsUseCase } from '@/core/usecases/GetBarberMetricsUseCase';
+import { RescheduleAppointmentUseCase } from '@/core/usecases/RescheduleAppointmentUseCase';
 
 // Action to create a new appointment (RF03/RF04)
 export async function createAppointmentAction(data: {
@@ -247,6 +248,135 @@ export async function getBarberMetricsDetailedAction(period: 'day' | 'week' | 'm
     console.error('Error fetching detailed barber metrics:', error);
     const err = error as Error;
     return { success: false, error: err.message || 'Erro ao buscar métricas detalhadas do barbeiro.' };
+  }
+}
+
+export async function getAppointmentDetailsAction(appointmentId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: 'Não autorizado.' };
+    }
+
+    const appointmentRepo = new PrismaAppointmentRepository();
+    const serviceRepo = new PrismaServiceRepository();
+    const barberRepo = new PrismaBarberRepository();
+
+    const appointment = await appointmentRepo.findByIdWithRelations(appointmentId);
+    if (!appointment) {
+      return { success: false, error: 'Agendamento não encontrado.' };
+    }
+
+    // Security check: only client who owns it, or barber/admin can view
+    if (
+      session.user.role !== 'ADMIN' &&
+      session.user.role !== 'BARBER' &&
+      appointment.clientId !== session.user.id
+    ) {
+      return { success: false, error: 'Acesso negado a este agendamento.' };
+    }
+
+    const barber = await barberRepo.findById(appointment.barberId);
+    const specialty = barber ? await barberRepo.getBarberSpecialty(barber.id) : null;
+
+    return {
+      success: true,
+      appointment: {
+        id: appointment.id,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        status: appointment.status,
+        clientId: appointment.clientId,
+        barberId: appointment.barberId,
+        serviceId: appointment.serviceId,
+        serviceName: appointment.service?.name || 'Serviço',
+        servicePrice: appointment.service?.price || 0,
+        serviceDurationMinutes: appointment.service?.durationMinutes || 30,
+        barberName: barber?.user?.name || 'Barbeiro Profissional',
+        barberSpecialty: specialty || 'Master Barber & Hair Stylist',
+        barberImage: barber?.user?.image || null,
+        clientName: appointment.client?.name || 'Cliente VIP',
+      },
+    };
+  } catch (error: unknown) {
+    console.error('Error fetching appointment details:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao carregar detalhes.' };
+  }
+}
+
+export async function cancelAppointmentByClientAction(appointmentId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: 'Você precisa estar logado.' };
+    }
+
+    const appointmentRepo = new PrismaAppointmentRepository();
+    const existing = await appointmentRepo.findById(appointmentId);
+    if (!existing || existing.clientId !== session.user.id) {
+      return { success: false, error: 'Agendamento não encontrado ou não autorizado.' };
+    }
+
+    if (existing.status !== 'CONFIRMED' && existing.status !== 'PENDING') {
+      return { success: false, error: 'Este agendamento não pode mais ser cancelado.' };
+    }
+
+    if (existing.startTime < new Date()) {
+      return { success: false, error: 'Não é possível cancelar agendamentos passados ou em andamento.' };
+    }
+
+    await appointmentRepo.updateStatus(appointmentId, 'CANCELED');
+    return { success: true, message: 'Agendamento cancelado com sucesso.' };
+  } catch (error: unknown) {
+    console.error('Error canceling appointment:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao cancelar o agendamento.' };
+  }
+}
+
+export async function rescheduleAppointmentAction(data: {
+  appointmentId: string;
+  newStartTimeStr: string; // ISO string
+}) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: 'Você precisa estar logado para reagendar.' };
+    }
+
+    const { appointmentId, newStartTimeStr } = data;
+    const newStartTime = new Date(newStartTimeStr);
+    if (isNaN(newStartTime.getTime())) {
+      return { success: false, error: 'Nova data ou horário inválido.' };
+    }
+
+    const appointmentRepo = new PrismaAppointmentRepository();
+    const serviceRepo = new PrismaServiceRepository();
+    const barberRepo = new PrismaBarberRepository();
+
+    const useCase = new RescheduleAppointmentUseCase(
+      appointmentRepo,
+      serviceRepo,
+      barberRepo
+    );
+
+    const updated = await useCase.execute({
+      appointmentId,
+      clientId: session.user.id,
+      newStartTime,
+    });
+
+    return { success: true, appointment: updated, message: 'Agendamento reagendado com sucesso!' };
+  } catch (error: unknown) {
+    console.error('Error rescheduling appointment:', error);
+    const err = error as Error & { status?: number };
+    return {
+      success: false,
+      error: err.status === 409
+        ? 'Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro.'
+        : err.message || 'Erro ao reagendar agendamento.',
+    };
   }
 }
 

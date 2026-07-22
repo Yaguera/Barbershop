@@ -89,6 +89,44 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
     });
   }
 
+  async rescheduleTransactional(
+    id: string,
+    newStartTime: Date,
+    newEndTime: Date,
+    conflictingStatuses: string[]
+  ): Promise<Appointment | null> {
+    return await prisma.$transaction(async (tx) => {
+      const existingAppt = await tx.appointment.findUnique({
+        where: { id },
+      });
+      if (!existingAppt) return null;
+
+      await tx.$executeRaw`
+        SELECT 1 FROM "Barber" WHERE id = ${existingAppt.barberId} FOR UPDATE
+      `;
+
+      const conflict = await tx.appointment.findFirst({
+        where: {
+          barberId: existingAppt.barberId,
+          id: { not: id },
+          status: { in: conflictingStatuses },
+          startTime: { lt: newEndTime },
+          endTime: { gt: newStartTime },
+        },
+      });
+
+      if (conflict) return null;
+
+      return await tx.appointment.update({
+        where: { id },
+        data: {
+          startTime: newStartTime,
+          endTime: newEndTime,
+        },
+      });
+    });
+  }
+
   async updateStatus(id: string, status: string): Promise<Appointment> {
     return await prisma.appointment.update({
       where: { id },

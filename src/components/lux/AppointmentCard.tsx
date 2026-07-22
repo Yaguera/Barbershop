@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { getClientAppointmentsAction } from '@/app/actions/appointment-actions';
 
 interface AppointmentCardProps {
+  id?: string;
   autoFetch?: boolean;
   date?: string;
   time?: string;
@@ -27,6 +28,7 @@ interface DynamicAppointment {
 }
 
 export function AppointmentCard({
+  id: propId,
   autoFetch = false,
   date: propDate = 'Sábado, 18 de Maio',
   time: propTime = '10:00',
@@ -113,6 +115,17 @@ export function AppointmentCard({
 
   const finalStatus = dynamicAppt ? dynamicAppt.status : propStatus;
   const isConfirmed = finalStatus === 'CONFIRMED' || finalStatus === 'PENDING' || finalStatus === 'COMPLETED';
+  const targetId = dynamicAppt?.id || propId;
+
+  const handleDetailsClick = () => {
+    if (onDetailsClick) {
+      onDetailsClick();
+    } else if (targetId) {
+      router.push(`/agenda/${targetId}`);
+    } else {
+      router.push('/agenda');
+    }
+  };
 
   return (
     <section className="w-full max-w-6xl mx-auto py-2">
@@ -178,7 +191,7 @@ export function AppointmentCard({
           <div className="mt-4 pt-3.5 border-t border-white/5">
             <button
               type="button"
-              onClick={onDetailsClick || (() => router.push('/agenda'))}
+              onClick={handleDetailsClick}
               className="w-full text-center text-xs font-bold text-[#D4AF37] hover:text-[#E2BE4D] uppercase tracking-wider flex items-center justify-center gap-1.5 py-1 transition-colors group cursor-pointer"
             >
               <span>VER DETALHES</span>

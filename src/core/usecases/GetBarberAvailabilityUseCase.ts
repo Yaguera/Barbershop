@@ -1,7 +1,7 @@
 import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
-import { startOfDay, endOfDay } from '../utils/date-utils';
+import { startOfDay, endOfDay, getYYYYMMDD, getLocalDayOfWeek } from '../utils/date-utils';
 
 export interface GetBarberAvailabilityRequest {
   barberId: string;
@@ -32,8 +32,7 @@ export class GetBarberAvailabilityUseCase {
     }
 
     // 2. Check if weekday is a workday
-    // getDay() returns 0 (Sunday) to 6 (Saturday)
-    const dayOfWeek = date.getDay();
+    const dayOfWeek = getLocalDayOfWeek(date);
     if (!barber.workDays.includes(dayOfWeek)) {
       return [];
     }
@@ -82,15 +81,16 @@ export class GetBarberAvailabilityUseCase {
       return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
 
+    const dateStr = getYYYYMMDD(date);
+
     // Iterate through each 30-minute block start time
     for (let current = workStartMinutes; current < workEndMinutes; current += 30) {
       const slotTimeStr = formatMinutes(current);
-      const slotStart = new Date(date);
-      slotStart.setHours(Math.floor(current / 60), current % 60, 0, 0);
+      const slotStart = new Date(`${dateStr}T${slotTimeStr}:00.000-03:00`);
 
       const slotEndMinutes = current + blocksNeeded * 30;
-      const slotEnd = new Date(date);
-      slotEnd.setHours(Math.floor(slotEndMinutes / 60), slotEndMinutes % 60, 0, 0);
+      const slotEndStr = formatMinutes(slotEndMinutes);
+      const slotEnd = new Date(`${dateStr}T${slotEndStr}:00.000-03:00`);
 
       // Check 1: Does the service fit within working hours?
       const fitsInWorkHours = slotEndMinutes <= workEndMinutes;

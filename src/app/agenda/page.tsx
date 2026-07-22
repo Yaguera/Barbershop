@@ -103,6 +103,7 @@ export default async function AgendaPage() {
             {appointments.map((appt) => (
               <AppointmentCard
                 key={appt.id}
+                id={appt.id}
                 autoFetch={false}
                 date={formatDate(appt.startTime)}
                 time={formatTime(appt.startTime)}
