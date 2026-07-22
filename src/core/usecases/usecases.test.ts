@@ -65,6 +65,7 @@ describe('App Barbearia Core Use Cases', () => {
       getAdminCalendarMetrics: vi.fn(),
       getBarberMonthOccupancy: vi.fn(),
       getAdminDashboardMetrics: vi.fn(),
+      getBarberDetailedMetrics: vi.fn(),
     };
 
     serviceRepo = {

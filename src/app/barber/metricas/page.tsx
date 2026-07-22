@@ -291,7 +291,7 @@ export default function BarberMetricasPage() {
                           outerRadius={85}
                           innerRadius={55}
                           paddingAngle={4}
-                          label={({ name, percentage }) => `${name} (${percentage}%)`}
+                          label={(entry: any) => `${entry.name || ''} (${entry.percentage || 0}%)`}
                           labelLine={false}
                         >
                           {(report?.servicesDistribution || []).map((entry, idx) => (
