@@ -36,13 +36,13 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
         <Link href="/" className="flex items-center gap-3">
           <Image 
             src="/logo.png" 
-            alt="José Carlos Barber Shop Logo" 
+            alt="Barbearia Premium Logo" 
             width={40} 
             height={40} 
             className="w-10 h-10 rounded-full border border-amber-500/30 object-cover" 
           />
           <span className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
-            José Carlos Barber Shop
+            Barbearia Premium
           </span>
         </Link>
 
