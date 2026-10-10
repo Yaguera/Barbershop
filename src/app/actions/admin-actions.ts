@@ -1,17 +1,19 @@
 'use server';
+import { reportPeriod } from '@/core/utils/report-period';
+import { PrismaAppointmentReportRepository } from '@/infra/repositories/PrismaAppointmentReportRepository';
 
 import { auth } from '@/auth';
-import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
-import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
-import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
-import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
-import { RegisterBarberUseCase } from '@/core/usecases/RegisterBarberUseCase';
-import { GetFinanceDashboardUseCase } from '@/core/usecases/GetFinanceDashboardUseCase';
 import { DeleteBarberUseCase } from '@/core/usecases/DeleteBarberUseCase';
-import { GetClientManagementDashboardUseCase } from '@/core/usecases/GetClientManagementDashboardUseCase';
-import { GetBarberPerformanceUseCase } from '@/core/usecases/GetBarberPerformanceUseCase';
 import { GetAdminCalendarMetricsUseCase } from '@/core/usecases/GetAdminCalendarMetricsUseCase';
 import { GetAdminDashboardMetricsUseCase } from '@/core/usecases/GetAdminDashboardMetricsUseCase';
+import { GetBarberPerformanceUseCase } from '@/core/usecases/GetBarberPerformanceUseCase';
+import { GetClientManagementDashboardUseCase } from '@/core/usecases/GetClientManagementDashboardUseCase';
+import { GetFinanceDashboardUseCase } from '@/core/usecases/GetFinanceDashboardUseCase';
+import { RegisterBarberUseCase } from '@/core/usecases/RegisterBarberUseCase';
+import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
+import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
+import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
+import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
 
 export async function registerBarberAction(data: {
   name: string;
@@ -43,7 +45,7 @@ export async function registerBarberAction(data: {
 
     return {
       success: true,
-      message: 'Barbeiro registrado com sucesso! A senha provisória foi registrada no console.',
+      message: 'Barbeiro registrado com sucesso! Compartilhe a senha provisória diretamente com o profissional.',
       barber: result.barber,
     };
   } catch (error: unknown) {
@@ -123,7 +125,7 @@ export async function getBarberMetricsAction(
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
-    const useCase = new GetBarberPerformanceUseCase(appointmentRepo);
+    const useCase = new GetBarberPerformanceUseCase(new PrismaAppointmentReportRepository());
 
     const report = await useCase.execute({
       requesterRole: session.user.role,
@@ -148,7 +150,7 @@ export async function getFinanceDashboardAction(period?: 'today' | 'week' | 'mon
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
-    const useCase = new GetFinanceDashboardUseCase(appointmentRepo);
+    const useCase = new GetFinanceDashboardUseCase(new PrismaAppointmentReportRepository());
 
     const report = await useCase.execute({
       adminRole: session.user.role,
@@ -206,7 +208,7 @@ export async function getServicesAction() {
 }
 
 export async function getAdminDashboardAnalyticsAction(
-  period: 'today' | 'yesterday' | 'week' | 'month' | 'year' = 'month',
+  period: 'today' | 'yesterday' | 'week' | 'month' | 'year' | 'all' = 'month',
   barberId?: string
 ) {
   try {
@@ -215,32 +217,10 @@ export async function getAdminDashboardAnalyticsAction(
       return { success: false, error: 'Acesso negado. Apenas administradores.' };
     }
 
-    const now = new Date();
-    let startDate: Date;
-    let endDate: Date;
-
-    if (period === 'today') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    } else if (period === 'yesterday') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
-    } else if (period === 'week') {
-      const dayOfWeek = now.getDay();
-      const diffToSunday = now.getDate() - dayOfWeek;
-      startDate = new Date(now.getFullYear(), now.getMonth(), diffToSunday, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth(), diffToSunday + 6, 23, 59, 59);
-    } else if (period === 'year') {
-      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
-    } else {
-      // month (default)
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    }
+    const { startDate, endDate } = reportPeriod(period);
 
     const appointmentRepo = new PrismaAppointmentRepository();
-    const useCase = new GetAdminDashboardMetricsUseCase(appointmentRepo);
+    const useCase = new GetAdminDashboardMetricsUseCase(new PrismaAppointmentReportRepository());
 
     const report = await useCase.execute({
       requesterRole: session.user.role,
@@ -266,7 +246,7 @@ export async function getAdminCalendarMetricsAction(year: number, month?: number
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
-    const useCase = new GetAdminCalendarMetricsUseCase(appointmentRepo);
+    const useCase = new GetAdminCalendarMetricsUseCase(new PrismaAppointmentReportRepository());
     const result = await useCase.execute({ year, month, day });
 
     return { success: true, ...result };

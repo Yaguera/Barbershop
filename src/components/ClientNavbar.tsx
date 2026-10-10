@@ -1,30 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { 
-  User as UserIcon, 
-  LogOut, 
-  Menu, 
-  X,
-  Calendar,
-  Scissors
+import {
+Calendar,
+LogOut,
+Menu,
+Scissors,
+User as UserIcon,
+X
 } from 'lucide-react';
+import { signOut,useSession } from 'next-auth/react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState,useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
+
+const subscribe = () => () => {};
 
 export function ClientNavbar() {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-900 bg-preto-classico/95 backdrop-blur-md text-white">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0D0D0D]/95 backdrop-blur-md text-white">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo / Brand */}
         <Link href="/" className="flex items-center gap-3">
@@ -33,7 +31,7 @@ export function ClientNavbar() {
             alt="Barbearia Premium Logo" 
             width={40} 
             height={40} 
-            className="w-10 h-10 rounded-full border border-carvalho/30 object-cover" 
+            className="w-10 h-10 rounded-full border border-[#D4AF37]/30 object-cover" 
           />
           <span className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
             Barbearia Premium
@@ -49,7 +47,7 @@ export function ClientNavbar() {
                 alt={session.user.name || 'Cliente'}
                 width={32}
                 height={32}
-                className="w-8 h-8 rounded-full border border-carvalho/20 object-cover"
+                className="w-8 h-8 rounded-full border border-[#D4AF37]/30 object-cover"
               />
             )}
             <span className="text-sm text-zinc-350">
@@ -135,10 +133,10 @@ export function ClientNavbar() {
                       alt={session.user.name || 'Cliente'}
                       width={40}
                       height={40}
-                      className="w-10 h-10 rounded-full border border-carvalho/30 object-cover"
+                      className="w-10 h-10 rounded-full border border-[#D4AF37]/30 object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-carvalho/20 flex items-center justify-center text-carvalho font-bold">
+                    <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37] font-bold">
                       {session.user.name?.charAt(0) || 'C'}
                     </div>
                   )}

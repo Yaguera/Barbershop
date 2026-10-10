@@ -1,5 +1,2 @@
-import BarberDashboard from '@/app/barber/dashboard/page';
-
-export default function BarbeiroAgendaPage() {
-  return <BarberDashboard />;
-}
+import { redirect } from 'next/navigation';
+export default function LegacyBarberAgendaPage() { redirect('/barber/agenda'); }

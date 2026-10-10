@@ -1,5 +1,5 @@
-import { UserRepository } from '../domain/repositories/UserRepository';
 import bcrypt from 'bcryptjs';
+import { UserRepository } from '../domain/repositories/UserRepository';
 
 export interface UpdatePasswordRequest {
   userId: string;

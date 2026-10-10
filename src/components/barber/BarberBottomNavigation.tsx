@@ -1,17 +1,15 @@
 'use client';
 
-import React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
+import {
+BarChart3,
+CalendarCheck,
+Clock,
+LayoutDashboard
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import { 
-  LayoutDashboard, 
-  Clock, 
-  BarChart3, 
-  CalendarCheck, 
-  User as UserIcon 
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import { usePathname,useRouter } from 'next/navigation';
 
 interface BarberBottomNavigationProps {
   barberProfileId?: string;
@@ -101,7 +99,7 @@ export function BarberBottomNavigation({ barberProfileId }: BarberBottomNavigati
           </button>
         </div>
 
-        {/* Item 4: Métricas */}
+        {/* Item 4: Análises */}
         <button
           type="button"
           onClick={() => router.push('/barber/metricas')}
@@ -112,27 +110,21 @@ export function BarberBottomNavigation({ barberProfileId }: BarberBottomNavigati
           }`}
         >
           <BarChart3 className="w-5 h-5 stroke-[2]" />
-          <span className="text-[10px] font-medium tracking-tight">Métricas</span>
+          <span className="text-[10px] font-medium tracking-tight">Análises</span>
         </button>
 
-        {/* Item 5: Meus Horários / Configurações de Agenda */}
+        {/* Item 5: Perfil & Ajustes */}
         <button
           type="button"
-          onClick={() => {
-            if (barberProfileId) {
-              router.push(`/barber/dashboard/schedule/${barberProfileId}`);
-            } else {
-              router.push('/profile');
-            }
-          }}
+          onClick={() => router.push('/profile')}
           className={`flex flex-col items-center justify-center gap-1 w-14 transition-all duration-200 cursor-pointer ${
-            pathname?.includes('/schedule/')
+            pathname?.startsWith('/profile')
               ? 'text-[#D4AF37]'
               : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
           }`}
         >
           <CalendarCheck className="w-5 h-5 stroke-[2]" />
-          <span className="text-[10px] font-medium tracking-tight">Horários</span>
+          <span className="text-[10px] font-medium tracking-tight">Perfil</span>
         </button>
 
       </div>

@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CreateServiceUseCase } from './CreateServiceUseCase';
-import { UpdateServiceUseCase } from './UpdateServiceUseCase';
-import { DeleteServiceUseCase } from './DeleteServiceUseCase';
+import { Service } from '@/core/domain/models';
+import { beforeEach,describe,expect,it,vi } from 'vitest';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
-import { Service } from '@/generated/prisma/client';
+import { CreateServiceUseCase } from './CreateServiceUseCase';
+import { DeleteServiceUseCase } from './DeleteServiceUseCase';
+import { UpdateServiceUseCase } from './UpdateServiceUseCase';
 
 describe('Service UseCases', () => {
   let mockServiceRepository: ServiceRepository;
@@ -34,7 +34,7 @@ describe('Service UseCases', () => {
         }
         return mockServices;
       }),
-      create: vi.fn().mockImplementation(async (data: any) => {
+      create: vi.fn().mockImplementation(async (data: Parameters<ServiceRepository['create']>[0]) => {
         const newService: Service = {
           id: 'new-service-id',
           name: data.name,
@@ -49,7 +49,7 @@ describe('Service UseCases', () => {
         mockServices.push(newService);
         return newService;
       }),
-      update: vi.fn().mockImplementation(async (id: string, data: any) => {
+      update: vi.fn().mockImplementation(async (id: string, data: Parameters<ServiceRepository['update']>[1]) => {
         const index = mockServices.findIndex((s) => s.id === id);
         if (index === -1) throw new Error('Not found');
         const updated = { ...mockServices[index], ...data };

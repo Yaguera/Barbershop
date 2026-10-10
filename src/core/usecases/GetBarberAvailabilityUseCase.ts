@@ -1,7 +1,7 @@
-import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
+import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
-import { startOfDay, endOfDay, getYYYYMMDD, getLocalDayOfWeek } from '../utils/date-utils';
+import { endOfDay,getLocalDayOfWeek,getYYYYMMDD,startOfDay } from '../utils/date-utils';
 
 export interface GetBarberAvailabilityRequest {
   barberId: string;
@@ -27,7 +27,7 @@ export class GetBarberAvailabilityUseCase {
 
     // 1. Find Barber
     const barber = await this.barberRepository.findById(barberId);
-    if (!barber) {
+    if (!barber || !barber.user.active) {
       throw new Error('Barber not found');
     }
 
@@ -41,7 +41,7 @@ export class GetBarberAvailabilityUseCase {
     let durationMinutes = 30; // default to 30 mins (1 block)
     if (serviceId) {
       const service = await this.serviceRepository.findById(serviceId);
-      if (!service) {
+      if (!service || !service.active) {
         throw new Error('Service not found');
       }
       durationMinutes = service.durationMinutes;

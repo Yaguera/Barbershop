@@ -1,5 +1,6 @@
+import { Appointment } from '@/core/domain/models';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
-import { Appointment } from '@/generated/prisma/client';
+import { BarberRepository } from '../domain/repositories/BarberRepository';
 
 export interface ChangeAppointmentStatusRequest {
   appointmentId: string;
@@ -9,11 +10,14 @@ export interface ChangeAppointmentStatusRequest {
 }
 
 export class ChangeAppointmentStatusUseCase {
-  constructor(private appointmentRepository: AppointmentRepository) {}
+  constructor(private appointmentRepository: AppointmentRepository, private barberRepository: BarberRepository) {}
 
   async execute(request: ChangeAppointmentStatusRequest): Promise<Appointment> {
     const { appointmentId, newStatus, userId, userRole } = request;
 
+    if (!['ADMIN', 'BARBER', 'CLIENT'].includes(userRole) || !['PENDING', 'COMPLETED', 'CANCELED', 'NO_SHOW'].includes(newStatus)) {
+      throw new Error('Não autorizado ou status inválido.');
+    }
     // 1. Find Appointment
     const appointment = await this.appointmentRepository.findById(appointmentId);
     if (!appointment) {
@@ -47,16 +51,14 @@ export class ChangeAppointmentStatusUseCase {
 
     // 3. Authorization Checks
     if (userRole === 'BARBER') {
-      // The barber can only manage their own queue
-      // Note: we need to verify if the user's barber record corresponds to the barberId in the appointment.
-      // But we can check this at the controller/infrastructure layer or retrieve the barber's profile.
-      // To be safe, we'll let the controller pass the user's barberId or check it.
-      // Let's assume the controller validates that the user owns the queue, or we can check the barberId directly if we had a barberRepository.
-      // For simplicity, we can let the controller ensure that the user owns the resource,
-      // but here we can enforce that clients cannot change status to COMPLETED or NO_SHOW.
+      const barber = await this.barberRepository.findByUserId(userId);
+      if (!barber || barber.id !== appointment.barberId) {
+        throw new Error('Você só pode gerenciar seus próprios agendamentos.');
+      }
     }
 
     if (userRole === 'CLIENT') {
+      if (appointment.startTime <= new Date()) throw new Error('Não é possível cancelar agendamentos passados ou em andamento.');
       // Clients can only CANCEL their own appointments
       if (newStatus !== 'CANCELED') {
         throw new Error('Clients are only permitted to cancel their appointments');
@@ -66,8 +68,11 @@ export class ChangeAppointmentStatusUseCase {
       }
     }
 
+    if ((newStatus === 'PENDING' && appointment.status !== 'PENDING') || (newStatus === 'COMPLETED' && appointment.status === 'NO_SHOW')) {
+      throw new Error('Não é possível reabrir um agendamento finalizado. Crie uma nova reserva.');
+    }
     // 4. Update the status
-    const updated = await this.appointmentRepository.updateStatus(appointmentId, newStatus);
+    const updated = await this.appointmentRepository.updateStatus(appointmentId, newStatus, appointment.status);
     return updated;
   }
 }

@@ -1,33 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { 
-  CalendarDays, 
-  Users, 
-  Scissors, 
-  User, 
-  LogOut, 
-  Menu, 
-  X, 
-  LayoutDashboard 
+import {
+CalendarDays,
+LayoutDashboard,
+LogOut,
+Menu,
+Scissors,
+User,
+Users,
+X
 } from 'lucide-react';
+import { signOut,useSession } from 'next-auth/react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState,useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 
 interface AdminNavbarProps {
   activePage?: 'dashboard' | 'calendario' | 'clientes' | 'servicos';
 }
 
+const subscribe = () => () => {};
+
 export function AdminNavbar({ activePage }: AdminNavbarProps) {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-900 bg-black/80 backdrop-blur-md">

@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { signUpAction } from '@/app/actions/auth-actions';
-import { User as UserIcon, Mail, Lock, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { AlertCircle,ArrowLeft,CheckCircle2,Loader2,Lock,Mail,User as UserIcon } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter,useSearchParams } from 'next/navigation';
+import { Suspense,useState } from 'react';
 
 function RegisterForm() {
   const router = useRouter();

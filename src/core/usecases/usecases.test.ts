@@ -1,12 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GetBarberAvailabilityUseCase } from './GetBarberAvailabilityUseCase';
-import { CreateAppointmentUseCase } from './CreateAppointmentUseCase';
-import { ChangeAppointmentStatusUseCase } from './ChangeAppointmentStatusUseCase';
-import { GetAdminDashboardMetricsUseCase } from './GetAdminDashboardMetricsUseCase';
-import { RescheduleAppointmentUseCase } from './RescheduleAppointmentUseCase';
-import { BarberRepository } from '../domain/repositories/BarberRepository';
+import { afterEach,beforeEach,describe,expect,it,vi } from 'vitest';
+import type { Appointment } from '../domain/models';
+import { AppointmentReportRepository } from '../domain/repositories/AppointmentReportRepository';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
+import { BarberRepository } from '../domain/repositories/BarberRepository';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
+import { ChangeAppointmentStatusUseCase } from './ChangeAppointmentStatusUseCase';
+import { CreateAppointmentUseCase } from './CreateAppointmentUseCase';
+import { GetAdminDashboardMetricsUseCase } from './GetAdminDashboardMetricsUseCase';
+import { GetBarberAvailabilityUseCase } from './GetBarberAvailabilityUseCase';
+import { RescheduleAppointmentUseCase } from './RescheduleAppointmentUseCase';
 
 // Mock values
 const mockBarber = {
@@ -25,6 +27,8 @@ const mockBarber = {
     image: null,
     passwordHash: 'hash',
     role: 'BARBER',
+    active: true,
+    phone: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -34,6 +38,8 @@ const mockService = {
   id: 'service-1',
   name: 'Corte',
   price: 50.0,
+  active: true,
+  image: null,
   durationMinutes: 30,
   commissionRate: 0.40,
   createdAt: new Date(),
@@ -42,13 +48,16 @@ const mockService = {
 
 describe('App Barbearia Core Use Cases', () => {
   let barberRepo: BarberRepository;
-  let appointmentRepo: AppointmentRepository;
+  let appointmentRepo: AppointmentRepository & AppointmentReportRepository;
   let serviceRepo: ServiceRepository;
 
+  afterEach(() => vi.useRealTimers());
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-01T12:00:00Z'));
     barberRepo = {
       findById: vi.fn().mockResolvedValue(mockBarber),
-      findByUserId: vi.fn(),
+      findByUserId: vi.fn().mockResolvedValue(mockBarber),
       findAll: vi.fn(),
       create: vi.fn(),
       getBarberSpecialty: vi.fn(),
@@ -82,7 +91,7 @@ describe('App Barbearia Core Use Cases', () => {
     it('should calculate free slots correctly for a work day', async () => {
       const useCase = new GetBarberAvailabilityUseCase(barberRepo, appointmentRepo, serviceRepo);
       // June 14, 2027 is a Monday (weekday 1)
-      const testDate = new Date('2027-06-14T12:00:00');
+      const testDate = new Date('2027-06-14T12:00:00-03:00');
       
       const slots = await useCase.execute({
         barberId: 'barber-1',
@@ -99,7 +108,7 @@ describe('App Barbearia Core Use Cases', () => {
     it('should return empty slots if date is not a working day', async () => {
       const useCase = new GetBarberAvailabilityUseCase(barberRepo, appointmentRepo, serviceRepo);
       // June 13, 2027 is a Sunday (weekday 0) which is not in mockBarber.workDays
-      const testDate = new Date('2027-06-13T12:00:00');
+      const testDate = new Date('2027-06-13T12:00:00-03:00');
 
       const slots = await useCase.execute({
         barberId: 'barber-1',
@@ -115,7 +124,7 @@ describe('App Barbearia Core Use Cases', () => {
     it('should throw an error if booking is outside working hours', async () => {
       const useCase = new CreateAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
       // Book at 08:00 AM (workStart is 09:00 AM) on future weekday Monday June 14, 2027
-      const bookingTime = new Date('2027-06-14T08:00:00');
+      const bookingTime = new Date('2027-06-14T08:00:00-03:00');
 
       await expect(
         useCase.execute({
@@ -132,7 +141,7 @@ describe('App Barbearia Core Use Cases', () => {
       appointmentRepo.createTransactional = vi.fn().mockResolvedValue(null);
 
       const useCase = new CreateAppointmentUseCase(appointmentRepo, serviceRepo, barberRepo);
-      const bookingTime = new Date('2027-06-14T10:00:00');
+      const bookingTime = new Date('2027-06-14T10:00:00-03:00');
 
       try {
         await useCase.execute({
@@ -167,7 +176,7 @@ describe('App Barbearia Core Use Cases', () => {
 
       appointmentRepo.findById = vi.fn().mockResolvedValue(mockAppointment);
 
-      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo, barberRepo);
 
       await expect(
         useCase.execute({
@@ -198,7 +207,7 @@ describe('App Barbearia Core Use Cases', () => {
         status: 'CANCELED',
       });
 
-      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo, barberRepo);
 
       const result = await useCase.execute({
         appointmentId: 'app-1',
@@ -208,7 +217,7 @@ describe('App Barbearia Core Use Cases', () => {
       });
 
       expect(result.status).toBe('CANCELED');
-      expect(appointmentRepo.updateStatus).toHaveBeenCalledWith('app-1', 'CANCELED');
+      expect(appointmentRepo.updateStatus).toHaveBeenCalledWith('app-1', 'CANCELED', 'COMPLETED');
     });
 
     it('should throw error when changing status to NO_SHOW before appointment startTime (Premature NO_SHOW)', async () => {
@@ -227,7 +236,7 @@ describe('App Barbearia Core Use Cases', () => {
 
       appointmentRepo.findById = vi.fn().mockResolvedValue(mockAppointment);
 
-      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo, barberRepo);
 
       await expect(
         useCase.execute({
@@ -254,7 +263,7 @@ describe('App Barbearia Core Use Cases', () => {
 
       appointmentRepo.findById = vi.fn().mockResolvedValue(mockAppointment);
 
-      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+      const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo, barberRepo);
 
       await expect(
         useCase.execute({
@@ -329,22 +338,22 @@ describe('App Barbearia Core Use Cases', () => {
         clientId: 'client-1',
         barberId: 'barber-1',
         serviceId: 'service-1',
-        status: 'CONFIRMED',
+        status: 'PENDING',
         startTime: new Date(Date.now() + 86400000), // tomorrow
         endTime: new Date(Date.now() + 86400000 + 1800000),
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      vi.mocked(appointmentRepo.findById).mockResolvedValue(existing as any);
-      vi.mocked(serviceRepo.findById).mockResolvedValue(mockService as any);
-      vi.mocked(barberRepo.findById).mockResolvedValue(mockBarber as any);
+      vi.mocked(appointmentRepo.findById).mockResolvedValue(existing as Appointment);
+      vi.mocked(serviceRepo.findById).mockResolvedValue(mockService);
+      vi.mocked(barberRepo.findById).mockResolvedValue(mockBarber);
 
       // Pick next Wednesday at 14:00 (-03:00) to ensure valid workday and working hours
       const nextWednesday = new Date('2026-07-29T14:00:00.000-03:00');
       vi.mocked(appointmentRepo.rescheduleTransactional).mockResolvedValue({
         ...existing,
         startTime: nextWednesday,
-      } as any);
+      } as Appointment);
 
       const res = await useCase.execute({
         appointmentId: 'app-1',
@@ -374,7 +383,7 @@ describe('App Barbearia Core Use Cases', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      vi.mocked(appointmentRepo.findById).mockResolvedValue(existing as any);
+      vi.mocked(appointmentRepo.findById).mockResolvedValue(existing as Appointment);
 
       await expect(
         useCase.execute({

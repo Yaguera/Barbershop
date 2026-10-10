@@ -1,13 +1,9 @@
-import React, { Suspense } from 'react';
-import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
-import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { auth } from '@/auth';
 import BookingFlow from '@/components/BookingFlow';
-import { ClientNavbar } from '@/components/ClientNavbar';
-import Link from 'next/link';
+import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
+import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { redirect } from 'next/navigation';
-import { Star, ShieldCheck, Clock, MapPin, Sparkles, Award } from 'lucide-react';
-import Image from 'next/image';
+import { Suspense } from 'react';
 
 export default async function Home() {
   const session = await auth();

@@ -1,4 +1,4 @@
-import { AppointmentRepository, FinanceReport } from '../domain/repositories/AppointmentRepository';
+import { AppointmentReportRepository,FinanceReport } from '../domain/repositories/AppointmentReportRepository';
 
 export interface GetFinanceDashboardRequest {
   adminRole: string; // The role of the requester (must be ADMIN)
@@ -6,7 +6,7 @@ export interface GetFinanceDashboardRequest {
 }
 
 export class GetFinanceDashboardUseCase {
-  constructor(private appointmentRepository: AppointmentRepository) {}
+  constructor(private appointmentRepository: AppointmentReportRepository) {}
 
   async execute(request: GetFinanceDashboardRequest): Promise<FinanceReport> {
     const { adminRole, period = 'all' } = request;

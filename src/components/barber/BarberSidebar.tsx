@@ -1,20 +1,16 @@
 'use client';
 
-import React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
-import { 
-  X, 
-  LayoutDashboard, 
-  Calendar, 
-  BarChart3, 
-  LogOut, 
-  User, 
-  Sparkles,
-  ChevronRight,
-  Clock
+import {
+BarChart3,
+Calendar,
+ChevronRight,
+LayoutDashboard,
+LogOut,
+X
 } from 'lucide-react';
+import { signOut,useSession } from 'next-auth/react';
 import Image from 'next/image';
+import { usePathname,useRouter } from 'next/navigation';
 
 interface BarberSidebarProps {
   isOpen: boolean;

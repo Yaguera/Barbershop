@@ -1,4 +1,4 @@
-import { User } from '@/generated/prisma/client';
+import { User } from '@/core/domain/models';
 
 export interface ClientSummary {
   id: string;

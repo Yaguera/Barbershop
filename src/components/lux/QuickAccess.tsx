@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Calendar, Scissors, User, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Calendar,Gift,Scissors,User } from 'lucide-react';
 
 interface QuickAccessProps {
   onActionClick?: (action: 'agendar' | 'servicos' | 'conta' | 'indicar') => void;

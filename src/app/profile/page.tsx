@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
-import { updateProfileAction, updatePasswordAction } from '@/app/actions/auth-actions';
+import { updatePasswordAction,updateProfileAction } from '@/app/actions/auth-actions';
 import { uploadProfileImageAction } from '@/app/actions/upload-actions';
-import { User, Key, Mail, Image as ImageIcon, Phone, Save, RefreshCw, AlertCircle, CheckCircle2, UploadCloud, Lock, Loader2, Sparkles } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { compressImageClient } from '@/utils/compress-image';
-import { Header } from '@/components/lux/Header';
 import { BottomNavigation } from '@/components/lux/BottomNavigation';
+import { Header } from '@/components/lux/Header';
+import { compressImageClient } from '@/utils/compress-image';
+import { AlertCircle,CheckCircle2,Image as ImageIcon,Key,Loader2,Lock,Mail,Phone,Save,Sparkles,UploadCloud,User } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useEffect,useRef,useState } from 'react';
 
 const formatPhone = (value: string): string => {
   if (!value) return '';

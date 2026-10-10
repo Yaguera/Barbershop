@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { 
-  BarChart3, 
-  User as UserIcon, 
-  LogOut, 
-  LayoutDashboard,
-  Bell,
-  Check,
-  CheckCheck,
-  Sparkles,
-  Clock,
-  AlertTriangle,
-  CalendarCheck,
-  Settings
-} from 'lucide-react';
-import { getNotificationsAction, markAsReadAction, markAllAsReadAction } from '@/app/actions/notification-actions';
+import { getNotificationsAction,markAllAsReadAction,markAsReadAction } from '@/app/actions/notification-actions';
 import { BarberBottomNavigation } from '@/components/barber/BarberBottomNavigation';
+import {
+AlertTriangle,
+BarChart3,
+Bell,
+CalendarCheck,
+Check,
+CheckCheck,
+Clock,
+LayoutDashboard,
+LogOut,
+Settings,
+Sparkles
+} from 'lucide-react';
+import { signOut,useSession } from 'next-auth/react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect,useEffectEvent,useRef,useState } from 'react';
 
 interface NotificationItem {
   id: string;
@@ -36,6 +36,7 @@ interface BarberNavbarProps {
 
 export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -52,10 +53,13 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
     }
   };
 
+  const onEffectfetchNotifications = useEffectEvent(fetchNotifications);
+
   useEffect(() => {
     if (session?.user) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 60000);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
+    onEffectfetchNotifications();
+      const interval = setInterval(onEffectfetchNotifications, 60000);
       return () => clearInterval(interval);
     }
   }, [session?.user]);
@@ -128,24 +132,36 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
             <div className="hidden md:flex items-center gap-1.5 mr-2 pr-4 border-r border-white/10">
               <Link
                 href="/barber/dashboard"
-                className="px-3 py-1.5 rounded-xl bg-transparent hover:bg-[#151515] text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-transparent hover:border-white/10 transition-all flex items-center gap-1.5"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  pathname === '/barber/dashboard'
+                    ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
+                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
+                }`}
               >
                 <LayoutDashboard className="w-3.5 h-3.5 text-[#D4AF37]" />
                 <span>Início</span>
               </Link>
               <Link
                 href="/barber/agenda"
-                className="px-3 py-1.5 rounded-xl bg-transparent hover:bg-[#151515] text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-transparent hover:border-white/10 transition-all flex items-center gap-1.5"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  pathname?.startsWith('/barber/agenda')
+                    ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
+                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
+                }`}
               >
                 <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Meus Atendimentos</span>
+                <span>Agenda</span>
               </Link>
               <Link
                 href="/barber/metricas"
-                className="px-3 py-1.5 rounded-xl bg-transparent hover:bg-[#151515] text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-transparent hover:border-white/10 transition-all flex items-center gap-1.5"
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  pathname?.startsWith('/barber/metricas')
+                    ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
+                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
+                }`}
               >
                 <BarChart3 className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Minhas Métricas</span>
+                <span>Análises</span>
               </Link>
             </div>
 
@@ -330,16 +346,14 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                       <span>Minhas Métricas & Rendimento</span>
                     </Link>
 
-                    {barberProfileId && (
-                      <Link
-                        href={`/barber/dashboard/schedule/${barberProfileId}`}
-                        onClick={() => setIsAccountMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
-                      >
-                        <CalendarCheck className="w-4 h-4 text-[#D4AF37]" />
-                        <span>Configurar Meus Horários</span>
-                      </Link>
-                    )}
+                    <Link
+                      href="/barber/agenda"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
+                    >
+                      <CalendarCheck className="w-4 h-4 text-[#D4AF37]" />
+                      <span>Agenda de Horários</span>
+                    </Link>
 
                     <Link
                       href="/profile"

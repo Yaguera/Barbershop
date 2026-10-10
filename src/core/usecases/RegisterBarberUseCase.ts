@@ -1,7 +1,7 @@
-import { UserRepository } from '../domain/repositories/UserRepository';
-import { BarberRepository } from '../domain/repositories/BarberRepository';
-import { User, Barber } from '@/generated/prisma/client';
+import { Barber,User } from '@/core/domain/models';
 import * as bcrypt from 'bcryptjs';
+import { BarberRepository } from '../domain/repositories/BarberRepository';
+import { UserRepository } from '../domain/repositories/UserRepository';
 
 export interface RegisterBarberRequest {
   adminRole: string; // The role of the requester (must be ADMIN)
@@ -53,16 +53,6 @@ export class RegisterBarberUseCase {
       workStart,
       workEnd,
     });
-
-    // 6. Simulate email/notification (RN02.2 - log to console)
-    console.log('\n--- SIMULAÇÃO DE ENVIO DE E-MAIL (RN02.2) ---');
-    console.log(`Para: ${email}`);
-    console.log(`Assunto: Bem-vindo à Barbearia - Sua conta foi criada!`);
-    console.log(`Olá, ${name}.`);
-    console.log(`Você foi registrado como Barbeiro no sistema.`);
-    console.log(`Sua senha provisória é: ${passwordHash}`);
-    console.log(`Por favor, acesse o sistema e redefina sua senha no seu primeiro login.`);
-    console.log('---------------------------------------------\n');
 
     return { user, barber };
   }

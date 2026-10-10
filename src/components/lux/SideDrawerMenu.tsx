@@ -1,23 +1,21 @@
 'use client';
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
-import { 
-  X, 
-  User, 
-  Calendar, 
-  Clock, 
-  Gift, 
-  MessageCircle, 
-  LogOut, 
-  ShieldCheck, 
-  Scissors, 
-  Settings, 
-  ChevronRight,
-  Sparkles
+import {
+Calendar,
+ChevronRight,
+Clock,
+Gift,
+LogOut,
+MessageCircle,
+Scissors,
+ShieldCheck,
+Sparkles,
+User,
+X
 } from 'lucide-react';
+import { signOut,useSession } from 'next-auth/react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface SideDrawerMenuProps {
   isOpen: boolean;

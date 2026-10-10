@@ -1,9 +1,10 @@
-import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
+import { safeRedirect } from '@/core/utils/safe-redirect';
 import { prisma } from '@/infra/db/prisma-client';
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import bcrypt from 'bcryptjs';
+import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
-import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -33,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email },
         });
 
-        if (!user || !user.passwordHash) {
+        if (!user || !user.active || !user.passwordHash) {
           return null;
         }
 
@@ -59,7 +60,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
+    async signIn({ user }) {
+      if (!user.email) return false;
+      const existing = await prisma.user.findUnique({ where: { email: user.email }, select: { active: true } });
+      return !existing || existing.active;
+    },
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role || 'CLIENT';
@@ -71,23 +77,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.image = img;
         }
       }
-      if (trigger === 'update' && session) {
-        if (session.name !== undefined) token.name = session.name;
-        if (session.email !== undefined) token.email = session.email;
-        if (session.phone !== undefined) token.phone = session.phone;
-        if (session.image !== undefined) {
-          const img = session.image;
-          if (img && (typeof img === 'string') && (img.startsWith('data:') || img.length > 150 || img === 'BASE64_IN_DB' || img === 'DB_IMAGE')) {
-            token.image = 'DB_IMAGE';
-          } else {
-            token.image = session.image;
-          }
-        }
-      }
+      // Re-read account state on every session access: deactivation revokes existing JWTs.
+      const current = typeof token.id === 'string' ? await prisma.user.findUnique({
+        where: { id: token.id }, select: { sessionVersion: true, active: true, role: true, name: true, email: true, phone: true, image: true },
+      }) : null;
+      if (!current?.active || (!user && token.sessionVersion !== current.sessionVersion)) return null;
+      token.sessionVersion = current.sessionVersion;
+      token.role = current.role;
+      token.name = current.name;
+      token.email = current.email;
+      token.phone = current.phone;
+      token.image = current.image?.startsWith('data:') ? 'DB_IMAGE' : current.image;
       // Remove any large properties automatically attached by Google/OAuth providers or adapter
-      delete (token as any).picture;
-      delete (token as any).sub;
-      delete (token as any).passwordHash;
+      delete token.picture;
+      delete token.sub;
+      delete token.passwordHash;
       return token;
     },
     async session({ session, token }) {
@@ -111,42 +115,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async redirect({ url, baseUrl }) {
-      const isProd = process.env.NODE_ENV === 'production';
-      let cleanBaseUrl = baseUrl;
-      if (isProd && cleanBaseUrl.includes('localhost')) {
-        try {
-          const { headers } = await import('next/headers');
-          const headerList = await headers();
-          const host = headerList.get('x-forwarded-host') || headerList.get('host');
-          if (host && !host.includes('localhost')) {
-            const proto = headerList.get('x-forwarded-proto') || 'https';
-            cleanBaseUrl = `${proto}://${host}`;
-          } else {
-            const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-            if (vercelDomain) {
-              cleanBaseUrl = `https://${vercelDomain}`;
-            }
-          }
-        } catch (e) {
-          const vercelDomain = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-          if (vercelDomain) {
-            cleanBaseUrl = `https://${vercelDomain}`;
-          }
-        }
-      }
-
-      if (url.startsWith('/')) {
-        return `${cleanBaseUrl}${url}`;
-      }
-      try {
-        const urlObj = new URL(url);
-        if (urlObj.origin === cleanBaseUrl || (isProd && !urlObj.hostname.includes('localhost'))) {
-          return url;
-        }
-      } catch (e) {
-        // Ignore parsing errors
-      }
-      return cleanBaseUrl;
+      return safeRedirect(url, process.env.AUTH_URL || process.env.NEXTAUTH_URL || baseUrl);
     },
   },
   pages: {

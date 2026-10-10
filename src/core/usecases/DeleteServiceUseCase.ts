@@ -1,5 +1,5 @@
+import { Service } from '@/core/domain/models';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
-import { Service } from '@/generated/prisma/client';
 
 export interface DeleteServiceRequest {
   adminRole: string;

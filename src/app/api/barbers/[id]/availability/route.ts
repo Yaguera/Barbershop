@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
-import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
-import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { GetBarberAvailabilityUseCase } from '@/core/usecases/GetBarberAvailabilityUseCase';
+import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
+import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
+import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
+import { NextRequest,NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,

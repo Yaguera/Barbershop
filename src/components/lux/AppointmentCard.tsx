@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User as UserIcon, ChevronRight, CheckCircle2, RefreshCw } from 'lucide-react';
+import { getClientAppointmentsAction } from '@/app/actions/appointment-actions';
 import { motion } from 'framer-motion';
+import { Calendar,ChevronRight,Clock,RefreshCw,User as UserIcon } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { getClientAppointmentsAction } from '@/app/actions/appointment-actions';
+import { useEffect,useState } from 'react';
 
 interface AppointmentCardProps {
   id?: string;
@@ -49,8 +49,8 @@ export function AppointmentCard({
       if (!session?.user) return;
       setIsLoading(true);
       try {
-        const res = await getClientAppointmentsAction();
-        if (res.success && res.appointments) {
+        const res = await getClientAppointmentsAction(1, true);
+        if (res.success && 'appointments' in res && res.appointments) {
           const upcoming = res.appointments
             .filter((app) => app.status === 'PENDING' || app.status === 'CONFIRMED')
             .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());

@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Crown, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ChevronRight,Crown } from 'lucide-react';
 
 interface PremiumBannerProps {
   onLearnMoreClick?: () => void;

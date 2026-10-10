@@ -1,28 +1,27 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  User as UserIcon,
-  Scissors,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  RotateCcw,
-  Trash2,
-  Check,
-  ChevronRight,
-  Loader2,
-  CalendarClock
-} from 'lucide-react';
-import {
-  getAppointmentDetailsAction,
-  cancelAppointmentByClientAction,
-  rescheduleAppointmentAction,
+cancelAppointmentByClientAction,
+getAppointmentDetailsAction,
+rescheduleAppointmentAction,
 } from '@/app/actions/appointment-actions';
+import {
+AlertCircle,
+ArrowLeft,
+Calendar,
+CalendarClock,
+Check,
+CheckCircle2,
+Clock,
+Loader2,
+RotateCcw,
+Scissors,
+Trash2,
+User as UserIcon,
+XCircle
+} from 'lucide-react';
+import { useParams,useRouter } from 'next/navigation';
+import { useEffect,useEffectEvent,useState } from 'react';
 
 interface AppointmentDetail {
   id: string;
@@ -58,7 +57,9 @@ export default function AppointmentDetailPage() {
 
   // Rescheduling state
   const [isRescheduling, setIsRescheduling] = useState(false);
-  const [datesList, setDatesList] = useState<Date[]>([]);
+  const [datesList] = useState<Date[]>(() => Array.from({ length: 14 }, (_, i) => {
+    const day = new Date(); day.setDate(day.getDate() + i); return day;
+  }));
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -71,23 +72,9 @@ export default function AppointmentDetailPage() {
   const [canceling, setCanceling] = useState(false);
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Generate next 14 days for date picker
-    const days: Date[] = [];
-    const today = new Date();
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      days.push(d);
-    }
-    setDatesList(days);
-    setSelectedDate(days[0]);
-  }, []);
 
   const fetchAppointmentDetails = async () => {
     if (!appointmentId) return;
-    setLoading(true);
-    setError(null);
     try {
       const res = await getAppointmentDetailsAction(appointmentId);
       if (res.success && res.appointment) {
@@ -103,8 +90,11 @@ export default function AppointmentDetailPage() {
     }
   };
 
+  const onEffectfetchAppointmentDetails = useEffectEvent(fetchAppointmentDetails);
+
   useEffect(() => {
-    fetchAppointmentDetails();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
+    onEffectfetchAppointmentDetails();
   }, [appointmentId]);
 
   // Fetch slots whenever selectedDate or isRescheduling changes

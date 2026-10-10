@@ -3,7 +3,7 @@
  */
 
 export function getYYYYMMDD(d: Date | string): string {
-  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
+  if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
     return d.substring(0, 10);
   }
   const dateObj = typeof d === 'string' ? new Date(d) : d;

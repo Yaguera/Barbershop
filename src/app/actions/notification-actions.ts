@@ -82,6 +82,8 @@ export async function createNotificationAction(data: {
   message: string;
   type?: 'INFO' | 'REMINDER' | 'ALERT' | 'CANCEL' | 'NO_SHOW';
 }) {
+  const session = await auth();
+  if (session?.user?.role !== 'ADMIN') return { success: false, error: 'Não autorizado.' };
   try {
     const notification = await prisma.notification.create({
       data: {

@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
+import { Scissors,Smile,Star,User } from 'lucide-react';
 import Image from 'next/image';
-import { Scissors, Star, Smile, User } from 'lucide-react';
 
 interface ServiceCardProps {
   id?: string;

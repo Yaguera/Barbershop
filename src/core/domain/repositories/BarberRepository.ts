@@ -1,4 +1,4 @@
-import { Barber, User } from '@/generated/prisma/client';
+import { Barber,User } from '@/core/domain/models';
 
 export type BarberWithUser = Barber & { user: User };
 

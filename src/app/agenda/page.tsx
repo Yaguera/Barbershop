@@ -1,22 +1,26 @@
-import React from 'react';
+import { Pagination } from '@/components/Pagination';
 import { auth } from '@/auth';
-import { prisma } from '@/infra/db/prisma-client';
-import { Header } from '@/components/lux/Header';
-import { BottomNavigation } from '@/components/lux/BottomNavigation';
 import { AppointmentCard } from '@/components/lux/AppointmentCard';
-import { Calendar as CalendarIcon, Scissors, ArrowRight, Sparkles } from 'lucide-react';
+import { BottomNavigation } from '@/components/lux/BottomNavigation';
+import { Header } from '@/components/lux/Header';
+import { prisma } from '@/infra/db/prisma-client';
+import { Calendar as CalendarIcon,Scissors,Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-export default async function AgendaPage() {
+export default async function AgendaPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect('/auth/login?callbackUrl=/agenda');
   }
 
+  const requestedPage = Number((await searchParams).page || 1);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1;
   const now = new Date();
-  const appointments = await prisma.appointment.findMany({
+  const rows = await prisma.appointment.findMany({
+    skip: (page - 1) * 30,
+    take: 31,
     where: {
       clientId: session.user.id,
       status: { in: ['PENDING', 'CONFIRMED'] },
@@ -30,6 +34,9 @@ export default async function AgendaPage() {
     },
     orderBy: { startTime: 'asc' },
   });
+
+  const hasMore = rows.length > 30;
+  const appointments = rows.slice(0, 30);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('pt-BR', {
@@ -114,6 +121,7 @@ export default async function AgendaPage() {
             ))}
           </div>
         )}
+        <Pagination page={page} hasMore={hasMore} path="/agenda" />
       </main>
 
       <BottomNavigation activeTab="agendamentos" />

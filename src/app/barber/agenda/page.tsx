@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { getBarberAppointmentsAction, changeAppointmentStatusAction, getBarberMonthScheduleAction } from '@/app/actions/appointment-actions';
-import { Clock, Check, X, AlertTriangle, RefreshCw, ChevronLeft, ChevronRight, Calendar, User as UserIcon, Sparkles } from 'lucide-react';
-import Image from 'next/image';
+import { changeAppointmentStatusAction,getBarberAppointmentsAction,getBarberMonthScheduleAction } from '@/app/actions/appointment-actions';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
+import { AlertTriangle,Calendar,Check,ChevronLeft,ChevronRight,Clock,RefreshCw,Sparkles,User as UserIcon,X } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { useEffect,useEffectEvent,useState } from 'react';
 
 interface BarberAppointment {
   id: string;
@@ -63,6 +63,8 @@ export default function BarberAgendaPage() {
     }
   };
 
+  const onEffectloadMonthOccupancy = useEffectEvent(loadMonthOccupancy);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       loadQueue();
@@ -71,7 +73,8 @@ export default function BarberAgendaPage() {
   }, [selectedDate]);
 
   useEffect(() => {
-    loadMonthOccupancy();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
+    onEffectloadMonthOccupancy();
   }, [currentMonthDate, barberProfileId]);
 
   const handleStatusChange = async (appointmentId: string, newStatus: 'PENDING' | 'COMPLETED' | 'CANCELED' | 'NO_SHOW') => {

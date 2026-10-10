@@ -1,14 +1,15 @@
-import { AppointmentRepository, BarberPerformanceReport } from '../domain/repositories/AppointmentRepository';
+import { AppointmentReportRepository, BarberPerformanceReport } from '../domain/repositories/AppointmentReportRepository';
+import { reportPeriod } from '../utils/report-period';
 
 export interface GetBarberPerformanceRequest {
   requesterRole: string;
   requesterBarberId?: string | null;
   barberId: string;
-  period?: 'day' | 'week' | 'month' | 'all';
+  period?: 'today' | 'day' | 'week' | 'month' | 'year' | 'all';
 }
 
 export class GetBarberPerformanceUseCase {
-  constructor(private appointmentRepository: AppointmentRepository) {}
+  constructor(private appointmentRepository: AppointmentReportRepository) {}
 
   async execute(request: GetBarberPerformanceRequest): Promise<BarberPerformanceReport> {
     const { requesterRole, requesterBarberId, barberId, period = 'month' } = request;
@@ -17,23 +18,12 @@ export class GetBarberPerformanceUseCase {
       throw new Error('Sem permissão para visualizar métricas deste barbeiro.');
     }
 
-    let startDate: Date | undefined;
-    let endDate: Date | undefined;
+    const { startDate, endDate } = reportPeriod(period);
 
-    const now = new Date();
-    if (period === 'day') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    } else if (period === 'week') {
-      const dayOfWeek = now.getDay();
-      const diffToSunday = now.getDate() - dayOfWeek;
-      startDate = new Date(now.getFullYear(), now.getMonth(), diffToSunday, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth(), diffToSunday + 6, 23, 59, 59);
-    } else if (period === 'month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    }
-
-    return await this.appointmentRepository.getBarberPerformanceReport(barberId, startDate, endDate);
+    return await this.appointmentRepository.getBarberPerformanceReport(
+      barberId,
+      period === 'all' ? undefined : startDate,
+      period === 'all' ? undefined : endDate
+    );
   }
 }

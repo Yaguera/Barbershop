@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import { ServiceCard } from './ServiceCard';
 import { ChevronRight } from 'lucide-react';
+import { ServiceCard } from './ServiceCard';
 
 export interface ServiceItem {
   id: string;

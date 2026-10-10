@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useBookingStore } from '@/store/booking-store';
 import { createAppointmentAction } from '@/app/actions/appointment-actions';
-import { Calendar, Clock, Scissors, User as UserIcon, CheckCircle2, AlertTriangle, Loader2, Star, ChevronRight } from 'lucide-react';
-import SplashScreen from './SplashScreen';
-import Image from 'next/image';
 import { useDragScroll } from '@/hooks/useDragScroll';
+import { useBookingStore } from '@/store/booking-store';
+import { AlertTriangle,Calendar,CheckCircle2,ChevronRight,Clock,Loader2,Scissors,Star,User as UserIcon } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { useRouter,useSearchParams } from 'next/navigation';
+import { useEffect,useEffectEvent,useState } from 'react';
 import { ClientLuxDashboard } from './lux/ClientLuxDashboard';
+import SplashScreen from './SplashScreen';
 
 interface ServiceProp {
   id: string;
@@ -65,11 +65,12 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
   const [showSplash, setShowSplash] = useState(false);
   const [step, setStep] = useState(0); // 0 = Home, 1 = Services, 2 = Barber, 3 = DateTime, 4 = Confirm
 
-  useEffect(() => {
-    if (searchParams?.get('action') === 'agendar' && step === 0) {
-      setStep(1);
-    }
-  }, [searchParams]);
+  const action = searchParams?.get('action');
+  const [previousAction, setPreviousAction] = useState<string | null | undefined>(undefined);
+  if (action !== previousAction) {
+    setPreviousAction(action);
+    if (action === 'agendar' && step === 0) setStep(1);
+  }
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [availableSlots, setAvailableSlots] = useState<{ time: string; dateTime: string; available: boolean }[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
@@ -97,7 +98,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
     return `${year}-${month}-${day}`;
   };
 
-  useEffect(() => {
+  const readSplashPreference = useEffectEvent(() => {
     if (typeof window !== 'undefined') {
       const shown = sessionStorage.getItem('splash_shown_perf');
       if (!shown) {
@@ -105,7 +106,9 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         sessionStorage.setItem('splash_shown_perf', 'true');
       }
     }
-  }, []);
+  });
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate a sessionStorage preference unavailable during SSR.
+  useEffect(() => { readSplashPreference(); }, []);
 
   useEffect(() => {
     const attemptAutoSubmit = async () => {

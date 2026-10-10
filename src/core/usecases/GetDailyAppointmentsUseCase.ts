@@ -1,5 +1,5 @@
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
-import { startOfDay, endOfDay, parseLocalDate } from '../utils/date-utils';
+import { endOfDay,parseLocalDate,startOfDay } from '../utils/date-utils';
 
 export interface GetDailyAppointmentsRequest {
   barberId: string;

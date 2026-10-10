@@ -1,21 +1,25 @@
-import React from 'react';
+import { Pagination } from '@/components/Pagination';
 import { auth } from '@/auth';
-import { prisma } from '@/infra/db/prisma-client';
-import { Header } from '@/components/lux/Header';
 import { BottomNavigation } from '@/components/lux/BottomNavigation';
-import { Clock, CheckCircle2, XCircle, AlertTriangle, RotateCcw, Scissors, Sparkles } from 'lucide-react';
+import { Header } from '@/components/lux/Header';
+import { prisma } from '@/infra/db/prisma-client';
+import { CheckCircle2,Clock,RotateCcw,Scissors,Sparkles,XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-export default async function HistoricoPage() {
+export default async function HistoricoPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const session = await auth();
 
   if (!session?.user?.id) {
     redirect('/auth/login?callbackUrl=/historico');
   }
 
+  const requestedPage = Number((await searchParams).page || 1);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1;
   const now = new Date();
-  const appointments = await prisma.appointment.findMany({
+  const rows = await prisma.appointment.findMany({
+    skip: (page - 1) * 30,
+    take: 31,
     where: {
       clientId: session.user.id,
       OR: [
@@ -30,8 +34,10 @@ export default async function HistoricoPage() {
       service: true,
     },
     orderBy: { startTime: 'desc' },
-    take: 30,
   });
+
+  const hasMore = rows.length > 30;
+  const appointments = rows.slice(0, 30);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('pt-BR', {
@@ -153,7 +159,7 @@ export default async function HistoricoPage() {
 
                   <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 gap-3">
                     <span className="font-bold text-white text-base">
-                      R$ {appt.service.price.toFixed(2)}
+                      R$ {(appt.priceCents / 100).toFixed(2)}
                     </span>
 
                     <div className="flex items-center gap-2">
@@ -177,6 +183,7 @@ export default async function HistoricoPage() {
             })}
           </div>
         )}
+        <Pagination page={page} hasMore={hasMore} path="/historico" />
       </main>
 
       <BottomNavigation activeTab="historico" />

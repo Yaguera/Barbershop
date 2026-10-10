@@ -1,7 +1,7 @@
-import 'dotenv/config';
-import { PrismaClient } from '../../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import 'dotenv/config';
 import { Pool } from 'pg';
+import { PrismaClient } from '../../generated/prisma/client';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -14,7 +14,7 @@ const pool = new Pool({
   connectionString,
   ssl: isLocal ? false : { rejectUnauthorized: false },
 });
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaPg(pool, { disposeExternalPool: true });
 
 // Global declaration for hot-reloading in Next.js development
 const globalForPrisma = globalThis as unknown as {

@@ -1,8 +1,8 @@
+import { Appointment } from '@/core/domain/models';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
-import { ServiceRepository } from '../domain/repositories/ServiceRepository';
 import { BarberRepository } from '../domain/repositories/BarberRepository';
-import { Appointment } from '@/generated/prisma/client';
-import { getLocalDayOfWeek, getLocalHoursMinutes } from '../utils/date-utils';
+import { ServiceRepository } from '../domain/repositories/ServiceRepository';
+import { getLocalDayOfWeek,getLocalHoursMinutes } from '../utils/date-utils';
 
 export interface RescheduleAppointmentRequest {
   appointmentId: string;
@@ -29,7 +29,7 @@ export class RescheduleAppointmentUseCase {
       throw new Error('Agendamento não encontrado ou não autorizado.');
     }
 
-    if (existingAppt.status !== 'PENDING' && existingAppt.status !== 'CONFIRMED') {
+    if (existingAppt.status !== 'PENDING') {
       throw new Error('Apenas agendamentos ativos podem ser reagendados.');
     }
 
@@ -38,12 +38,12 @@ export class RescheduleAppointmentUseCase {
     }
 
     const service = await this.serviceRepository.findById(existingAppt.serviceId);
-    if (!service) {
+    if (!service || !service.active) {
       throw new Error('Service not found');
     }
 
     const barber = await this.barberRepository.findById(existingAppt.barberId);
-    if (!barber) {
+    if (!barber || !barber.user.active) {
       throw new Error('Barber not found');
     }
 
@@ -62,7 +62,7 @@ export class RescheduleAppointmentUseCase {
     const appStartMinutes = startH * 60 + startM;
     const newEndTime = new Date(newStartTime.getTime() + service.durationMinutes * 60 * 1000);
     const { hours: endH, minutes: endM } = getLocalHoursMinutes(newEndTime);
-    const appEndMinutes = endH * 60 + endM;
+    const appEndMinutes = appStartMinutes + service.durationMinutes;
 
     if (appStartMinutes < workStartMinutes || appEndMinutes > workEndMinutes) {
       throw new Error('Horário fora do expediente do profissional.');

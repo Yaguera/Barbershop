@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSession, signOut } from 'next-auth/react';
 import { getClientManagementAction } from '@/app/actions/admin-actions';
-import { Users, Search, DollarSign, Calendar, Mail, Phone, ArrowLeft, RefreshCw, AlertCircle, LogOut, User, Award, Scissors, CalendarDays } from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
 import { AdminNavbar } from '@/components/admin/AdminNavbar';
+import { AlertCircle,Calendar,Mail,Phone,RefreshCw,Search,Users } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useEffect,useState } from 'react';
 
 interface ClientSummaryItem {
   id: string;
@@ -22,19 +20,17 @@ interface ClientSummaryItem {
 export default function AdminClientesPage() {
   const { data: session } = useSession();
   const [clients, setClients] = useState<ClientSummaryItem[]>([]);
-  const [filteredClients, setFilteredClients] = useState<ClientSummaryItem[]>([]);
+
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const loadClients = async () => {
-    setIsLoading(true);
-    setErrorMsg(null);
     try {
       const res = await getClientManagementAction();
       if (res.success && res.clients) {
         setClients(res.clients);
-        setFilteredClients(res.clients);
+
       } else {
         setErrorMsg(res.error || 'Erro ao carregar lista de clientes.');
       }
@@ -52,21 +48,8 @@ export default function AdminClientesPage() {
     return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (!search.trim()) {
-      setFilteredClients(clients);
-    } else {
-      const term = search.toLowerCase();
-      setFilteredClients(
-        clients.filter(
-          (c) =>
-            c.name.toLowerCase().includes(term) ||
-            c.email.toLowerCase().includes(term) ||
-            (c.phone && c.phone.toLowerCase().includes(term))
-        )
-      );
-    }
-  }, [search, clients]);
+  const term = search.trim().toLowerCase();
+  const filteredClients = clients.filter(c => !term || c.name.toLowerCase().includes(term) || c.email.toLowerCase().includes(term) || c.phone?.toLowerCase().includes(term));
 
   const formatPrice = (p: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p);

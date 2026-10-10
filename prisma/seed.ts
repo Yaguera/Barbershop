@@ -3,20 +3,17 @@ import { prisma } from '../src/infra/db/prisma-client';
 import * as bcrypt from 'bcryptjs';
 
 async function main() {
-  console.log('Limpando todos os dados antigos de usuários, agendamentos e serviços...');
-  await prisma.appointment.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.verificationToken.deleteMany();
-  await prisma.barber.deleteMany();
-  await prisma.service.deleteMany();
-  await prisma.user.deleteMany();
-
+  if (await prisma.user.count() || await prisma.service.count()) {
+    throw new Error('O seed é destinado apenas a bancos vazios. Nenhum dado foi removido.');
+  }
+  if (!process.env.SEED_ADMIN_PASSWORD || !process.env.SEED_BARBER_PASSWORD) {
+    throw new Error('Defina SEED_ADMIN_PASSWORD e SEED_BARBER_PASSWORD antes de executar o seed.');
+  }
   console.log('Seeding database with new José Carlos Barber Shop data...');
 
   // 1. Create Super Admin with default profile photo
   const adminEmail = 'admin@barber.com';
-  const passwordHash = await bcrypt.hash('admin123', 10);
+  const passwordHash = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD, 10);
   const admin = await prisma.user.create({
     data: {
       name: 'José Carlos (Admin)',
@@ -60,7 +57,7 @@ async function main() {
   // Let's create an initial barber "Marcos Barber" if none exists, so there's a barber to book immediately!
   // 3. Create initial barber "Marcos de Souza"
   const barberEmail = 'marcos@barber.com';
-  const passwordHashBarber = await bcrypt.hash('barber123', 10);
+  const passwordHashBarber = await bcrypt.hash(process.env.SEED_BARBER_PASSWORD, 10);
   const barberUser = await prisma.user.create({
     data: {
       name: 'Marcos de Souza',

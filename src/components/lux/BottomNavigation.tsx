@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Home, Clock, Plus, Calendar, MoreHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Calendar,Clock,Home,MoreHorizontal,Plus } from 'lucide-react';
+import { usePathname,useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { SideDrawerMenu } from './SideDrawerMenu';
 
 export type NavTab = 'inicio' | 'agendamentos' | 'mais_acao' | 'historico' | 'mais';

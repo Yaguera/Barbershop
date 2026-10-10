@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const poppins = localFont({
+  src: [
+    { path: "./fonts/poppins-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/poppins-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/poppins-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/poppins-700.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
   variable: "--font-poppins",
 });

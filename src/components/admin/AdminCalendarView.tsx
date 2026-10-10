@@ -1,25 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { getAdminCalendarMetricsAction } from '@/app/actions/admin-actions';
-import { CalendarMetric, DayAppointmentDetail } from '@/core/domain/repositories/AppointmentRepository';
-import { 
-  Calendar, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  User, 
-  Scissors, 
-  DollarSign, 
-  CheckCircle2, 
-  Clock3, 
-  RefreshCw, 
-  Layers, 
-  CalendarDays, 
-  ArrowLeft,
-  TrendingUp,
-  Award
+import { CalendarMetric,DayAppointmentDetail } from '@/core/domain/repositories/AppointmentReportRepository';
+import {
+ArrowLeft,
+Award,
+CalendarDays,
+CheckCircle2,
+ChevronLeft,
+ChevronRight,
+Clock,
+Clock3,
+DollarSign,
+Layers,
+RefreshCw,
+Scissors,
+TrendingUp,
+User
 } from 'lucide-react';
+import { useEffect,useEffectEvent,useState } from 'react';
 
 type ViewMode = 'YEAR' | 'MONTH' | 'DAY';
 
@@ -33,6 +32,7 @@ export function AdminCalendarView() {
   const [metrics, setMetrics] = useState<CalendarMetric[]>([]);
   const [dayAppointments, setDayAppointments] = useState<DayAppointmentDetail[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const monthsNames = [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -41,32 +41,43 @@ export function AdminCalendarView() {
 
   const loadData = async () => {
     setIsLoading(true);
+    setErrorMsg(null);
     try {
       if (viewMode === 'YEAR') {
         const res = await getAdminCalendarMetricsAction(selectedYear);
         if (res.success && 'metrics' in res && res.metrics) {
           setMetrics(res.metrics);
+        } else {
+          setErrorMsg(res.error || 'Erro ao carregar dados do ano.');
         }
       } else if (viewMode === 'MONTH') {
         const res = await getAdminCalendarMetricsAction(selectedYear, selectedMonth);
         if (res.success && 'metrics' in res && res.metrics) {
           setMetrics(res.metrics);
+        } else {
+          setErrorMsg(res.error || 'Erro ao carregar dados do mês.');
         }
       } else if (viewMode === 'DAY') {
         const res = await getAdminCalendarMetricsAction(selectedYear, selectedMonth, selectedDay);
         if (res.success && 'dayDetails' in res && res.dayDetails) {
           setDayAppointments(res.dayDetails.appointments);
+        } else {
+          setErrorMsg(res.error || 'Erro ao carregar dados do dia.');
         }
       }
     } catch (err) {
       console.error('Error loading calendar metrics:', err);
+      setErrorMsg('Falha ao conectar com o servidor. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const onEffectloadData = useEffectEvent(loadData);
+
   useEffect(() => {
-    loadData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
+    onEffectloadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, selectedYear, selectedMonth, selectedDay]);
 
@@ -175,7 +186,7 @@ export function AdminCalendarView() {
       <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-            <Layers className="w-4 h-4 text-carvalho" />
+            <Layers className="w-4 h-4 text-[#D4AF37]" />
             <span 
               onClick={() => setViewMode('YEAR')} 
               className={`cursor-pointer hover:text-white transition-colors ${viewMode === 'YEAR' ? 'text-amber-400 font-bold underline' : ''}`}
@@ -274,6 +285,21 @@ export function AdminCalendarView() {
           </div>
         </div>
       </div>
+
+      {errorMsg && (
+        <div className="flex items-center justify-between gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-red-400 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-bold">Aviso:</span>
+            <span>{errorMsg}</span>
+          </div>
+          <button
+            onClick={loadData}
+            className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-xs font-bold text-red-300 transition-colors cursor-pointer"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
       {/* Summary KPI Banner for Year / Month mode */}
       {viewMode !== 'DAY' && (

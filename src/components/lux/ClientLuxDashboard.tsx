@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { AppointmentCard } from './AppointmentCard';
+import { BottomNavigation,NavTab } from './BottomNavigation';
 import { Header } from './Header';
 import { HeroBanner } from './HeroBanner';
-import { QuickAccess } from './QuickAccess';
-import { AppointmentCard } from './AppointmentCard';
-import { ServicesCarousel, ServiceItem } from './ServicesCarousel';
 import { PremiumBanner } from './PremiumBanner';
-import { BottomNavigation, NavTab } from './BottomNavigation';
+import { QuickAccess } from './QuickAccess';
+import { ServiceItem,ServicesCarousel } from './ServicesCarousel';
 
 interface BarberProp {
   id: string;

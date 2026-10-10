@@ -1,75 +1,117 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { getBarberMetricsDetailedAction } from '@/app/actions/appointment-actions';
-import { 
-  BarChart3, 
-  Calendar, 
-  DollarSign, 
-  Scissors, 
-  Trophy, 
-  RefreshCw, 
-  AlertCircle, 
-  TrendingUp, 
-  PieChart as PieChartIcon,
-  Activity
-} from 'lucide-react';
-import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  Tooltip, 
-  CartesianGrid, 
-  Legend 
-} from 'recharts';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
-import { BarberDetailedMetricsReport } from '@/core/domain/repositories/AppointmentRepository';
+import type { BarberDetailedMetricsReport } from '@/core/domain/repositories/AppointmentReportRepository';
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  DollarSign,
+  PieChart as PieChartIcon,
+  RefreshCw,
+  Scissors,
+  TrendingUp,
+  Trophy,
+  Wallet
+} from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
+
+export type BarberPeriod = 'today' | 'week' | 'month' | 'year' | 'all';
 
 export default function BarberMetricasPage() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [period, setPeriod] = useState<'day' | 'week' | 'month' | 'all'>('month');
+  const paramPeriod = (searchParams.get('period') as BarberPeriod) || 'month';
+  const [period, setPeriod] = useState<BarberPeriod>(
+    ['today', 'week', 'month', 'year', 'all'].includes(paramPeriod) ? paramPeriod : 'month'
+  );
+
   const [report, setReport] = useState<BarberDetailedMetricsReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  const loadMetrics = async (selectedPeriod: 'day' | 'week' | 'month' | 'all' = period) => {
-    setIsLoading(true);
-    setErrorMsg(null);
-    try {
-      const res = await getBarberMetricsDetailedAction(selectedPeriod);
-      if (res.success && res.report) {
-        setReport(res.report);
-        if (res.barberId) setBarberProfileId(res.barberId);
-      } else {
-        setErrorMsg(res.error || 'Erro ao carregar métricas detalhadas do barbeiro.');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Erro inesperado ao buscar dados de desempenho.');
-    } finally {
-      setIsLoading(false);
-    }
+  const requestIdRef = useRef(0);
+
+  const updateUrlParam = (newPeriod: BarberPeriod) => {
+    const params = new URLSearchParams();
+    if (newPeriod !== 'month') params.set('period', newPeriod);
+    const queryString = params.toString();
+    router.replace(queryString ? `/barber/metricas?${queryString}` : '/barber/metricas', {
+      scroll: false,
+    });
   };
+
+  const loadMetrics = useCallback(
+    async (selectedPeriod: BarberPeriod = period, isManual = false) => {
+      const currentRequestId = ++requestIdRef.current;
+
+      if (isManual || report) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      setErrorMsg(null);
+
+      try {
+        const res = await getBarberMetricsDetailedAction(selectedPeriod);
+
+        if (currentRequestId !== requestIdRef.current) return;
+
+        if (res.success && res.report) {
+          setReport(res.report);
+          setErrorMsg(null);
+          if (res.barberId) setBarberProfileId(res.barberId);
+          const now = new Date();
+          setLastUpdated(
+            now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          );
+        } else {
+          setErrorMsg(res.error || 'Erro ao carregar métricas de desempenho.');
+        }
+      } catch {
+        if (currentRequestId === requestIdRef.current) {
+          setErrorMsg('Falha inesperada ao buscar dados. Tente novamente.');
+        }
+      } finally {
+        if (currentRequestId === requestIdRef.current) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
 
   useEffect(() => {
     if (session?.user) {
-      loadMetrics();
+      loadMetrics(period);
     }
-  }, [session?.user]);
+  }, [session?.user, period, loadMetrics]);
 
-  const handlePeriodChange = (newPeriod: 'day' | 'week' | 'month' | 'all') => {
+  const handlePeriodChange = (newPeriod: BarberPeriod) => {
     setPeriod(newPeriod);
-    loadMetrics(newPeriod);
+    updateUrlParam(newPeriod);
   };
 
   const formatPrice = (p: number) => {
@@ -78,204 +120,281 @@ export default function BarberMetricasPage() {
 
   const totalAppointments = report?.totalAppointments || 0;
   const totalRevenue = report?.totalRevenue || 0;
+  const totalCommission = report?.totalCommission ?? 0;
   const avgTicket = totalAppointments > 0 ? totalRevenue / totalAppointments : 0;
 
+  const periodOptions: { key: BarberPeriod; label: string }[] = [
+    { key: 'today', label: 'Hoje' },
+    { key: 'week', label: 'Esta semana' },
+    { key: 'month', label: 'Este mês' },
+    { key: 'year', label: 'Este ano' },
+    { key: 'all', label: 'Geral' },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-[#D4AF37]/30 font-sans pb-24">
+    <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col selection:bg-[#D4AF37]/30 pb-24">
       <BarberNavbar barberProfileId={barberProfileId || undefined} />
 
-      <main className="flex-grow max-w-6xl mx-auto px-6 py-8 w-full space-y-8">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-[#D4AF37]" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#D4AF37]">
-                Dashboard de Alta Densidade
-              </span>
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 py-8 w-full space-y-8">
+        {/* 1 & 2. Título, Contexto e Filtros Padronizados */}
+        <div className="bg-[#151515] border border-white/5 rounded-2xl p-6 shadow-xl flex flex-col gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                Meu Desempenho
+              </h1>
+              <p className="text-white/60 text-xs sm:text-sm mt-1">
+                Acompanhe sua receita gerada, comissão estimada e serviços mais realizados.
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight flex items-center gap-3 mt-1">
-              <span>Minhas Métricas & Rendimento</span>
-            </h1>
-            <p className="text-slate-400 text-xs sm:text-sm mt-1">
-              Dados exclusivos do seu perfil calculados em tempo real com agregação no banco de dados.
-            </p>
+
+            {/* Timestamp e Ação de Atualizar */}
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              {lastUpdated && (
+                <span className="text-xs text-white/50">
+                  Atualizado às {lastUpdated}
+                </span>
+              )}
+              <button
+                onClick={() => loadMetrics(period, true)}
+                disabled={isRefreshing}
+                className="p-2 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white/80 hover:text-[#D4AF37] transition-all disabled:opacity-50 cursor-pointer"
+                title="Atualizar dados agora"
+                aria-label="Atualizar dados"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#D4AF37]' : ''}`} />
+              </button>
+            </div>
           </div>
 
-          {/* Period Selector */}
-          <div className="flex items-center gap-1 bg-slate-900 p-1.5 rounded-2xl border border-slate-800 self-start sm:self-auto shadow-xl">
-            {(['day', 'week', 'month', 'all'] as const).map((p) => {
-              const labels = { day: 'Hoje', week: 'Semana', month: 'Mês Atual', all: 'Geral' };
-              return (
-                <button
-                  key={p}
-                  onClick={() => handlePeriodChange(p)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                    period === p
-                      ? 'bg-[#D4AF37] text-slate-950 shadow-lg shadow-[#D4AF37]/20 scale-105'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-                  }`}
-                >
-                  {labels[p]}
-                </button>
-              );
-            })}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-white/5">
+            {/* Intervalo Exato de Datas */}
+            {report?.periodLabel && (
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#1C1C1C] border border-white/10 text-xs text-white/80 font-medium self-start">
+                <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <span>Período: <strong className="text-white font-semibold">{report.periodLabel}</strong></span>
+              </div>
+            )}
+
+            {/* Seletor de Períodos */}
+            <div className="flex items-center gap-1 bg-[#1C1C1C] p-1 rounded-xl border border-white/10 self-start sm:self-auto">
+              {periodOptions.map((opt) => {
+                const active = period === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => handlePeriodChange(opt.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      active
+                        ? 'bg-[#252525] text-[#D4AF37] border border-[#D4AF37]/40 shadow-sm'
+                        : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+                    }`}
+                    aria-pressed={active}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
+        {/* Mensagem de Erro com Ação de Tentar Novamente */}
         {errorMsg && (
-          <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-red-400 text-sm animate-fade-in">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <p className="font-medium">{errorMsg}</p>
+          <div className="flex items-center justify-between gap-3 bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-red-400 text-sm shadow-md">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p>{errorMsg}</p>
+            </div>
+            <button
+              onClick={() => loadMetrics(period, true)}
+              className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-xs font-bold text-red-300 transition-colors cursor-pointer"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
+
+        {/* Indicador de Atualizando Dados (Overlay sutil durante troca de filtros) */}
+        {isRefreshing && !isLoading && (
+          <div className="flex items-center justify-center gap-2 py-2 text-xs font-semibold text-[#D4AF37] animate-pulse">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            <span>Atualizando métricas...</span>
           </div>
         )}
 
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-3">
-            <RefreshCw className="w-8 h-8 animate-spin text-[#D4AF37]" />
-            <span className="text-sm font-semibold">Calculando métricas agregadas...</span>
+          <div className="flex flex-col items-center justify-center py-24 text-white/50 gap-3">
+            <RefreshCw className="w-7 h-7 animate-spin text-[#D4AF37]" />
+            <span className="text-sm font-semibold text-white/70">Carregando métricas...</span>
           </div>
         ) : (
-          <div className="space-y-8 animate-fade-in">
-            {/* KPI Cards (Alta Densidade) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex items-center gap-5 shadow-2xl relative overflow-hidden group hover:border-[#D4AF37]/40 transition-all">
-                <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#D4AF37]/10 rounded-full blur-xl group-hover:bg-[#D4AF37]/20 transition-all pointer-events-none" />
-                <div className="p-4 bg-[#D4AF37]/15 text-[#D4AF37] rounded-2xl border border-[#D4AF37]/30 shrink-0">
-                  <Scissors className="w-7 h-7 stroke-[2]" />
+          <div className="space-y-8">
+            {/* 3. Indicadores Principais (Grid 1 -> sm:2 -> lg:4) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Card 1: Receita Gerada */}
+              <div className="bg-[#151515] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                    Receita Gerada
+                  </span>
+                  <div className="p-2.5 bg-[#1C1C1C] text-[#D4AF37] rounded-xl border border-white/10">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs uppercase font-extrabold tracking-wider text-slate-400 block">
-                    Total de Cortes / Serviços
-                  </span>
-                  <span className="text-3xl sm:text-4xl font-black text-white mt-1 block">
-                    {totalAppointments}
-                  </span>
-                  <span className="text-[11px] text-[#22C55E] font-bold mt-1 block">
-                    &bull; Status Finalizado
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex items-center gap-5 shadow-2xl relative overflow-hidden group hover:border-[#22C55E]/40 transition-all">
-                <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#22C55E]/10 rounded-full blur-xl group-hover:bg-[#22C55E]/20 transition-all pointer-events-none" />
-                <div className="p-4 bg-[#22C55E]/15 text-[#22C55E] rounded-2xl border border-[#22C55E]/30 shrink-0">
-                  <DollarSign className="w-7 h-7 stroke-[2]" />
-                </div>
-                <div>
-                  <span className="text-xs uppercase font-extrabold tracking-wider text-slate-400 block">
-                    Rendimento Acumulado
-                  </span>
-                  <span className="text-3xl sm:text-4xl font-black text-[#22C55E] mt-1 block tracking-tight">
+                <div className="mt-4 space-y-1">
+                  <span className="text-2xl sm:text-3xl font-black text-white block tracking-tight">
                     {formatPrice(totalRevenue)}
                   </span>
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Valor total dos serviços
+                  <span className="text-xs text-white/50 block">
+                    Faturamento bruto dos serviços
                   </span>
                 </div>
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex items-center gap-5 shadow-2xl relative overflow-hidden group hover:border-cyan-500/40 transition-all">
-                <div className="absolute -right-6 -top-6 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all pointer-events-none" />
-                <div className="p-4 bg-cyan-500/15 text-cyan-400 rounded-2xl border border-cyan-500/30 shrink-0">
-                  <TrendingUp className="w-7 h-7 stroke-[2]" />
-                </div>
-                <div>
-                  <span className="text-xs uppercase font-extrabold tracking-wider text-slate-400 block">
-                    Ticket Médio por Corte
+              {/* Card 2: Minha Comissão */}
+              <div className="bg-[#151515] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                    Minha Comissão
                   </span>
-                  <span className="text-3xl sm:text-4xl font-black text-cyan-400 mt-1 block tracking-tight">
+                  <div className="p-2.5 bg-[#1C1C1C] text-emerald-400 rounded-xl border border-white/10">
+                    <Wallet className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-1">
+                  <span className="text-2xl sm:text-3xl font-black text-emerald-400 block tracking-tight">
+                    {formatPrice(totalCommission)}
+                  </span>
+                  <span className="text-xs text-white/50 block">
+                    Comissão líquida dos atendimentos
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 3: Atendimentos Concluídos */}
+              <div className="bg-[#151515] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                    Concluídos
+                  </span>
+                  <div className="p-2.5 bg-[#1C1C1C] text-[#D4AF37] rounded-xl border border-white/10">
+                    <Scissors className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-1">
+                  <span className="text-2xl sm:text-3xl font-black text-white block tracking-tight">
+                    {totalAppointments}
+                  </span>
+                  <span className="text-xs text-white/50 block">
+                    Atendimentos finalizados com sucesso
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 4: Ticket Médio por Atendimento */}
+              <div className="bg-[#151515] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                    Ticket Médio
+                  </span>
+                  <div className="p-2.5 bg-[#1C1C1C] text-[#D4AF37] rounded-xl border border-white/10">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-1">
+                  <span className="text-2xl sm:text-3xl font-black text-white block tracking-tight">
                     {formatPrice(avgTicket)}
                   </span>
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    Média por cliente atendido
+                  <span className="text-xs text-white/50 block">
+                    Receita dividida por atendimentos
                   </span>
                 </div>
               </div>
+
             </div>
 
-            {/* Recharts AreaChart: Gráfico de Rendimento */}
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-slate-800 pb-4">
+            {/* 4. Evolução no Tempo (AreaChart) */}
+            <div className="bg-[#151515] border border-white/5 rounded-2xl p-6 shadow-xl space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-white/5 pb-4">
                 <div>
-                  <h2 className="text-lg font-black text-white flex items-center gap-2.5">
-                    <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
-                    <span>Gráfico de Rendimento Diário</span>
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Evolução da Receita Gerada</span>
                   </h2>
-                  <p className="text-xs text-slate-400">
-                    Evolução do seu faturamento ao longo das datas deste período.
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Faturamento diário/mensal conforme o período selecionado
                   </p>
                 </div>
-                <div className="flex items-center gap-3 text-xs font-bold">
-                  <span className="flex items-center gap-1.5 text-[#D4AF37]">
-                    <span className="w-3 h-3 rounded-full bg-[#D4AF37]" /> Receita (R$)
-                  </span>
-                  <span className="flex items-center gap-1.5 text-cyan-400">
-                    <span className="w-3 h-3 rounded-full bg-cyan-400" /> Atendimentos
-                  </span>
+                <div className="flex items-center gap-2 text-xs font-bold text-[#D4AF37]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" />
+                  <span>Receita (R$)</span>
                 </div>
               </div>
 
               {report?.dailyRevenueChart.length === 0 ? (
-                <div className="py-16 text-center text-slate-500 text-sm font-medium">
-                  Nenhum faturamento registrado para o período selecionado.
+                <div className="py-16 text-center text-white/40 text-sm">
+                  Nenhuma movimentação registrada para o período selecionado.
                 </div>
               ) : (
                 <div className="w-full h-80 pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={report?.dailyRevenueChart || []}>
                       <defs>
-                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4} />
+                        <linearGradient id="barberRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.35} />
                           <stop offset="95%" stopColor="#D4AF37" stopOpacity={0.0} />
                         </linearGradient>
-                        <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
-                        </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                      <XAxis dataKey="date" stroke="#64748b" fontSize={12} tickLine={false} />
-                      <YAxis yAxisId="left" stroke="#64748b" fontSize={12} tickLine={false} tickFormatter={(val) => `R$ ${val}`} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={12} tickLine={false} allowDecimals={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                      <XAxis dataKey="date" stroke="#737373" fontSize={11} tickLine={false} />
+                      <YAxis stroke="#737373" fontSize={11} tickLine={false} tickFormatter={(val) => `R$${val}`} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#0f172a',
-                          borderColor: '#334155',
-                          borderRadius: '16px',
-                          color: '#f8fafc',
-                          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)',
-                          padding: '12px 16px'
+                          backgroundColor: '#151515',
+                          borderColor: '#262626',
+                          borderRadius: '12px',
+                          color: '#FFFFFF',
+                          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.6)',
                         }}
-                        formatter={(value: any, name: any) => [
-                          name === 'revenue' ? formatPrice(Number(value)) : `${value} cortes`,
-                          name === 'revenue' ? 'Faturamento' : 'Volume de Cortes',
+                        formatter={(value, name) => [
+                          name === 'revenue' ? formatPrice(Number(value)) : `${value} atendimentos`,
+                          name === 'revenue' ? 'Receita' : 'Atendimentos',
                         ]}
                       />
-                      <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" name="revenue" />
-                      <Area yAxisId="right" type="monotone" dataKey="count" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorCount)" name="count" />
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="#D4AF37"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#barberRevenueGradient)"
+                        name="revenue"
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
               )}
             </div>
 
-            {/* Grid Inferior: Distribuição de Serviços & Ranking */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* 5 & 6. Distribuição e Ranking por Serviço (Grid 1/2 + 1/2) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               
-              {/* PieChart/BarChart: Serviços Mais Realizados */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl flex flex-col justify-between">
+              {/* Gráfico Donut de Distribuição */}
+              <div className="bg-[#151515] border border-white/5 rounded-2xl p-6 shadow-xl flex flex-col justify-between space-y-6">
                 <div>
-                  <h2 className="text-lg font-black text-white flex items-center gap-2.5">
-                    <PieChartIcon className="w-5 h-5 text-[#D4AF37]" />
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <PieChartIcon className="w-4 h-4 text-[#D4AF37]" />
                     <span>Serviços Mais Realizados</span>
                   </h2>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Distribuição dos cortes executados com base no volume total.
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Participação percentual por quantidade de atendimentos
                   </p>
                 </div>
 
                 {report?.servicesDistribution.length === 0 ? (
-                  <div className="py-16 text-center text-slate-500 text-sm font-medium">
+                  <div className="py-16 text-center text-white/40 text-sm">
                     Nenhum serviço registrado neste período.
                   </div>
                 ) : (
@@ -288,26 +407,24 @@ export default function BarberMetricasPage() {
                           nameKey="name"
                           cx="50%"
                           cy="50%"
-                          outerRadius={85}
-                          innerRadius={55}
+                          outerRadius={80}
+                          innerRadius={52}
                           paddingAngle={4}
-                          label={(entry: any) => `${entry.name || ''} (${entry.percentage || 0}%)`}
-                          labelLine={false}
                         >
                           {(report?.servicesDistribution || []).map((entry, idx) => (
-                            <Cell key={`cell-${idx}`} fill={entry.fill} stroke="#0f172a" strokeWidth={2} />
+                            <Cell key={`cell-${idx}`} fill={entry.fill} stroke="#151515" strokeWidth={2} />
                           ))}
                         </Pie>
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#0f172a',
-                            borderColor: '#334155',
+                            backgroundColor: '#151515',
+                            borderColor: '#262626',
                             borderRadius: '12px',
-                            color: '#f8fafc',
+                            color: '#FFFFFF',
                           }}
-                          formatter={(value: any, name: any, props: any) => [
+                          formatter={(value, name, props) => [
                             `${value} realização(ões) (${props.payload.percentage}%)`,
-                            props.payload.name
+                            name,
                           ]}
                         />
                       </PieChart>
@@ -316,48 +433,53 @@ export default function BarberMetricasPage() {
                 )}
               </div>
 
-              {/* Top Services Ranking Detalhado */}
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+              {/* Ranking Financeiro por Serviço */}
+              <div className="bg-[#151515] border border-white/5 rounded-2xl p-6 shadow-xl space-y-6">
                 <div>
-                  <h2 className="text-lg font-black text-white flex items-center gap-2.5">
-                    <Trophy className="w-5 h-5 text-[#D4AF37]" />
-                    <span>Ranking de Receita por Serviço</span>
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Ranking por Receita Gerada</span>
                   </h2>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Comportamento financeiro de cada especialidade realizada.
+                  <p className="text-xs text-white/50 mt-0.5">
+                    Valor total gerado em cada serviço executado
                   </p>
                 </div>
 
                 {report?.servicesDistribution.length === 0 ? (
-                  <div className="py-16 text-center text-slate-500 text-sm font-medium">
+                  <div className="py-16 text-center text-white/40 text-sm">
                     Nenhum serviço registrado neste período.
                   </div>
                 ) : (
-                  <div className="divide-y divide-slate-800">
+                  <div className="divide-y divide-white/5">
                     {report?.servicesDistribution.map((svc, index) => (
-                      <div key={svc.name} className="py-3.5 flex items-center justify-between gap-4">
+                      <div key={svc.name} className="py-3 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 ${
-                            index === 0 ? 'bg-[#D4AF37] text-slate-950 shadow-md' : index === 1 ? 'bg-slate-300 text-slate-950' : index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-800 text-slate-400'
-                          }`}>
+                          <span
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                              index === 0
+                                ? 'bg-[#D4AF37] text-black shadow-sm'
+                                : index === 1
+                                ? 'bg-white/20 text-white'
+                                : index === 2
+                                ? 'bg-[#D4AF37]/20 text-[#D4AF37]'
+                                : 'bg-white/5 text-white/40'
+                            }`}
+                          >
                             {index + 1}º
                           </span>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-white text-sm truncate">{svc.name}</span>
+                              <span className="font-semibold text-white text-sm truncate">{svc.name}</span>
                               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: svc.fill }} />
                             </div>
-                            <span className="text-xs text-slate-400 block">
+                            <span className="text-xs text-white/50 block">
                               {svc.count} {svc.count === 1 ? 'atendimento' : 'atendimentos'} ({svc.percentage}%)
                             </span>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <span className="font-extrabold text-[#22C55E] text-base block">
+                          <span className="font-bold text-emerald-400 text-sm block">
                             {formatPrice(svc.revenue)}
-                          </span>
-                          <span className="text-[10px] text-slate-500 uppercase tracking-wider block font-bold">
-                            Total gerado
                           </span>
                         </div>
                       </div>

@@ -54,6 +54,7 @@ export class PrismaUserRepository implements UserRepository {
         name: data.name,
         email: data.email,
         passwordHash: data.passwordHash,
+        ...(data.passwordHash || data.active === false ? { sessionVersion: { increment: 1 } } : {}),
         image: data.image,
         phone: data.phone,
         active: data.active,
@@ -64,7 +65,7 @@ export class PrismaUserRepository implements UserRepository {
   async softDelete(id: string): Promise<User> {
     return await prisma.user.update({
       where: { id },
-      data: { active: false },
+      data: { active: false, sessionVersion: { increment: 1 } },
     });
   }
 
@@ -81,7 +82,7 @@ export class PrismaUserRepository implements UserRepository {
 
     return clients.map((client) => {
       const completedApps = client.appointments.filter((a) => a.status === 'COMPLETED');
-      const totalSpent = completedApps.reduce((sum, a) => sum + (a.service?.price || 0), 0);
+      const totalSpent = completedApps.reduce((sum, a) => sum + (a.priceCents / 100), 0);
       const completedServices = Array.from(new Set(completedApps.map((a) => a.service?.name).filter(Boolean) as string[]));
 
       return {

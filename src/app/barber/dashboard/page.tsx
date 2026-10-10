@@ -1,25 +1,24 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { getBarberAppointmentsAction,getBarberMetricsDetailedAction } from '@/app/actions/appointment-actions';
+import { BarberNavbar } from '@/components/barber/BarberNavbar';
+import {
+Calendar,
+CheckCircle2,
+ChevronRight,
+Clock,
+DollarSign,
+Quote,
+RefreshCw,
+ShieldCheck,
+Sparkles,
+Star,
+TrendingUp
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { 
-  Sparkles, 
-  CheckCircle2, 
-  DollarSign, 
-  Calendar, 
-  Clock, 
-  Star, 
-  TrendingUp, 
-  ChevronRight, 
-  User as UserIcon,
-  Quote,
-  ShieldCheck,
-  RefreshCw
-} from 'lucide-react';
-import { BarberNavbar } from '@/components/barber/BarberNavbar';
-import { getBarberMetricsDetailedAction, getBarberAppointmentsAction } from '@/app/actions/appointment-actions';
+import { useEffect,useEffectEvent,useState } from 'react';
 
 interface ReviewItem {
   id: string;
@@ -65,7 +64,6 @@ export default function BarberDashboardHome() {
   const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
 
   const loadDashboardData = async () => {
-    setIsLoading(true);
     try {
       const [metricsRes, todayRes] = await Promise.all([
         getBarberMetricsDetailedAction('month'),
@@ -93,8 +91,10 @@ export default function BarberDashboardHome() {
     }
   };
 
+  const onLoadDashboard = useEffectEvent(loadDashboardData);
   useEffect(() => {
-    loadDashboardData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
+    onLoadDashboard();
   }, [session?.user]);
 
   const formatPrice = (value: number) => {
@@ -279,12 +279,15 @@ export default function BarberDashboardHome() {
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
                 <span className="text-xs font-bold uppercase tracking-widest text-[#D4AF37]">
-                  Reputação & Qualidade
+                  Demonstração (Mockup)
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
-                Feedback dos Clientes
+                Avaliações de Clientes (Exemplo)
               </h2>
+              <p className="text-xs text-white/50 mt-0.5">
+                Exemplos ilustrativos de feedbacks para demonstração da plataforma.
+              </p>
             </div>
 
             {/* Média Simulação Card */}
@@ -299,7 +302,7 @@ export default function BarberDashboardHome() {
                   ))}
                 </div>
                 <span className="text-[11px] text-white/60 font-medium block">
-                  Média de 142 avaliações verificadas
+                  Exemplo de 142 avaliações ilustrativas
                 </span>
               </div>
             </div>

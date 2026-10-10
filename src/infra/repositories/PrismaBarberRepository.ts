@@ -1,4 +1,4 @@
-import { BarberRepository, BarberWithUser } from '@/core/domain/repositories/BarberRepository';
+import { BarberRepository,BarberWithUser } from '@/core/domain/repositories/BarberRepository';
 import { Barber } from '@/generated/prisma/client';
 import { prisma } from '../db/prisma-client';
 

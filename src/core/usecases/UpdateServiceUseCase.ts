@@ -1,5 +1,5 @@
+import { Service } from '@/core/domain/models';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
-import { Service } from '@/generated/prisma/client';
 
 export interface UpdateServiceRequest {
   adminRole: string;
@@ -44,21 +44,21 @@ export class UpdateServiceUseCase {
     }
 
     if (price !== undefined) {
-      if (isNaN(price) || price <= 0) {
+      if (!Number.isFinite(price) || price <= 0) {
         throw new Error('O preço deve ser um valor maior que zero.');
       }
       dataToUpdate.price = price;
     }
 
     if (durationMinutes !== undefined) {
-      if (isNaN(durationMinutes) || durationMinutes <= 0) {
+      if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
         throw new Error('A duração em minutos deve ser maior que zero.');
       }
       dataToUpdate.durationMinutes = durationMinutes;
     }
 
     if (commissionRate !== undefined) {
-      if (isNaN(commissionRate) || commissionRate < 0 || commissionRate > 1) {
+      if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 1) {
         throw new Error('A taxa de comissão deve estar entre 0 e 1 (ex: 0.40 para 40%).');
       }
       dataToUpdate.commissionRate = commissionRate;

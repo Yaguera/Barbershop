@@ -1,10 +1,10 @@
 'use server';
 
 import { auth } from '@/auth';
-import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { CreateServiceUseCase } from '@/core/usecases/CreateServiceUseCase';
-import { UpdateServiceUseCase } from '@/core/usecases/UpdateServiceUseCase';
 import { DeleteServiceUseCase } from '@/core/usecases/DeleteServiceUseCase';
+import { UpdateServiceUseCase } from '@/core/usecases/UpdateServiceUseCase';
+import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { revalidatePath } from 'next/cache';
 
 export async function getServicesAdminAction(activeOnly: boolean = false) {

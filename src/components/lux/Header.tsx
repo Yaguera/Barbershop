@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { getNotificationsAction,markAllAsReadAction,markAsReadAction } from '@/app/actions/notification-actions';
+import { AlertTriangle,Bell,Check,CheckCheck,Clock,Sparkles,User } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Bell, User, Check, CheckCheck, Sparkles, AlertTriangle, Clock } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import React,{ useEffect,useEffectEvent,useState } from 'react';
 import { SideDrawerMenu } from './SideDrawerMenu';
-import { getNotificationsAction, markAsReadAction, markAllAsReadAction } from '@/app/actions/notification-actions';
 
 interface NotificationItem {
   id: string;
@@ -37,11 +37,14 @@ export function Header({ onOpenDrawer }: HeaderProps) {
     }
   };
 
+  const onEffectfetchNotifications = useEffectEvent(fetchNotifications);
+
   useEffect(() => {
     if (session?.user) {
-      fetchNotifications();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
+    onEffectfetchNotifications();
       // Periodically check notifications every 60 seconds
-      const interval = setInterval(fetchNotifications, 60000);
+      const interval = setInterval(onEffectfetchNotifications, 60000);
       return () => clearInterval(interval);
     }
   }, [session?.user]);

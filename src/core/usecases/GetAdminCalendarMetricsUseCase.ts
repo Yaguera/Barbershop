@@ -1,4 +1,4 @@
-import { AppointmentRepository, CalendarMetric, AdminCalendarDayResult } from '../domain/repositories/AppointmentRepository';
+import { AdminCalendarDayResult,AppointmentReportRepository,CalendarMetric } from '../domain/repositories/AppointmentReportRepository';
 
 export interface GetAdminCalendarMetricsRequest {
   year: number;
@@ -12,7 +12,7 @@ export interface GetAdminCalendarMetricsResponse {
 }
 
 export class GetAdminCalendarMetricsUseCase {
-  constructor(private appointmentRepository: AppointmentRepository) {}
+  constructor(private appointmentRepository: AppointmentReportRepository) {}
 
   async execute(request: GetAdminCalendarMetricsRequest): Promise<GetAdminCalendarMetricsResponse> {
     const { year, month, day } = request;

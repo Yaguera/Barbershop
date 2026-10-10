@@ -1,8 +1,8 @@
+import { Appointment } from '@/core/domain/models';
 import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
-import { ServiceRepository } from '../domain/repositories/ServiceRepository';
 import { BarberRepository } from '../domain/repositories/BarberRepository';
-import { Appointment } from '@/generated/prisma/client';
-import { getLocalDayOfWeek, getLocalHoursMinutes } from '../utils/date-utils';
+import { ServiceRepository } from '../domain/repositories/ServiceRepository';
+import { getLocalDayOfWeek,getLocalHoursMinutes } from '../utils/date-utils';
 
 export interface CreateAppointmentRequest {
   clientId: string;
@@ -28,13 +28,13 @@ export class CreateAppointmentUseCase {
 
     // 1. Validate Service
     const service = await this.serviceRepository.findById(serviceId);
-    if (!service) {
+    if (!service || !service.active) {
       throw new Error('Service not found');
     }
 
     // 2. Validate Barber
     const barber = await this.barberRepository.findById(barberId);
-    if (!barber) {
+    if (!barber || !barber.user.active) {
       throw new Error('Barber not found');
     }
 
@@ -55,7 +55,7 @@ export class CreateAppointmentUseCase {
     const appStartMinutes = startH * 60 + startM;
     const endTime = new Date(startTime.getTime() + service.durationMinutes * 60 * 1000);
     const { hours: endH, minutes: endM } = getLocalHoursMinutes(endTime);
-    const appEndMinutes = endH * 60 + endM;
+    const appEndMinutes = appStartMinutes + service.durationMinutes;
 
     if (appStartMinutes < workStartMinutes || appEndMinutes > workEndMinutes) {
       throw new Error('Appointment time is outside of barber working hours');

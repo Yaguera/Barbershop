@@ -1,4 +1,4 @@
-import { AppointmentRepository } from '../domain/repositories/AppointmentRepository';
+import { AppointmentReportRepository } from '../domain/repositories/AppointmentReportRepository';
 
 export interface GetBarberMonthScheduleRequest {
   barberId: string;
@@ -12,7 +12,7 @@ export interface BarberDayOccupancy {
 }
 
 export class GetBarberMonthScheduleUseCase {
-  constructor(private appointmentRepository: AppointmentRepository) {}
+  constructor(private appointmentRepository: AppointmentReportRepository) {}
 
   async execute(request: GetBarberMonthScheduleRequest): Promise<BarberDayOccupancy[]> {
     const { barberId, year, month } = request;

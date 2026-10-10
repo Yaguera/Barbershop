@@ -1,4 +1,4 @@
-import { AppointmentRepository, AdminDashboardMetricsReport } from '../domain/repositories/AppointmentRepository';
+import { AdminDashboardMetricsReport,AppointmentReportRepository } from '../domain/repositories/AppointmentReportRepository';
 
 export interface GetAdminDashboardMetricsRequest {
   requesterRole: string;
@@ -8,7 +8,7 @@ export interface GetAdminDashboardMetricsRequest {
 }
 
 export class GetAdminDashboardMetricsUseCase {
-  constructor(private appointmentRepository: AppointmentRepository) {}
+  constructor(private appointmentRepository: AppointmentReportRepository) {}
 
   async execute(request: GetAdminDashboardMetricsRequest): Promise<AdminDashboardMetricsReport> {
     const { requesterRole, startDate, endDate, barberId } = request;

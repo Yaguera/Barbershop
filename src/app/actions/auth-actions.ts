@@ -1,10 +1,10 @@
 'use server';
 
-import { z } from 'zod';
-import bcrypt from 'bcryptjs';
-import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
 import { auth } from '@/auth';
 import { UpdatePasswordUseCase } from '@/core/usecases/UpdatePasswordUseCase';
+import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
+import bcrypt from 'bcryptjs';
+import { z } from 'zod';
 
 // Zod Schema to validate and sanitize sign-up payload (RN01.2)
 const signUpSchema = z.object({

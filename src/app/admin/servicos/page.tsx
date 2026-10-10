@@ -1,41 +1,34 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useSession, signOut } from 'next-auth/react';
 import {
-  getServicesAdminAction,
-  createServiceAction,
-  updateServiceAction,
-  deleteServiceAction,
+createServiceAction,
+deleteServiceAction,
+getServicesAdminAction,
+updateServiceAction,
 } from '@/app/actions/service-actions';
 import { uploadServiceImageAction } from '@/app/actions/upload-actions';
+import { AdminNavbar } from '@/components/admin/AdminNavbar';
 import { compressImageClient } from '@/utils/compress-image';
 import {
-  Scissors,
-  Plus,
-  Edit3,
-  Trash2,
-  RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  UploadCloud,
-  Image as ImageIcon,
-  Clock,
-  DollarSign,
-  Percent,
-  ArrowLeft,
-  CalendarDays,
-  Users,
-  User,
-  LogOut,
-  X,
-  Check,
-  Eye,
-  EyeOff,
+AlertCircle,
+CheckCircle2,
+Clock,
+DollarSign,
+Edit3,
+Eye,
+EyeOff,
+Image as ImageIcon,
+Percent,
+Plus,
+RefreshCw,
+Scissors,
+Trash2,
+UploadCloud,
+X
 } from 'lucide-react';
-import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import { AdminNavbar } from '@/components/admin/AdminNavbar';
+import { useEffect,useEffectEvent,useRef,useState } from 'react';
 
 interface ServiceProp {
   id: string;
@@ -75,8 +68,6 @@ export default function AdminServicesPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadServices = async () => {
-    setIsLoading(true);
-    setErrorMsg(null);
     try {
       const res = await getServicesAdminAction(filterActiveOnly);
       if (res.success && res.services) {
@@ -84,15 +75,18 @@ export default function AdminServicesPage() {
       } else {
         setErrorMsg(res.error || 'Erro ao carregar serviços.');
       }
-    } catch (e: any) {
-      setErrorMsg(e?.message || 'Erro de conexão.');
+    } catch (e: unknown) {
+      setErrorMsg((e instanceof Error ? e.message : '') || 'Erro de conexão.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const onEffectloadServices = useEffectEvent(loadServices);
+
   useEffect(() => {
-    loadServices();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
+    onEffectloadServices();
   }, [filterActiveOnly]);
 
   const openCreateModal = () => {
@@ -152,8 +146,8 @@ export default function AdminServicesPage() {
       } else {
         setErrorMsg(res.error || 'Erro ao fazer upload da imagem.');
       }
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro ao comprimir ou enviar imagem.');
+    } catch (err: unknown) {
+      setErrorMsg((err instanceof Error ? err.message : '') || 'Erro ao comprimir ou enviar imagem.');
     } finally {
       setIsUploadingImage(false);
     }
@@ -223,8 +217,8 @@ export default function AdminServicesPage() {
           setErrorMsg(res.error || 'Erro ao atualizar serviço.');
         }
       }
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro inesperado ao salvar.');
+    } catch (err: unknown) {
+      setErrorMsg((err instanceof Error ? err.message : '') || 'Erro inesperado ao salvar.');
     } finally {
       setIsSubmitting(false);
     }
@@ -247,8 +241,8 @@ export default function AdminServicesPage() {
       } else {
         setErrorMsg(res.error || 'Erro ao desativar serviço.');
       }
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Erro de conexão.');
+    } catch (err: unknown) {
+      setErrorMsg((err instanceof Error ? err.message : '') || 'Erro de conexão.');
     } finally {
       setDeletingId(null);
     }

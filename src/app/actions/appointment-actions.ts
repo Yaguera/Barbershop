@@ -1,16 +1,17 @@
 'use server';
+import { PrismaAppointmentReportRepository } from '@/infra/repositories/PrismaAppointmentReportRepository';
 
 import { auth } from '@/auth';
-import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
-import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
-import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
-import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
-import { CreateAppointmentUseCase } from '@/core/usecases/CreateAppointmentUseCase';
 import { ChangeAppointmentStatusUseCase } from '@/core/usecases/ChangeAppointmentStatusUseCase';
-import { GetBarberMonthScheduleUseCase } from '@/core/usecases/GetBarberMonthScheduleUseCase';
-import { GetDailyAppointmentsUseCase } from '@/core/usecases/GetDailyAppointmentsUseCase';
+import { CreateAppointmentUseCase } from '@/core/usecases/CreateAppointmentUseCase';
 import { GetBarberMetricsUseCase } from '@/core/usecases/GetBarberMetricsUseCase';
+import { GetBarberMonthScheduleUseCase } from '@/core/usecases/GetBarberMonthScheduleUseCase';
 import { RescheduleAppointmentUseCase } from '@/core/usecases/RescheduleAppointmentUseCase';
+import { parseLocalDate } from '@/core/utils/date-utils';
+import { barberAppointments,clientAppointments } from '@/infra/repositories/appointment-queries';
+import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
+import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
+import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 
 // Action to create a new appointment (RF03/RF04)
 export async function createAppointmentAction(data: {
@@ -74,7 +75,7 @@ export async function changeAppointmentStatusAction(data: {
 
     const { appointmentId, newStatus } = data;
     const appointmentRepo = new PrismaAppointmentRepository();
-    const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo);
+    const useCase = new ChangeAppointmentStatusUseCase(appointmentRepo, new PrismaBarberRepository());
 
     await useCase.execute({
       appointmentId,
@@ -92,34 +93,16 @@ export async function changeAppointmentStatusAction(data: {
 }
 
 // Action to retrieve appointments for the current client
-export async function getClientAppointmentsAction() {
+export async function getClientAppointmentsAction(page = 1, upcomingOnly = false) {
   try {
     const session = await auth();
     if (!session?.user) {
       return { success: false, error: 'Não autorizado.' };
     }
 
-    const appointmentRepo = new PrismaAppointmentRepository();
-    const appointments = await appointmentRepo.findByClient(session.user.id);
-
-    // Fetch related service details to display names and prices
-    const serviceRepo = new PrismaServiceRepository();
-    const barberRepo = new PrismaBarberRepository();
-
-    const appointmentsWithDetails = await Promise.all(
-      appointments.map(async (app) => {
-        const service = await serviceRepo.findById(app.serviceId);
-        const barber = await barberRepo.findById(app.barberId);
-        return {
-          ...app,
-          serviceName: service?.name || 'Serviço',
-          servicePrice: service?.price || 0,
-          barberName: barber?.user?.name || 'Barbeiro',
-        };
-      })
-    );
-
-    return { success: true, appointments: appointmentsWithDetails };
+    if (!Number.isInteger(page) || page < 1 || page > 10000) return { success: false, error: 'Página inválida.' };
+    const result = await clientAppointments(session.user.id, page, upcomingOnly);
+    return { success: true, ...result };
   } catch (error: unknown) {
     console.error('Error fetching client appointments:', error);
     const err = error as Error;
@@ -156,30 +139,8 @@ export async function getBarberAppointmentsAction(dateStr?: string) {
       barberId = barbers[0].id;
     }
 
-    const useCase = new GetDailyAppointmentsUseCase(appointmentRepo);
-    const appointments = await useCase.execute({
-      barberId,
-      dateStr,
-    });
-
-    // Populate client and service details
-    const userRepo = new PrismaUserRepository();
-    const appointmentsWithDetails = await Promise.all(
-      appointments.map(async (app) => {
-        const client = await userRepo.findById(app.clientId);
-        const service = await serviceRepo.findById(app.serviceId);
-        return {
-          ...app,
-          clientName: client?.name || 'Cliente Anônimo',
-          clientEmail: client?.email || '',
-          clientImage: client?.image || null,
-          serviceName: service?.name || 'Serviço',
-          servicePrice: service?.price || 0,
-        };
-      })
-    );
-
-    return { success: true, appointments: appointmentsWithDetails, barberId };
+    const appointments = await barberAppointments(barberId, parseLocalDate(dateStr));
+    return { success: true, appointments, barberId };
   } catch (error: unknown) {
     console.error('Error fetching barber appointments:', error);
     const err = error as Error;
@@ -194,6 +155,11 @@ export async function getBarberMonthScheduleAction(year: number, month: number, 
       return { success: false, error: 'Não autenticado.' };
     }
 
+    if (!['ADMIN', 'BARBER'].includes(session.user.role)) return { success: false, error: 'Não autorizado.' };
+    if (session.user.role === 'BARBER' && barberIdParam) {
+      const ownBarber = await new PrismaBarberRepository().findByUserId(session.user.id);
+      if (ownBarber?.id !== barberIdParam) return { success: false, error: 'Acesso negado.' };
+    }
     let barberId = barberIdParam;
     if (!barberId) {
       const barberRepo = new PrismaBarberRepository();
@@ -205,7 +171,7 @@ export async function getBarberMonthScheduleAction(year: number, month: number, 
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
-    const useCase = new GetBarberMonthScheduleUseCase(appointmentRepo);
+    const useCase = new GetBarberMonthScheduleUseCase(new PrismaAppointmentReportRepository());
     const occupancy = await useCase.execute({ barberId, year, month });
 
     return { success: true, occupancy, barberId };
@@ -216,7 +182,10 @@ export async function getBarberMonthScheduleAction(year: number, month: number, 
   }
 }
 
-export async function getBarberMetricsDetailedAction(period: 'day' | 'week' | 'month' | 'all' = 'month') {
+export async function getBarberMetricsDetailedAction(
+  period: 'today' | 'day' | 'week' | 'month' | 'year' | 'all' = 'month',
+  barberIdParam?: string
+) {
   try {
     const session = await auth();
     if (!session?.user?.id || (session.user.role !== 'BARBER' && session.user.role !== 'ADMIN')) {
@@ -225,7 +194,9 @@ export async function getBarberMetricsDetailedAction(period: 'day' | 'week' | 'm
 
     const barberRepo = new PrismaBarberRepository();
     let barberId = '';
-    if (session.user.role === 'BARBER') {
+    if (session.user.role === 'ADMIN' && barberIdParam) {
+      barberId = barberIdParam;
+    } else if (session.user.role === 'BARBER') {
       const barber = await barberRepo.findByUserId(session.user.id);
       if (!barber) {
         return { success: false, error: 'Perfil profissional do barbeiro não encontrado.' };
@@ -234,16 +205,31 @@ export async function getBarberMetricsDetailedAction(period: 'day' | 'week' | 'm
     } else {
       const barbers = await barberRepo.findAll();
       if (barbers.length === 0) {
-        return { success: true, report: null };
+        return { success: true, report: null, barberId: '', barber: null };
       }
       barberId = barbers[0].id;
     }
 
-    const appointmentRepo = new PrismaAppointmentRepository();
-    const useCase = new GetBarberMetricsUseCase(appointmentRepo);
+    const barber = await barberRepo.findById(barberId);
+    const specialty = barber ? await barberRepo.getBarberSpecialty(barber.id) : null;
+
+    const useCase = new GetBarberMetricsUseCase(new PrismaAppointmentReportRepository());
     const report = await useCase.execute({ barberId, period });
 
-    return { success: true, report, barberId };
+    return {
+      success: true,
+      report,
+      barberId,
+      barber: barber
+        ? {
+            id: barber.id,
+            name: barber.user?.name || 'Barbeiro Profissional',
+            email: barber.user?.email || '',
+            image: barber.user?.image || null,
+            specialty: specialty || 'Especialista em Cortes & Barba',
+          }
+        : null,
+    };
   } catch (error: unknown) {
     console.error('Error fetching detailed barber metrics:', error);
     const err = error as Error;
@@ -267,10 +253,11 @@ export async function getAppointmentDetailsAction(appointmentId: string) {
       return { success: false, error: 'Agendamento não encontrado.' };
     }
 
-    // Security check: only client who owns it, or barber/admin can view
+    const ownBarber = session.user.role === 'BARBER' ? await barberRepo.findByUserId(session.user.id) : null;
+    // Ownership is checked on the server, independently of page access.
     if (
       session.user.role !== 'ADMIN' &&
-      session.user.role !== 'BARBER' &&
+      ownBarber?.id !== appointment.barberId &&
       appointment.clientId !== session.user.id
     ) {
       return { success: false, error: 'Acesso negado a este agendamento.' };
@@ -290,7 +277,7 @@ export async function getAppointmentDetailsAction(appointmentId: string) {
         barberId: appointment.barberId,
         serviceId: appointment.serviceId,
         serviceName: appointment.service?.name || 'Serviço',
-        servicePrice: appointment.service?.price || 0,
+        servicePrice: appointment.priceCents / 100,
         serviceDurationMinutes: appointment.service?.durationMinutes || 30,
         barberName: barber?.user?.name || 'Barbeiro Profissional',
         barberSpecialty: specialty || 'Master Barber & Hair Stylist',
@@ -326,7 +313,7 @@ export async function cancelAppointmentByClientAction(appointmentId: string) {
       return { success: false, error: 'Não é possível cancelar agendamentos passados ou em andamento.' };
     }
 
-    await appointmentRepo.updateStatus(appointmentId, 'CANCELED');
+    await new ChangeAppointmentStatusUseCase(appointmentRepo, new PrismaBarberRepository()).execute({ appointmentId, newStatus: 'CANCELED', userId: session.user.id, userRole: 'CLIENT' });
     return { success: true, message: 'Agendamento cancelado com sucesso.' };
   } catch (error: unknown) {
     console.error('Error canceling appointment:', error);

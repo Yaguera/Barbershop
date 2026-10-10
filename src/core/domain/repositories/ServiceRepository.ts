@@ -1,4 +1,4 @@
-import { Service } from '@/generated/prisma/client';
+import { Service } from '@/core/domain/models';
 
 export interface ServiceRepository {
   findById(id: string): Promise<Service | null>;

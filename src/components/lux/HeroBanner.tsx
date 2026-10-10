@@ -1,9 +1,8 @@
 'use client';
 
-import React from 'react';
-import Image from 'next/image';
-import { Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Calendar } from 'lucide-react';
+import Image from 'next/image';
 
 interface HeroBannerProps {
   onBookClick?: () => void;

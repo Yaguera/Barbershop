@@ -1,4 +1,4 @@
-import { UserRepository, ClientSummary } from '../domain/repositories/UserRepository';
+import { ClientSummary,UserRepository } from '../domain/repositories/UserRepository';
 
 export interface GetClientManagementRequest {
   adminRole: string;
