@@ -2,7 +2,7 @@
 
 import { changeAppointmentStatusAction,getBarberAppointmentsAction,getBarberMonthScheduleAction } from '@/app/actions/appointment-actions';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
-import { AlertTriangle,Calendar,Check,ChevronLeft,ChevronRight,Clock,RefreshCw,Sparkles,User as UserIcon,X } from 'lucide-react';
+import { AlertCircle,AlertTriangle,Calendar,Check,ChevronLeft,ChevronRight,Clock,RefreshCw,Sparkles,User as UserIcon,X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useEffect,useEffectEvent,useState } from 'react';
@@ -28,6 +28,7 @@ export default function BarberAgendaPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
   const [monthOccupancyMap, setMonthOccupancyMap] = useState<Record<string, number>>({});
+  const [earlyConfirmAppt, setEarlyConfirmAppt] = useState<BarberAppointment | null>(null);
 
   const formatYYYYMMDD = (d: Date): string => {
     const year = d.getFullYear();
@@ -93,6 +94,23 @@ export default function BarberAgendaPage() {
       setErrorMsg(result.error || 'Erro ao atualizar status');
     }
     setUpdatingId(null);
+  };
+
+  const handleRequestComplete = (app: BarberAppointment) => {
+    const start = new Date(app.startTime);
+    const now = new Date();
+    if (now < start) {
+      setEarlyConfirmAppt(app);
+    } else {
+      handleStatusChange(app.id, 'COMPLETED');
+    }
+  };
+
+  const handleConfirmEarlyComplete = () => {
+    if (!earlyConfirmAppt) return;
+    const targetId = earlyConfirmAppt.id;
+    setEarlyConfirmAppt(null);
+    handleStatusChange(targetId, 'COMPLETED');
   };
 
   const formatPrice = (p: number) => {
@@ -237,7 +255,7 @@ export default function BarberAgendaPage() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => handleStatusChange(nextAppt.id, 'COMPLETED')}
+                onClick={() => handleRequestComplete(nextAppt)}
                 className="flex-1 sm:flex-initial py-3 px-6 rounded-2xl bg-[#22C55E] hover:bg-[#1DA851] text-[#0D0D0D] font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
@@ -412,7 +430,7 @@ export default function BarberAgendaPage() {
                           <>
                             <button
                               id={`btn-complete-${app.id}`}
-                              onClick={() => handleStatusChange(app.id, 'COMPLETED')}
+                              onClick={() => handleRequestComplete(app)}
                               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#22C55E]/15 hover:bg-[#22C55E] border border-[#22C55E]/40 hover:border-transparent text-[#22C55E] hover:text-[#0D0D0D] transition-all cursor-pointer shadow-sm hover:scale-105"
                               title="Concluir Atendimento"
                             >
@@ -454,6 +472,71 @@ export default function BarberAgendaPage() {
           </div>
         </div>
       </main>
+
+      {/* Modal de Confirmação para Atendimento Antecipado */}
+      {earlyConfirmAppt && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="early-confirm-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          onClick={() => setEarlyConfirmAppt(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#151515] border border-[#D4AF37]/40 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5 animate-scale-in"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#D4AF37] flex items-center justify-center shrink-0">
+                <AlertCircle className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <div className="space-y-1">
+                <h3 id="early-confirm-title" className="text-lg font-extrabold text-white">
+                  Confirmar Atendimento Antecipado?
+                </h3>
+                <p className="text-xs text-white/70 leading-relaxed">
+                  Você está confirmando o atendimento antes do horário agendado. Gostaria de confirmar a ação?
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[#1C1C1C] border border-white/5 rounded-2xl p-4 space-y-2.5 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-white/50">Cliente:</span>
+                <span className="font-bold text-white">{earlyConfirmAppt.clientName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-white/50">Serviço:</span>
+                <span className="font-bold text-[#D4AF37]">{earlyConfirmAppt.serviceName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-white/50">Horário Agendado:</span>
+                <span className="font-bold text-[#D4AF37]">
+                  {new Date(earlyConfirmAppt.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setEarlyConfirmAppt(null)}
+                className="flex-1 py-3 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white/80 hover:text-white font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-early-complete"
+                onClick={handleConfirmEarlyComplete}
+                className="flex-1 py-3 rounded-xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-xs transition-all shadow-[0_4px_20px_rgba(212,175,55,0.25)] cursor-pointer"
+              >
+                Sim, Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

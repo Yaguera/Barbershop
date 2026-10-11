@@ -8,10 +8,12 @@ import { GetBarberMetricsUseCase } from '@/core/usecases/GetBarberMetricsUseCase
 import { GetBarberMonthScheduleUseCase } from '@/core/usecases/GetBarberMonthScheduleUseCase';
 import { RescheduleAppointmentUseCase } from '@/core/usecases/RescheduleAppointmentUseCase';
 import { parseLocalDate } from '@/core/utils/date-utils';
+import { prisma } from '@/infra/db/prisma-client';
 import { barberAppointments,clientAppointments } from '@/infra/repositories/appointment-queries';
 import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
 import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
 import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
+import { revalidatePath } from 'next/cache';
 
 // Action to create a new appointment (RF03/RF04)
 export async function createAppointmentAction(data: {
@@ -49,6 +51,55 @@ export async function createAppointmentAction(data: {
       startTime,
     });
 
+    if (appointment) {
+      try {
+        const barberRecord = await prisma.barber.findUnique({
+          where: { id: barberId },
+          select: { userId: true, user: { select: { name: true } } },
+        });
+
+        const serviceRecord = await prisma.service.findUnique({
+          where: { id: serviceId },
+          select: { name: true },
+        });
+
+        const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+          dateStyle: 'short',
+          timeStyle: 'short',
+          timeZone: 'America/Sao_Paulo',
+        }).format(startTime);
+
+        if (barberRecord?.userId) {
+          await prisma.notification.create({
+            data: {
+              userId: barberRecord.userId,
+              title: 'Novo agendamento',
+              message: `${session.user.name || 'Cliente'} agendou ${serviceRecord?.name || 'serviço'} para ${formattedDate}.`,
+              type: 'INFO',
+              read: false,
+            },
+          });
+        }
+
+        await prisma.notification.create({
+          data: {
+            userId: session.user.id,
+            title: 'Agendamento confirmado',
+            message: `Seu agendamento de ${serviceRecord?.name || 'serviço'} com ${barberRecord?.user?.name || 'o barbeiro'} foi confirmado para ${formattedDate}.`,
+            type: 'INFO',
+            read: false,
+          },
+        });
+      } catch (notifError) {
+        console.error('Erro ao registrar notificações de agendamento:', notifError);
+      }
+
+      revalidatePath('/barber/agenda');
+      revalidatePath('/barber/dashboard');
+      revalidatePath('/agenda');
+      revalidatePath('/');
+    }
+
     return { success: true, appointment };
   } catch (error: unknown) {
     console.error('Error creating appointment:', error);
@@ -83,6 +134,10 @@ export async function changeAppointmentStatusAction(data: {
       userId: session.user.id,
       userRole: session.user.role as 'ADMIN' | 'BARBER' | 'CLIENT',
     });
+
+    revalidatePath('/barber/agenda');
+    revalidatePath('/barber/dashboard');
+    revalidatePath('/agenda');
 
     return { success: true, message: 'Status atualizado com sucesso!' };
   } catch (error: unknown) {
@@ -314,6 +369,38 @@ export async function cancelAppointmentByClientAction(appointmentId: string) {
     }
 
     await new ChangeAppointmentStatusUseCase(appointmentRepo, new PrismaBarberRepository()).execute({ appointmentId, newStatus: 'CANCELED', userId: session.user.id, userRole: 'CLIENT' });
+
+    try {
+      const barberRecord = await prisma.barber.findUnique({
+        where: { id: existing.barberId },
+        select: { userId: true },
+      });
+      if (barberRecord?.userId) {
+        const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+          dateStyle: 'short',
+          timeStyle: 'short',
+          timeZone: 'America/Sao_Paulo',
+        }).format(existing.startTime);
+
+        await prisma.notification.create({
+          data: {
+            userId: barberRecord.userId,
+            title: 'Agendamento cancelado',
+            message: `${session.user.name || 'Cliente'} cancelou o agendamento de ${formattedDate}.`,
+            type: 'CANCEL',
+            read: false,
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.error('Erro ao notificar cancelamento:', notifErr);
+    }
+
+    revalidatePath('/barber/agenda');
+    revalidatePath('/barber/dashboard');
+    revalidatePath('/agenda');
+    revalidatePath(`/agenda/${appointmentId}`);
+
     return { success: true, message: 'Agendamento cancelado com sucesso.' };
   } catch (error: unknown) {
     console.error('Error canceling appointment:', error);
@@ -353,6 +440,37 @@ export async function rescheduleAppointmentAction(data: {
       clientId: session.user.id,
       newStartTime,
     });
+
+    try {
+      const barberRecord = await prisma.barber.findUnique({
+        where: { id: updated.barberId },
+        select: { userId: true },
+      });
+      if (barberRecord?.userId) {
+        const formattedDate = new Intl.DateTimeFormat('pt-BR', {
+          dateStyle: 'short',
+          timeStyle: 'short',
+          timeZone: 'America/Sao_Paulo',
+        }).format(newStartTime);
+
+        await prisma.notification.create({
+          data: {
+            userId: barberRecord.userId,
+            title: 'Agendamento reagendado',
+            message: `${session.user.name || 'Cliente'} alterou o horário do agendamento para ${formattedDate}.`,
+            type: 'INFO',
+            read: false,
+          },
+        });
+      }
+    } catch (notifErr) {
+      console.error('Erro ao notificar reagendamento:', notifErr);
+    }
+
+    revalidatePath('/barber/agenda');
+    revalidatePath('/barber/dashboard');
+    revalidatePath('/agenda');
+    revalidatePath(`/agenda/${appointmentId}`);
 
     return { success: true, appointment: updated, message: 'Agendamento reagendado com sucesso!' };
   } catch (error: unknown) {

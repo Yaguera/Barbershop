@@ -58,9 +58,16 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
   useEffect(() => {
     if (session?.user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
-    onEffectfetchNotifications();
-      const interval = setInterval(onEffectfetchNotifications, 60000);
-      return () => clearInterval(interval);
+      onEffectfetchNotifications();
+      const interval = setInterval(onEffectfetchNotifications, 15000);
+      const handleFocus = () => onEffectfetchNotifications();
+      window.addEventListener('focus', handleFocus);
+      document.addEventListener('visibilitychange', handleFocus);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('focus', handleFocus);
+        document.removeEventListener('visibilitychange', handleFocus);
+      };
     }
   }, [session?.user]);
 
