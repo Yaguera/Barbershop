@@ -10,55 +10,47 @@ interface HeroBannerProps {
 
 export function HeroBanner({ onBookClick }: HeroBannerProps) {
   return (
-    <section className="w-full relative overflow-hidden min-h-[420px] sm:min-h-[480px] flex flex-col justify-between select-none">
+    <section className="w-full relative overflow-hidden min-h-[290px] sm:min-h-[360px] flex flex-col justify-end select-none">
       {/* Full Width Background Image */}
       <Image
         src="/images/splash_bg.png"
-        alt="Cadeira Premium de Barbeiro"
+        alt="Cadeira e ambiente da Barbearia"
         fill
         sizes="100vw"
-        quality={95}
+        quality={90}
         priority
         className="object-cover object-center"
       />
 
-      {/* Top Gradient Fade (Mescla suave com o Header/Fundo #0D0D0D) */}
-      <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#0D0D0D] via-[#0D0D0D]/60 to-transparent z-10 pointer-events-none" />
-
-      {/* Bottom Gradient Fade (Mescla suave com o fundo #0D0D0D da parte inferior) */}
-      <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/85 to-transparent z-10 pointer-events-none" />
-
-      {/* Left/Side Dark Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0D0D0D] via-[#0D0D0D]/80 to-transparent z-10 pointer-events-none" />
-
-      {/* Overall subtle contrast tint */}
-      <div className="absolute inset-0 bg-black/40 z-0 pointer-events-none" />
+      {/* Balanced subtle gradient overlays preserving photo visibility with clear text contrast */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/50 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0D0D0D]/90 via-[#0D0D0D]/40 to-transparent z-10 pointer-events-none" />
 
       {/* Left-Aligned Text Content Container */}
-      <div className="relative z-20 w-full max-w-6xl mx-auto px-6 pt-16 sm:pt-24 pb-6 flex-1 flex flex-col justify-end">
+      <div className="relative z-20 w-full max-w-6xl mx-auto px-6 pt-10 sm:pt-16 pb-6 flex flex-col justify-end">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="max-w-md"
         >
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-[#FFFFFF] leading-[1.15] tracking-tight drop-shadow-md">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-[#FFFFFF] leading-[1.18] tracking-tight drop-shadow-md">
             Seu estilo,<br />
             nosso <span className="text-[#D4AF37]">cuidado.</span>
           </h1>
 
-          <p className="text-xs sm:text-sm font-normal text-white/70 pt-2.5 leading-relaxed max-w-xs drop-shadow">
-            Agende seu horário de forma rápida e prática.
+          <p className="text-xs sm:text-sm font-normal text-white/75 pt-2 leading-relaxed max-w-xs drop-shadow">
+            Atendimento com especialistas e produtos de alta qualidade.
           </p>
 
-          <div className="pt-6">
+          <div className="pt-4 sm:pt-5">
             <button
               type="button"
               onClick={onBookClick}
-              className="bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-bold text-xs sm:text-sm uppercase tracking-wider py-3.5 px-6 rounded-xl shadow-[0_4px_20px_rgba(212,175,55,0.3)] transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] inline-flex items-center gap-2.5 cursor-pointer"
+              className="bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-bold text-xs sm:text-sm uppercase tracking-wider py-3 px-5 sm:py-3.5 sm:px-6 rounded-xl shadow-[0_4px_20px_rgba(212,175,55,0.3)] transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] inline-flex items-center gap-2.5 cursor-pointer"
             >
               <Calendar className="w-4 h-4 stroke-[2.5] shrink-0" />
-              <span>AGENDAR HORÁRIO</span>
+              <span>Agendar Horário</span>
             </button>
           </div>
         </motion.div>

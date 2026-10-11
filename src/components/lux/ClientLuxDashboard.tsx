@@ -3,12 +3,12 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { AppointmentCard } from './AppointmentCard';
-import { BottomNavigation,NavTab } from './BottomNavigation';
+import { BottomNavigation, NavTab } from './BottomNavigation';
 import { Header } from './Header';
 import { HeroBanner } from './HeroBanner';
 import { PremiumBanner } from './PremiumBanner';
 import { QuickAccess } from './QuickAccess';
-import { ServiceItem,ServicesCarousel } from './ServicesCarousel';
+import { ServiceItem, ServicesCarousel } from './ServicesCarousel';
 
 interface BarberProp {
   id: string;
@@ -29,7 +29,6 @@ export function ClientLuxDashboard({
   barbers = [],
   onStartBooking,
   onServiceSelect,
-  onOpenHistory,
 }: ClientLuxDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<NavTab>('inicio');
@@ -40,7 +39,10 @@ export function ClientLuxDashboard({
     } else if (action === 'conta') {
       router.push('/profile');
     } else if (action === 'indicar') {
-      alert('Seu código de indicação VIP: BARBER-VIP-2026. Compartilhe e ganhe R$ 20 de desconto!');
+      const shareText = encodeURIComponent(
+        'Venha conhecer a barbearia e agende seu atendimento com profissionais de excelência!'
+      );
+      window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank');
     }
   };
 
@@ -55,12 +57,19 @@ export function ClientLuxDashboard({
     }
   };
 
+  const handleLearnMorePlans = () => {
+    const text = encodeURIComponent(
+      'Olá! Gostaria de conhecer os planos e condições de assinatura mensal da barbearia.'
+    );
+    window.open(`https://wa.me/5585986279194?text=${text}`, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 selection:bg-[#D4AF37]/30 font-sans">
       {/* Top Header */}
       <Header />
 
-      {/* Main Container respecting exact layout spacing and mobile-first widths up to desktop */}
+      {/* Main Container */}
       <main className="flex-grow w-full space-y-4">
         {/* Hero Section */}
         <HeroBanner onBookClick={onStartBooking} />
@@ -71,10 +80,7 @@ export function ClientLuxDashboard({
         {/* Próximo Agendamento */}
         <AppointmentCard
           autoFetch={true}
-          date="Sábado, 18 de Maio"
-          time="10:00"
-          barberName={barbers.length > 0 ? barbers[0].name : 'Lucas'}
-          serviceName="Corte & Estilo VIP"
+          barberName={barbers.length > 0 ? barbers[0].name : undefined}
         />
 
         {/* Nossos Serviços */}
@@ -91,11 +97,7 @@ export function ClientLuxDashboard({
         />
 
         {/* Seja Premium Banner */}
-        <PremiumBanner
-          onLearnMoreClick={() => {
-            alert('Clube VIP: Assinatura mensal com cortes ilimitados, bar aberto e atendimento prioritário.');
-          }}
-        />
+        <PremiumBanner onLearnMoreClick={handleLearnMorePlans} />
       </main>
 
       {/* Fixed Bottom Navigation */}

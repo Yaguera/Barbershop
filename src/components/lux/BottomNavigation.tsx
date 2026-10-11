@@ -1,8 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Calendar,Clock,Home,MoreHorizontal,Plus } from 'lucide-react';
-import { usePathname,useRouter } from 'next/navigation';
+import { Calendar, Clock, Home, MoreHorizontal, Plus } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { SideDrawerMenu } from './SideDrawerMenu';
 
@@ -65,8 +65,8 @@ export function BottomNavigation({
       <motion.nav
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-[#0D0D0D]/95 backdrop-blur-xl border-t border-[rgba(255,255,255,0.06)] shadow-[0_-4px_25px_rgba(0,0,0,0.5)] pb-safe"
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-[#0D0D0D]/95 backdrop-blur-xl border-t border-white/5 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] pb-safe"
       >
         <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between relative">
           {/* Item 1: Início */}
@@ -77,43 +77,46 @@ export function BottomNavigation({
               currentTab === 'inicio' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
             }`}
           >
-            <Home className="w-6 h-6 stroke-[2]" />
+            <Home className="w-5 h-5 stroke-[2]" />
             <span className="text-[11px] font-medium tracking-tight">Início</span>
           </button>
 
-          {/* Item 2: Agendamentos */}
+          {/* Item 2: Agenda */}
           <button
             type="button"
             onClick={() => handleTabClick('agendamentos')}
-            className={`flex flex-col items-center justify-center gap-1 w-16 transition-all duration-200 cursor-pointer ${
+            className={`flex flex-col items-center justify-center gap-1 w-14 transition-all duration-200 cursor-pointer ${
               currentTab === 'agendamentos' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
             }`}
           >
-            <Clock className="w-6 h-6 stroke-[2]" />
+            <Clock className="w-5 h-5 stroke-[2]" />
             <span className="text-[11px] font-medium tracking-tight">Agenda</span>
           </button>
 
-          {/* Item 3: Botão central (+) - Circular, Maior, Dourado, Sombra */}
-          <div className="relative -mt-6 flex items-center justify-center">
+          {/* Item 3: Botão central com nome visual 'Agendar' */}
+          <div className="relative -mt-5 flex flex-col items-center justify-center">
             <button
               type="button"
               onClick={handlePlusClick}
-              aria-label="Novo Agendamento"
-              className="w-14 h-14 rounded-full bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] flex items-center justify-center shadow-[0_4px_20px_rgba(212,175,55,0.45)] transition-all duration-200 hover:scale-[1.06] active:scale-[0.96] border-4 border-[#0D0D0D] cursor-pointer"
+              aria-label="Agendar Horário"
+              className="w-12 h-12 rounded-full bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] flex items-center justify-center shadow-[0_4px_20px_rgba(212,175,55,0.4)] transition-all duration-200 hover:scale-105 active:scale-95 border-4 border-[#0D0D0D] cursor-pointer"
             >
-              <Plus className="w-7 h-7 stroke-[2.5]" />
+              <Plus className="w-6 h-6 stroke-[2.5]" />
             </button>
+            <span className="text-[10px] font-bold text-[#D4AF37] tracking-tight mt-0.5">
+              Agendar
+            </span>
           </div>
 
           {/* Item 4: Histórico */}
           <button
             type="button"
             onClick={() => handleTabClick('historico')}
-            className={`flex flex-col items-center justify-center gap-1 w-16 transition-all duration-200 cursor-pointer ${
+            className={`flex flex-col items-center justify-center gap-1 w-14 transition-all duration-200 cursor-pointer ${
               currentTab === 'historico' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
             }`}
           >
-            <Calendar className="w-6 h-6 stroke-[2]" />
+            <Calendar className="w-5 h-5 stroke-[2]" />
             <span className="text-[11px] font-medium tracking-tight">Histórico</span>
           </button>
 
@@ -125,7 +128,7 @@ export function BottomNavigation({
               currentTab === 'mais' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
             }`}
           >
-            <MoreHorizontal className="w-6 h-6 stroke-[2]" />
+            <MoreHorizontal className="w-5 h-5 stroke-[2]" />
             <span className="text-[11px] font-medium tracking-tight">Mais</span>
           </button>
         </div>
