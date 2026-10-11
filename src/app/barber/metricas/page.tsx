@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -33,7 +33,7 @@ import {
 
 export type BarberPeriod = 'today' | 'week' | 'month' | 'year' | 'all';
 
-export default function BarberMetricasPage() {
+function BarberMetricasContent() {
   const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -493,5 +493,19 @@ export default function BarberMetricasPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function BarberMetricasPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0D0D0D] flex flex-col items-center justify-center p-4">
+          <RefreshCw className="w-8 h-8 animate-spin text-[#D4AF37]" />
+        </div>
+      }
+    >
+      <BarberMetricasContent />
+    </Suspense>
   );
 }
