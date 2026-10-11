@@ -99,9 +99,10 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
         ) : (
           <div className="space-y-3">
             {appointments.map((appt) => {
-              const isCompleted = appt.status === 'COMPLETED' || (appt.status === 'PENDING' && appt.startTime < now);
+              const isCompleted = appt.status === 'COMPLETED';
               const isCanceled = appt.status === 'CANCELED';
               const isNoShow = appt.status === 'NO_SHOW';
+              const isPending = !isCompleted && !isCanceled && !isNoShow;
 
               return (
                 <div
@@ -140,7 +141,12 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                         )}
                         {isNoShow && (
                           <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30">
-                            No-Show
+                            Falta (No-Show)
+                          </span>
+                        )}
+                        {isPending && (
+                          <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
+                            Pendente
                           </span>
                         )}
                       </div>

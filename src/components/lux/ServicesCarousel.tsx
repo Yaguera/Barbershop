@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Scissors } from 'lucide-react';
 import { ServiceCard } from './ServiceCard';
 
 export interface ServiceItem {
@@ -22,20 +22,6 @@ export function ServicesCarousel({
   onServiceSelect,
   onViewAllClick,
 }: ServicesCarouselProps) {
-  // Default mock items EXACTLY matching screenshot
-  const displayServices: (ServiceItem & { iconType?: 'scissors' | 'beard' | 'star' | 'smile' })[] =
-    services.length > 0
-      ? services.map((s, idx) => ({
-          ...s,
-          iconType: idx === 0 ? 'scissors' : idx === 1 ? 'beard' : idx === 2 ? 'star' : 'smile',
-        }))
-      : [
-          { id: '1', name: 'Corte de Cabelo', price: 40, durationMinutes: 45, image: '/images/service_image.png', iconType: 'scissors' },
-          { id: '2', name: 'Barba', price: 30, durationMinutes: 30, image: '/images/service_image.png', iconType: 'beard' },
-          { id: '3', name: 'Corte + Barba', price: 60, durationMinutes: 65, image: '/images/service_image.png', iconType: 'star' },
-          { id: '4', name: 'Corte Infantil', price: 35, durationMinutes: 40, image: '/images/service_image.png', iconType: 'smile' },
-        ];
-
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
@@ -46,29 +32,47 @@ export function ServicesCarousel({
         <h2 className="text-sm font-bold text-[#FFFFFF] tracking-tight">
           Nossos serviços
         </h2>
-        <button
-          type="button"
-          onClick={onViewAllClick}
-          className="text-[#D4AF37] text-xs font-bold hover:underline cursor-pointer transition-colors flex items-center gap-1"
-        >
-          <span>Ver todos</span>
-          <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-        </button>
+        {services.length > 0 && (
+          <button
+            type="button"
+            onClick={onViewAllClick}
+            className="text-[#D4AF37] text-xs font-bold hover:underline cursor-pointer transition-colors flex items-center gap-1"
+          >
+            <span>Ver todos</span>
+            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+          </button>
+        )}
       </div>
 
-      <div className="flex gap-3 overflow-x-auto px-6 pb-3 pt-1 scrollbar-none snap-x snap-mandatory">
-        {displayServices.map((srv) => (
-          <ServiceCard
-            key={srv.id}
-            name={srv.name}
-            priceFormatted={formatCurrency(srv.price)}
-            duration={`${srv.durationMinutes} min`}
-            imageUrl={srv.image || '/images/service_image.png'}
-            iconType={srv.iconType}
-            onClick={() => onServiceSelect && onServiceSelect(srv)}
-          />
-        ))}
-      </div>
+      {services.length === 0 ? (
+        <div className="px-6">
+          <div className="bg-[#151515] border border-white/5 rounded-2xl p-6 text-center space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-[#1C1C1C] text-[#D4AF37] flex items-center justify-center mx-auto">
+              <Scissors className="w-5 h-5" />
+            </div>
+            <p className="text-xs font-semibold text-white/70">
+              Nenhum serviço disponível no catálogo no momento.
+            </p>
+            <p className="text-[11px] text-white/40">
+              Entre em contato conosco ou tente novamente mais tarde.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-3 overflow-x-auto px-6 pb-3 pt-1 scrollbar-none snap-x snap-mandatory">
+          {services.map((srv, idx) => (
+            <ServiceCard
+              key={srv.id}
+              name={srv.name}
+              priceFormatted={formatCurrency(srv.price)}
+              duration={`${srv.durationMinutes} min`}
+              imageUrl={srv.image || '/images/service_image.png'}
+              iconType={idx === 0 ? 'scissors' : idx === 1 ? 'beard' : idx === 2 ? 'star' : 'smile'}
+              onClick={() => onServiceSelect && onServiceSelect(srv)}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
