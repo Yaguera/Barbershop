@@ -1,11 +1,9 @@
-import { getToken } from 'next-auth/jwt';
-import type { NextRequest } from 'next/server';
+import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
-export async function proxy(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET, secureCookie: req.nextUrl.protocol === 'https:' });
-  const isLoggedIn = !!token;
-  const userRole = token?.role;
+const authProxy = auth((req) => {
+  const isLoggedIn = !!req.auth?.user;
+  const userRole = req.auth?.user?.role;
 
   const url = req.nextUrl;
   const isAdminRoute = url.pathname.startsWith('/admin');
@@ -32,7 +30,10 @@ export async function proxy(req: NextRequest) {
   }
 
   return NextResponse.next();
-}
+});
+
+export const proxy = authProxy;
+export default authProxy;
 
 export const config = {
   matcher: [

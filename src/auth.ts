@@ -115,7 +115,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
     async redirect({ url, baseUrl }) {
-      return safeRedirect(url, process.env.AUTH_URL || process.env.NEXTAUTH_URL || baseUrl);
+      let effectiveBaseUrl = baseUrl;
+      const configuredUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL;
+      if (configuredUrl && !configuredUrl.includes('localhost')) {
+        effectiveBaseUrl = configuredUrl;
+      } else if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+        effectiveBaseUrl = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+      } else if (process.env.VERCEL_URL) {
+        effectiveBaseUrl = `https://${process.env.VERCEL_URL}`;
+      } else if (process.env.NODE_ENV === 'production' && effectiveBaseUrl.includes('localhost')) {
+        effectiveBaseUrl = 'https://barbeariajosecarlos-chi.vercel.app';
+      }
+
+      return safeRedirect(url, effectiveBaseUrl);
     },
   },
   pages: {
