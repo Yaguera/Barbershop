@@ -5,7 +5,7 @@ import { uploadProfileImageAction } from '@/app/actions/upload-actions';
 import { BottomNavigation } from '@/components/lux/BottomNavigation';
 import { Header } from '@/components/lux/Header';
 import { compressImageClient } from '@/utils/compress-image';
-import { AlertCircle,CheckCircle2,Image as ImageIcon,Key,Loader2,Lock,Mail,Phone,Save,Sparkles,UploadCloud,User } from 'lucide-react';
+import { AlertCircle,CheckCircle2,Eye,EyeOff,Image as ImageIcon,Key,Loader2,Lock,Mail,Phone,Save,Sparkles,UploadCloud,User } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -51,6 +51,8 @@ export default function ProfilePage() {
   // Password fields
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -307,6 +309,7 @@ export default function ProfilePage() {
                   <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
                     type="text"
+                    autoComplete="name"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -322,6 +325,7 @@ export default function ProfilePage() {
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
                     type="email"
+                    autoComplete="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -338,7 +342,8 @@ export default function ProfilePage() {
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                   <input
-                    type="text"
+                    type="tel"
+                    autoComplete="tel"
                     value={phone}
                     onChange={handlePhoneChange}
                     placeholder="+55 11 99999-9999"
@@ -363,12 +368,21 @@ export default function ProfilePage() {
                   <div className="relative">
                     <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                     <input
-                      type="password"
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="Sua senha atual"
-                      className="w-full pl-11 pr-4 py-3 bg-[#1C1C1C] border border-white/10 rounded-2xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:outline-none text-sm font-medium transition-colors"
+                      className="w-full pl-11 pr-11 py-3 bg-[#1C1C1C] border border-white/10 rounded-2xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:outline-none text-sm font-medium transition-colors"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      aria-label={showCurrentPassword ? 'Ocultar senha atual' : 'Exibir senha atual'}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors focus:outline-none"
+                    >
+                      {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -377,12 +391,21 @@ export default function ProfilePage() {
                   <div className="relative">
                     <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                     <input
-                      type="password"
+                      type={showNewPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Mínimo 6 caracteres"
-                      className="w-full pl-11 pr-4 py-3 bg-[#1C1C1C] border border-white/10 rounded-2xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:outline-none text-sm font-medium transition-colors"
+                      className="w-full pl-11 pr-11 py-3 bg-[#1C1C1C] border border-white/10 rounded-2xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:outline-none text-sm font-medium transition-colors"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      aria-label={showNewPassword ? 'Ocultar nova senha' : 'Exibir nova senha'}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors focus:outline-none"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               </div>
