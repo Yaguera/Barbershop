@@ -1,343 +1,500 @@
 'use client';
 
-import { getBarberAppointmentsAction,getBarberMetricsDetailedAction } from '@/app/actions/appointment-actions';
+import { getBarberAppointmentsAction, getBarberMetricsDetailedAction } from '@/app/actions/appointment-actions';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
+import { getYYYYMMDD } from '@/core/utils/date-utils';
 import {
-Calendar,
-CheckCircle2,
-ChevronRight,
-Clock,
-DollarSign,
-Quote,
-RefreshCw,
-ShieldCheck,
-Sparkles,
-Star,
-TrendingUp
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  DollarSign,
+  RefreshCw,
+  TrendingUp,
+  User,
+  Wallet,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect,useEffectEvent,useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-interface ReviewItem {
+interface BarberAppointmentItem {
   id: string;
-  name: string;
-  date: string;
-  stars: number;
-  comment: string;
-  avatar?: string;
+  startTime: string | Date;
+  endTime: string | Date;
+  status: string;
+  clientName: string;
+  clientEmail?: string | null;
+  clientImage?: string | null;
+  serviceName: string;
+  servicePrice: number;
 }
-
-const mockReviews: ReviewItem[] = [
-  {
-    id: 'rev-1',
-    name: 'Dr. Roberto Mendonça',
-    date: 'Ontem',
-    stars: 5,
-    comment: 'Atendimento de altíssimo padrão! Corte impecável e pontualidade britânica. Melhor barbearia da cidade.'
-  },
-  {
-    id: 'rev-2',
-    name: 'Fernando Vasconcelos',
-    date: 'Há 3 dias',
-    stars: 5,
-    comment: 'Profissionalismo fantástico. O ambiente é extremamente elegante e o barbeiro sabe exatamente o que faz. Recomendo 100%.'
-  },
-  {
-    id: 'rev-3',
-    name: 'Lucas Sampaio',
-    date: '15 de Julho',
-    stars: 5,
-    comment: 'O ritual de barba na toalha quente foi espetacular. Acabamento perfeito e ótimo bate-papo.'
-  }
-];
 
 export default function BarberDashboardHome() {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(true);
-  const [metrics, setMetrics] = useState<{
+  const [hasError, setHasError] = useState(false);
+  const [appointments, setAppointments] = useState<BarberAppointmentItem[]>([]);
+  const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
+  const [monthMetrics, setMonthMetrics] = useState<{
     totalAppointments: number;
     totalRevenue: number;
-  }>({ totalAppointments: 0, totalRevenue: 0 });
-  const [todayCount, setTodayCount] = useState<number>(0);
-  const [barberProfileId, setBarberProfileId] = useState<string | null>(null);
+    totalCommission: number;
+  }>({ totalAppointments: 0, totalRevenue: 0, totalCommission: 0 });
 
-  const loadDashboardData = async () => {
+  const requestIdRef = useRef(0);
+
+  const loadDashboardData = useCallback(async () => {
+    const currentRequestId = ++requestIdRef.current;
+    setIsLoading(true);
+    setHasError(false);
+
     try {
-      const [metricsRes, todayRes] = await Promise.all([
+      const todayStr = getYYYYMMDD(new Date());
+      const [metricsRes, appointmentsRes] = await Promise.all([
         getBarberMetricsDetailedAction('month'),
-        getBarberAppointmentsAction(new Date().toISOString().split('T')[0])
+        getBarberAppointmentsAction(todayStr),
       ]);
 
-      if (metricsRes.success && metricsRes.report) {
-        setMetrics({
-          totalAppointments: metricsRes.report.totalAppointments,
-          totalRevenue: metricsRes.report.totalRevenue
-        });
-        if (metricsRes.barberId) setBarberProfileId(metricsRes.barberId);
-      }
+      if (currentRequestId !== requestIdRef.current) return;
 
-      if (todayRes.success && todayRes.appointments) {
-        setTodayCount(todayRes.appointments.length);
-        if (todayRes.barberId && !barberProfileId) {
-          setBarberProfileId(todayRes.barberId);
+      if (metricsRes.success && metricsRes.report) {
+        setMonthMetrics({
+          totalAppointments: metricsRes.report.totalAppointments,
+          totalRevenue: metricsRes.report.totalRevenue,
+          totalCommission: metricsRes.report.totalCommission || 0,
+        });
+        if (metricsRes.barberId) {
+          setBarberProfileId(metricsRes.barberId);
         }
       }
-    } catch (error) {
-      console.error('Erro ao carregar dados do dashboard do barbeiro:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const onLoadDashboard = useEffectEvent(loadDashboardData);
+      if (appointmentsRes.success && appointmentsRes.appointments) {
+        setAppointments(appointmentsRes.appointments as BarberAppointmentItem[]);
+        if (appointmentsRes.barberId && !barberProfileId) {
+          setBarberProfileId(appointmentsRes.barberId);
+        }
+      } else if (!appointmentsRes.success) {
+        setHasError(true);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados operacionais do barbeiro:', error);
+      if (currentRequestId === requestIdRef.current) {
+        setHasError(true);
+      }
+    } finally {
+      if (currentRequestId === requestIdRef.current) {
+        setIsLoading(false);
+      }
+    }
+  }, [barberProfileId]);
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
-    onLoadDashboard();
-  }, [session?.user]);
+    if (session?.user) {
+      loadDashboardData();
+    }
+  }, [session?.user, loadDashboardData]);
 
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
-  const userName = session?.user?.name || 'Barbeiro Master';
-  const userImage = session?.user?.image;
-  const initials = userName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
+  const formatTime = (dateInput: string | Date) => {
+    const d = new Date(dateInput);
+    return new Intl.DateTimeFormat('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    }).format(d);
+  };
+
+  const getTodayFormatted = () => {
+    const formatted = new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'America/Sao_Paulo',
+    }).format(new Date());
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
+
+  const nowMs = Date.now();
+  const sortedAppointments = [...appointments].sort(
+    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+  );
+
+  const pendingAppointments = sortedAppointments.filter((a) => a.status === 'PENDING');
+  const completedToday = sortedAppointments.filter((a) => a.status === 'COMPLETED').length;
+  const scheduledToday = pendingAppointments.length;
+
+  const pastPendingAppointments = pendingAppointments.filter(
+    (a) => new Date(a.startTime).getTime() < nowMs
+  );
+  const upcomingAppointments = pendingAppointments.filter(
+    (a) => new Date(a.startTime).getTime() >= nowMs
+  );
+
+  const nextAppointment = upcomingAppointments.length > 0 ? upcomingAppointments[0] : null;
+  const subsequentAppointments = upcomingAppointments.slice(1, 4);
+
+  const userName = session?.user?.name ? session.user.name.split(' ')[0] : 'Barbeiro';
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col selection:bg-[#D4AF37]/30 font-sans pb-24">
       <BarberNavbar barberProfileId={barberProfileId || undefined} />
 
-      <main className="flex-grow max-w-6xl mx-auto px-6 py-8 w-full space-y-10">
+      <main className="flex-grow max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-8">
         
-        {/* Header de Perfil do Barbeiro */}
-        <section className="bg-gradient-to-br from-[#151515] via-[#151515] to-[#1C1C1C] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-fade-in">
-          <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
-            <div className="flex items-center gap-5">
-              {/* Profile Image / Fallback Initials */}
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl border-2 border-[#D4AF37] p-1 bg-[#1C1C1C] shadow-[0_0_25px_rgba(212,175,55,0.25)] shrink-0 flex items-center justify-center overflow-hidden">
-                {userImage ? (
-                  <Image 
-                    src={userImage} 
-                    alt={userName} 
-                    width={96} 
-                    height={96} 
-                    className="w-full h-full object-cover rounded-2xl"
-                  />
-                ) : (
-                  <span className="text-2xl sm:text-3xl font-black text-[#D4AF37] tracking-wider">
-                    {initials}
-                  </span>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] text-xs font-black uppercase tracking-wider border border-[#D4AF37]/30">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Barbeiro Profissional</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#22C55E]/15 text-[#22C55E] text-xs font-bold border border-[#22C55E]/30">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Ativo</span>
-                  </span>
-                </div>
-                <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight pt-1">
-                  Olá, {userName}!
-                </h1>
-                <p className="text-white/60 text-xs sm:text-sm">
-                  Bem-vindo ao seu painel executivo. Confira seus desempenhos e agenda de hoje.
-                </p>
-              </div>
+        {/* Cabeçalho Operacional Contextual */}
+        <section className="bg-[#151515] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[#D4AF37] text-xs font-semibold uppercase tracking-wider">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{getTodayFormatted()}</span>
             </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Olá, {userName}
+            </h1>
+            <p className="text-xs sm:text-sm text-white/60">
+              Visão geral dos seus atendimentos do dia e resultados acumulados.
+            </p>
+          </div>
 
-            {/* Quick action button to Agenda */}
-            <div className="flex items-center gap-3 self-start sm:self-center">
-              <Link
-                href="/barber/agenda"
-                className="px-6 py-3.5 rounded-2xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-xs sm:text-sm shadow-xl hover:shadow-[#D4AF37]/20 transition-all flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5"
-              >
-                <Calendar className="w-4 h-4 stroke-[2.5]" />
-                <span>Ver Agenda Completa</span>
-                <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-              </Link>
-            </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              href="/barber/agenda"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              <Clock className="w-4 h-4 stroke-[2.5]" />
+              <span>Abrir Agenda</span>
+            </Link>
           </div>
         </section>
 
-        {/* Cards de Resumo (Mês Atual) */}
+        {/* Mensagem de Erro com Ação de Recarregamento */}
+        {hasError && (
+          <div className="bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[#EF4444]">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Não foi possível carregar os dados atualizados no momento.</span>
+            </div>
+            <button
+              type="button"
+              onClick={loadDashboardData}
+              className="px-4 py-1.5 rounded-lg bg-[#EF4444]/20 hover:bg-[#EF4444]/30 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 self-start sm:self-auto cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Tentar novamente</span>
+            </button>
+          </div>
+        )}
+
+        {/* Alerta de Atendimentos Anteriores com Pendência */}
+        {pastPendingAppointments.length > 0 && (
+          <div className="bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm text-white/90">
+              <Clock className="w-4 h-4 text-[#D4AF37] shrink-0" />
+              <span>
+                Há <strong className="text-[#D4AF37] font-semibold">{pastPendingAppointments.length}</strong> {pastPendingAppointments.length === 1 ? 'atendimento' : 'atendimentos'} de horário anterior aguardando conclusão ou atualização.
+              </span>
+            </div>
+            <Link
+              href="/barber/agenda"
+              className="px-3.5 py-1.5 rounded-lg bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold transition-colors flex items-center justify-center gap-1 self-start sm:self-auto"
+            >
+              <span>Resolver na agenda</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
+
+        {/* Bloco: Próximo Atendimento e Resumo do Dia */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Card em Destaque: Próximo Atendimento */}
+          <section className="lg:col-span-2 bg-[#151515] border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col justify-between space-y-5">
+            <div>
+              <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3 mb-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  Próximo Atendimento
+                </span>
+                <Link
+                  href="/barber/agenda"
+                  className="text-xs text-white/50 hover:text-white transition-colors flex items-center gap-1 font-medium"
+                >
+                  <span>Ver na agenda</span>
+                  <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+
+              {isLoading ? (
+                <div className="py-8 flex items-center justify-center text-white/40 gap-2 text-xs">
+                  <RefreshCw className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                  <span>Carregando próximo atendimento...</span>
+                </div>
+              ) : nextAppointment ? (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#1C1C1C] p-4 rounded-xl border border-white/5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-[#0D0D0D] border border-white/10 flex items-center justify-center shrink-0 overflow-hidden text-[#D4AF37] font-bold text-sm">
+                        {nextAppointment.clientImage ? (
+                          <Image
+                            src={nextAppointment.clientImage}
+                            alt={nextAppointment.clientName}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-5 h-5 text-white/60" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-base text-white">
+                          {nextAppointment.clientName}
+                        </h3>
+                        <p className="text-xs text-white/60">
+                          {nextAppointment.serviceName} · {formatPrice(nextAppointment.servicePrice)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                      <div className="text-sm sm:text-base font-bold text-[#D4AF37]">
+                        {formatTime(nextAppointment.startTime)} - {formatTime(nextAppointment.endTime)}
+                      </div>
+                      <span className="text-[11px] text-white/50">Horário agendado</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end">
+                    <Link
+                      href="/barber/agenda"
+                      className="px-4 py-2 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 hover:border-[#D4AF37]/40 text-xs font-semibold text-white transition-all flex items-center gap-1.5"
+                    >
+                      <span>Gerenciar na agenda</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-6 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-white/5 mx-auto flex items-center justify-center text-white/40">
+                    <CheckCircle2 className="w-5 h-5 text-white/40" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-white">
+                      {sortedAppointments.length === 0
+                        ? 'Nenhum atendimento agendado para hoje'
+                        : pendingAppointments.length === 0
+                        ? 'Todos os atendimentos de hoje foram concluídos'
+                        : 'Sem próximos atendimentos agendados hoje'}
+                    </p>
+                    <p className="text-xs text-white/50 max-w-sm mx-auto">
+                      {sortedAppointments.length === 0
+                        ? 'Os horários marcados pelos clientes para o dia de hoje aparecerão aqui.'
+                        : 'Você pode verificar seu histórico ou conferir outros dias na agenda.'}
+                    </p>
+                  </div>
+                  <Link
+                    href="/barber/agenda"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-xs font-semibold text-white/90 hover:text-white transition-all"
+                  >
+                    <span>Ver agenda completa</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Fila curta dos próximos do dia (se houver mais de um) */}
+            {subsequentAppointments.length > 0 && (
+              <div className="border-t border-white/10 pt-4 space-y-2.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white/50 block">
+                  A seguir hoje
+                </span>
+                <div className="space-y-2">
+                  {subsequentAppointments.map((app) => (
+                    <div
+                      key={app.id}
+                      className="flex items-center justify-between p-2.5 rounded-lg bg-[#1C1C1C]/60 border border-white/5 text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="font-semibold text-[#D4AF37] shrink-0">
+                          {formatTime(app.startTime)}
+                        </span>
+                        <span className="text-white font-medium truncate">
+                          {app.clientName}
+                        </span>
+                        <span className="text-white/40 hidden sm:inline truncate">
+                          · {app.serviceName}
+                        </span>
+                      </div>
+                      <span className="text-white/60 font-medium shrink-0 ml-2">
+                        {formatPrice(app.servicePrice)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Resumo Operacional de Hoje */}
+          <section className="bg-[#151515] border border-white/10 rounded-2xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-white/60 border-b border-white/10 pb-3 mb-4">
+                Operação de Hoje
+              </h2>
+
+              <div className="space-y-3">
+                <div className="bg-[#1C1C1C] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs text-white/60 font-medium">Agendados restantes</span>
+                    <div className="text-2xl font-bold text-white">
+                      {isLoading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-white/40 my-1" />
+                      ) : (
+                        scheduledToday
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                </div>
+
+                <div className="bg-[#1C1C1C] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs text-white/60 font-medium">Concluídos hoje</span>
+                    <div className="text-2xl font-bold text-white">
+                      {isLoading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-white/40 my-1" />
+                      ) : (
+                        completedToday
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-[#22C55E]/10 text-[#22C55E] flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                </div>
+
+                <div className="bg-[#1C1C1C] p-3.5 rounded-xl border border-white/5 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs text-white/60 font-medium">Total programado</span>
+                    <div className="text-2xl font-bold text-white">
+                      {isLoading ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-white/40 my-1" />
+                      ) : (
+                        appointments.length
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-white/5 text-white/70 flex items-center justify-center">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Link
+              href="/barber/agenda"
+              className="w-full py-2.5 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-xs font-semibold text-white/90 hover:text-white transition-all text-center block"
+            >
+              Ver agenda do dia
+            </Link>
+          </section>
+
+        </div>
+
+        {/* Resumo Financeiro e Desempenho do Mês */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-              <TrendingUp className="w-5 h-5 text-[#D4AF37]" />
+            <h2 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
               <span>Resumo do Mês Atual</span>
             </h2>
             <Link 
               href="/barber/metricas" 
-              className="text-xs text-[#D4AF37] hover:underline font-bold flex items-center gap-1"
+              className="text-xs text-[#D4AF37] hover:underline font-semibold flex items-center gap-1"
             >
-              <span>Relatórios Detalhados</span>
+              <span>Ver análises</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Card 1: Total de Atendimentos */}
-            <div className="bg-[#151515] hover:bg-[#1C1C1C] border border-white/10 rounded-3xl p-6 shadow-2xl transition-all relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#22C55E]/5 rounded-full blur-2xl group-hover:bg-[#22C55E]/10 transition-all pointer-events-none" />
-              
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/50 block">
-                    Total de Atendimentos
-                  </span>
-                  <div className="text-3xl sm:text-4xl font-black text-white mt-2 tracking-tight">
-                    {isLoading ? (
-                      <RefreshCw className="w-6 h-6 animate-spin text-white/40 my-2" />
-                    ) : (
-                      metrics.totalAppointments
-                    )}
-                  </div>
-                  <p className="text-xs text-[#22C55E] font-semibold mt-2 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Serviços com status Finalizado</span>
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-[#22C55E]/15 text-[#22C55E] flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-6 h-6 stroke-[2]" />
-                </div>
-              </div>
-            </div>
-
-            {/* Card 2: Faturamento Acumulado */}
-            <div className="bg-[#151515] hover:bg-[#1C1C1C] border border-white/10 rounded-3xl p-6 shadow-2xl transition-all relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/10 rounded-full blur-2xl group-hover:bg-[#D4AF37]/15 transition-all pointer-events-none" />
-              
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/50 block">
-                    Faturamento Acumulado
-                  </span>
-                  <div className="text-3xl sm:text-4xl font-black text-[#D4AF37] mt-2 tracking-tight">
-                    {isLoading ? (
-                      <RefreshCw className="w-6 h-6 animate-spin text-[#D4AF37]/60 my-2" />
-                    ) : (
-                      formatPrice(metrics.totalRevenue)
-                    )}
-                  </div>
-                  <p className="text-xs text-white/60 font-medium mt-2">
-                    Soma total dos serviços realizados no mês
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center shrink-0">
-                  <DollarSign className="w-6 h-6 stroke-[2]" />
-                </div>
-              </div>
-            </div>
-
-            {/* Card 3: Atendimentos Hoje */}
-            <div className="bg-[#151515] hover:bg-[#1C1C1C] border border-white/10 rounded-3xl p-6 shadow-2xl transition-all relative overflow-hidden group sm:col-span-2 lg:col-span-1">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all pointer-events-none" />
-              
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-widest text-white/50 block">
-                    Atendimentos Hoje
-                  </span>
-                  <div className="text-3xl sm:text-4xl font-black text-white mt-2 tracking-tight">
-                    {isLoading ? (
-                      <RefreshCw className="w-6 h-6 animate-spin text-white/40 my-2" />
-                    ) : (
-                      todayCount
-                    )}
-                  </div>
-                  <p className="text-xs text-white/60 font-medium mt-2 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                    <span>Clientes agendados para a data atual</span>
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-2xl bg-white/10 text-white flex items-center justify-center shrink-0">
-                  <Calendar className="w-6 h-6 stroke-[2]" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Seção de Avaliações (Mock/Simulação) */}
-        <section className="bg-[#151515] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
-            <div>
-              <div className="flex items-center gap-2">
-                <Star className="w-4 h-4 text-[#D4AF37] fill-[#D4AF37]" />
-                <span className="text-xs font-bold uppercase tracking-widest text-[#D4AF37]">
-                  Demonstração (Mockup)
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            
+            {/* Card 1: Atendimentos Concluídos no Mês */}
+            <div className="bg-[#151515] border border-white/10 rounded-2xl p-5 shadow-md flex items-start justify-between">
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50 block">
+                  Concluídos no Mês
                 </span>
+                <div className="text-2xl sm:text-3xl font-bold text-white">
+                  {isLoading ? (
+                    <RefreshCw className="w-5 h-5 animate-spin text-white/40 my-1" />
+                  ) : (
+                    monthMetrics.totalAppointments
+                  )}
+                </div>
+                <p className="text-[11px] text-white/50">
+                  Serviços finalizados no período
+                </p>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
-                Avaliações de Clientes (Exemplo)
-              </h2>
-              <p className="text-xs text-white/50 mt-0.5">
-                Exemplos ilustrativos de feedbacks para demonstração da plataforma.
-              </p>
+              <div className="w-10 h-10 rounded-xl bg-[#22C55E]/10 text-[#22C55E] flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
             </div>
 
-            {/* Média Simulação Card */}
-            <div className="flex items-center gap-4 bg-[#1C1C1C] border border-white/10 px-5 py-3 rounded-2xl">
-              <div className="text-3xl font-black text-[#D4AF37] tracking-tighter">
-                4.8
-              </div>
-              <div className="space-y-0.5 border-l border-white/10 pl-4">
-                <div className="flex items-center text-[#D4AF37]">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="w-4 h-4 fill-[#D4AF37]" />
-                  ))}
-                </div>
-                <span className="text-[11px] text-white/60 font-medium block">
-                  Exemplo de 142 avaliações ilustrativas
+            {/* Card 2: Comissão Estimada */}
+            <div className="bg-[#151515] border border-white/10 rounded-2xl p-5 shadow-md flex items-start justify-between">
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50 block">
+                  Comissão Calculada
                 </span>
+                <div className="text-2xl sm:text-3xl font-bold text-[#D4AF37]">
+                  {isLoading ? (
+                    <RefreshCw className="w-5 h-5 animate-spin text-[#D4AF37]/60 my-1" />
+                  ) : (
+                    formatPrice(monthMetrics.totalCommission)
+                  )}
+                </div>
+                <p className="text-[11px] text-white/50">
+                  Sua comissão acumulada
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center shrink-0">
+                <Wallet className="w-5 h-5" />
               </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-            {mockReviews.map((rev) => (
-              <div
-                key={rev.id}
-                className="bg-[#1C1C1C]/80 hover:bg-[#1C1C1C] border border-white/5 rounded-2xl p-6 transition-all flex flex-col justify-between space-y-4 relative group"
-              >
-                <Quote className="w-8 h-8 text-[#D4AF37]/15 absolute top-4 right-4 pointer-events-none group-hover:text-[#D4AF37]/30 transition-all" />
-                
-                <div className="space-y-3 relative z-10">
-                  <div className="flex items-center gap-1 text-[#D4AF37]">
-                    {Array.from({ length: rev.stars }).map((_, idx) => (
-                      <Star key={idx} className="w-3.5 h-3.5 fill-[#D4AF37]" />
-                    ))}
-                  </div>
-                  <p className="text-xs sm:text-sm text-white/80 leading-relaxed italic">
-                    &ldquo;{rev.comment}&rdquo;
-                  </p>
+            {/* Card 3: Faturamento Bruto */}
+            <div className="bg-[#151515] border border-white/10 rounded-2xl p-5 shadow-md flex items-start justify-between">
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-white/50 block">
+                  Faturamento Total
+                </span>
+                <div className="text-2xl sm:text-3xl font-bold text-white">
+                  {isLoading ? (
+                    <RefreshCw className="w-5 h-5 animate-spin text-white/40 my-1" />
+                  ) : (
+                    formatPrice(monthMetrics.totalRevenue)
+                  )}
                 </div>
-
-                <div className="flex items-center gap-3 pt-3 border-t border-white/5 relative z-10">
-                  <div className="w-9 h-9 rounded-full bg-[#151515] border border-white/10 flex items-center justify-center text-xs font-black text-[#D4AF37]">
-                    {rev.name.substring(0, 2).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-xs font-bold text-white truncate">{rev.name}</h4>
-                    <span className="text-[10px] text-white/40 block">{rev.date}</span>
-                  </div>
-                </div>
+                <p className="text-[11px] text-white/50">
+                  Receita total dos serviços
+                </p>
               </div>
-            ))}
+              <div className="w-10 h-10 rounded-xl bg-white/5 text-white/80 flex items-center justify-center shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+            </div>
+
           </div>
         </section>
 
