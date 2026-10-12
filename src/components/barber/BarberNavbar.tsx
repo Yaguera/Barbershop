@@ -1,8 +1,13 @@
 'use client';
 
-import { getNotificationsAction,markAllAsReadAction,markAsReadAction } from '@/app/actions/notification-actions';
+import {
+  getNotificationsAction,
+  markAllAsReadAction,
+  markAsReadAction,
+} from '@/app/actions/notification-actions';
 import { BarberBottomNavigation } from '@/components/barber/BarberBottomNavigation';
 import {
+  AlertCircle,
   AlertTriangle,
   BarChart3,
   Bell,
@@ -11,14 +16,15 @@ import {
   Clock,
   LayoutDashboard,
   LogOut,
+  RefreshCw,
   Settings,
-  Sparkles
+  Sparkles,
 } from 'lucide-react';
-import { signOut,useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect,useEffectEvent,useRef,useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 interface NotificationItem {
   id: string;
@@ -40,15 +46,28 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifLoading, setIsNotifLoading] = useState(false);
+  const [notifError, setNotifError] = useState<string | null>(null);
 
   const navRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
     if (!session?.user) return;
-    const res = await getNotificationsAction();
-    if (res.success && res.notifications) {
-      setNotifications(res.notifications as NotificationItem[]);
-      setUnreadCount(res.unreadCount || 0);
+    setIsNotifLoading(true);
+    setNotifError(null);
+
+    try {
+      const res = await getNotificationsAction();
+      if (res.success && res.notifications) {
+        setNotifications(res.notifications as NotificationItem[]);
+        setUnreadCount(res.unreadCount || 0);
+      } else {
+        setNotifError(res.error || 'Erro ao carregar notificações.');
+      }
+    } catch {
+      setNotifError('Falha de comunicação ao buscar notificações.');
+    } finally {
+      setIsNotifLoading(false);
     }
   };
 
@@ -69,7 +88,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
     }
   }, [session?.user]);
 
-  // Close dropdowns when clicking outside
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
@@ -81,46 +100,109 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Fechar dropdowns ao pressionar Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsNotificationsOpen(false);
+        setIsAccountMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Reversão otimista se a marcação falhar no backend
   const handleMarkAsRead = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const previousNotifications = [...notifications];
+    const previousUnread = unreadCount;
+
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     setUnreadCount((prev) => Math.max(0, prev - 1));
-    await markAsReadAction(id);
+
+    try {
+      const res = await markAsReadAction(id);
+      if (!res.success) {
+        setNotifications(previousNotifications);
+        setUnreadCount(previousUnread);
+      }
+    } catch {
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnread);
+    }
   };
 
   const handleMarkAllAsRead = async () => {
+    const previousNotifications = [...notifications];
+    const previousUnread = unreadCount;
+
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
-    await markAllAsReadAction();
+
+    try {
+      const res = await markAllAsReadAction();
+      if (!res.success) {
+        setNotifications(previousNotifications);
+        setUnreadCount(previousUnread);
+      }
+    } catch {
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnread);
+    }
   };
 
   const formatNotifTime = (dateStr: string | Date) => {
     const d = new Date(dateStr);
-    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const now = new Date();
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+
+    const timeStr = d.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    });
+
+    if (isToday) {
+      return timeStr;
+    }
+
+    const dateStrFormatted = d.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    });
+
+    return `${dateStrFormatted} às ${timeStr}`;
   };
 
-  const userName = session?.user?.name || 'Barbeiro Profissional';
-  const userEmail = session?.user?.email || 'barbeiro@vip.com';
+  const userName = session?.user?.name || 'Barbeiro';
+  const userEmail = session?.user?.email || '';
   const userImage = session?.user?.image;
   const initials = userName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
+    ? userName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase()
+    : 'B';
 
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/95 backdrop-blur-xl text-white">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between" ref={navRef}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between" ref={navRef}>
           {/* Logo / Brand */}
           <Link href="/barber/dashboard" className="flex items-center gap-3">
-            <Image 
-              src="/logo.png" 
-              alt="Barber Logo" 
-              width={36} 
-              height={36} 
-              className="w-9 h-9 rounded-full border border-[#D4AF37]/40 object-cover shadow-lg" 
+            <Image
+              src="/logo.png"
+              alt="Barber Logo"
+              width={36}
+              height={36}
+              className="w-9 h-9 rounded-full border border-[#D4AF37]/40 object-cover shadow-lg"
             />
             <div className="flex flex-col">
               <span className="text-[10px] font-bold tracking-[0.2em] text-[#D4AF37] uppercase leading-none">
@@ -132,12 +214,12 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
             </div>
           </Link>
 
-          {/* Right Area: Links + Notifications + Profile Dropdown */}
-          <div className="flex items-center gap-3 relative">
+          {/* Área Direita: Links + Notificações + Dropdown de Perfil */}
+          <div className="flex items-center gap-2 sm:gap-3 relative">
             <div className="hidden md:flex items-center gap-1.5 mr-2 pr-4 border-r border-white/10">
               <Link
                 href="/barber/dashboard"
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   pathname === '/barber/dashboard'
                     ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
                     : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
@@ -148,7 +230,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
               </Link>
               <Link
                 href="/barber/agenda"
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   pathname?.startsWith('/barber/agenda')
                     ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
                     : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
@@ -159,7 +241,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
               </Link>
               <Link
                 href="/barber/metricas"
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
                   pathname?.startsWith('/barber/metricas')
                     ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
                     : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
@@ -170,7 +252,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
               </Link>
             </div>
 
-            {/* Notification Bell */}
+            {/* Sino de Notificações com Badge Estático Limpo e Acessível */}
             <button
               type="button"
               onClick={() => {
@@ -179,30 +261,32 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                 if (!isNotificationsOpen) fetchNotifications();
               }}
               className="p-2 rounded-full text-white/70 hover:text-white hover:bg-[#151515] transition-all relative cursor-pointer"
-              aria-label="Notificações do Barbeiro"
+              aria-label={unreadCount > 0 ? `${unreadCount} notificações não lidas` : 'Notificações'}
+              aria-expanded={isNotificationsOpen}
             >
               <Bell className="w-5 h-5 stroke-[2]" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 px-1.5 min-w-[16px] h-4 rounded-full bg-[#D4AF37] text-[#0D0D0D] text-[10px] font-black flex items-center justify-center animate-pulse shadow-md">
+                <span className="absolute top-1 right-1 px-1.5 min-w-[16px] h-4 rounded-full bg-[#D4AF37] text-[#0D0D0D] text-[10px] font-black flex items-center justify-center shadow-md">
                   {unreadCount}
                 </span>
               )}
             </button>
 
-            {/* Notifications Dropdown */}
+            {/* Dropdown de Notificações com Tratamento de Erro e Dimensão Segura */}
             {isNotificationsOpen && (
-              <div className="absolute right-0 top-14 w-80 sm:w-96 bg-[#151515] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
+              <div className="absolute right-0 top-14 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] bg-[#151515] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#1C1C1C]">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-[#D4AF37]" />
                     <span className="text-xs font-bold text-white uppercase tracking-wider">
-                      Alertas do Profissional
+                      Notificações
                     </span>
                   </div>
                   {unreadCount > 0 && (
                     <button
+                      type="button"
                       onClick={handleMarkAllAsRead}
-                      className="text-[11px] text-[#D4AF37] hover:underline font-semibold flex items-center gap-1"
+                      className="text-[11px] text-[#D4AF37] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                     >
                       <CheckCheck className="w-3.5 h-3.5" /> Ler todas
                     </button>
@@ -210,7 +294,26 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                 </div>
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-white/5 selection:bg-[#D4AF37]/30">
-                  {notifications.length === 0 ? (
+                  {isNotifLoading && notifications.length === 0 ? (
+                    <div className="p-8 flex items-center justify-center text-white/50 gap-2 text-xs">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#D4AF37]" />
+                      <span>Carregando notificações...</span>
+                    </div>
+                  ) : notifError ? (
+                    <div className="p-6 text-center space-y-2">
+                      <div className="flex items-center justify-center gap-1.5 text-xs text-[#EF4444]">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{notifError}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={fetchNotifications}
+                        className="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-white/80 transition-colors cursor-pointer"
+                      >
+                        Tentar novamente
+                      </button>
+                    </div>
+                  ) : notifications.length === 0 ? (
                     <div className="p-8 text-center text-white/40 text-xs">
                       Nenhum alerta de atendimento por enquanto.
                     </div>
@@ -250,8 +353,9 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                           </p>
                           {!notif.read && (
                             <button
+                              type="button"
                               onClick={(e) => handleMarkAsRead(notif.id, e)}
-                              className="mt-2 text-[10px] text-[#D4AF37] hover:underline font-bold flex items-center gap-1"
+                              className="mt-2 text-[10px] text-[#D4AF37] hover:underline font-bold flex items-center gap-1 cursor-pointer"
                             >
                               <Check className="w-3 h-3" /> Marcar como lida
                             </button>
@@ -264,15 +368,17 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
               </div>
             )}
 
-            {/* Profile Photo / Account Menu Trigger */}
+            {/* Gatilho do Menu da Conta */}
             <div className="relative">
               <button
+                type="button"
                 onClick={() => {
                   setIsAccountMenuOpen(!isAccountMenuOpen);
                   setIsNotificationsOpen(false);
                 }}
                 className="w-10 h-10 rounded-full bg-[#1C1C1C] border-2 border-white/10 hover:border-[#D4AF37] overflow-hidden flex items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
                 aria-label="Opções da conta"
+                aria-expanded={isAccountMenuOpen}
               >
                 {userImage ? (
                   <Image
@@ -283,17 +389,17 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-xs font-black text-[#D4AF37]">
+                  <span className="text-xs font-bold text-[#D4AF37]">
                     {initials}
                   </span>
                 )}
               </button>
 
-              {/* Account Dropdown Menu */}
+              {/* Menu Suspenso da Conta */}
               {isAccountMenuOpen && (
-                <div className="absolute right-0 top-14 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-[#151515] border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 overflow-hidden animate-fade-in">
+                <div className="absolute right-0 top-14 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-[#151515] border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 overflow-hidden animate-fade-in">
                   
-                  {/* Account Header */}
+                  {/* Cabeçalho da Conta */}
                   <div className="p-5 bg-gradient-to-b from-[#1C1C1C] to-[#151515] border-b border-white/10 flex flex-col items-center text-center">
                     <div className="w-14 h-14 rounded-full border-2 border-[#D4AF37] p-0.5 bg-[#0D0D0D] mb-2.5 shadow-md overflow-hidden flex items-center justify-center">
                       {userImage ? (
@@ -313,12 +419,14 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                     <span className="font-bold text-sm text-white truncate max-w-full">
                       {userName}
                     </span>
-                    <span className="text-xs text-white/50 truncate max-w-full mt-0.5">
-                      {userEmail}
-                    </span>
+                    {userEmail && (
+                      <span className="text-xs text-white/50 truncate max-w-full mt-0.5">
+                        {userEmail}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Options List */}
+                  {/* Lista de Destinos */}
                   <div className="p-2 space-y-1">
                     <Link
                       href="/barber/dashboard"
@@ -353,15 +461,21 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                       className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
                     >
                       <Settings className="w-4 h-4 text-[#D4AF37]" />
-                      <span>Configurações do Perfil</span>
+                      <span>Configurações da Conta</span>
                     </Link>
                   </div>
 
-                  {/* Sign Out Footer */}
+                  {/* Rodapé de Encerramento de Sessão */}
                   <div className="p-2 border-t border-white/10 bg-[#1C1C1C]/40">
                     <button
-                      onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-xs font-extrabold bg-[#EF4444]/10 hover:bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 transition-all cursor-pointer"
+                      type="button"
+                      onClick={() =>
+                        signOut({
+                          callbackUrl:
+                            typeof window !== 'undefined' ? window.location.origin : '/',
+                        })
+                      }
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#EF4444]/10 hover:bg-[#EF4444]/20 text-[#EF4444] border border-[#EF4444]/30 transition-all cursor-pointer"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Sair da Conta</span>
@@ -375,7 +489,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
         </div>
       </header>
 
-      {/* Bottom Navigation for Mobile / Tablet */}
+      {/* Navegação Inferior para Mobile */}
       <BarberBottomNavigation barberProfileId={barberProfileId} />
     </>
   );

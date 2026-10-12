@@ -10,6 +10,7 @@ import {
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface BarberBottomNavigationProps {
   barberProfileId?: string;
@@ -19,6 +20,7 @@ export function BarberBottomNavigation({}: BarberBottomNavigationProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [avatarError, setAvatarError] = useState(false);
 
   const isCurrent = (path: string) => {
     if (path === '/barber/dashboard') {
@@ -77,13 +79,14 @@ export function BarberBottomNavigation({}: BarberBottomNavigationProps = {}) {
               type="button"
               onClick={() => router.push(item.path)}
               aria-label={item.label}
+              aria-current={isActive ? 'page' : undefined}
               className={`flex flex-col items-center justify-center gap-1 py-1 transition-all duration-200 cursor-pointer ${
                 isActive
                   ? 'text-[#D4AF37]'
-                  : 'text-white/50 hover:text-white'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
-              {item.isUser && userImage ? (
+              {item.isUser && userImage && !avatarError ? (
                 <div
                   className={`w-5 h-5 rounded-full overflow-hidden border transition-all ${
                     isActive ? 'border-[#D4AF37] ring-1 ring-[#D4AF37]' : 'border-white/20'
@@ -94,13 +97,14 @@ export function BarberBottomNavigation({}: BarberBottomNavigationProps = {}) {
                     alt={userName}
                     width={20}
                     height={20}
+                    onError={() => setAvatarError(true)}
                     className="w-full h-full object-cover"
                   />
                 </div>
               ) : (
                 <Icon className={`w-5 h-5 stroke-[2] ${isActive ? 'text-[#D4AF37]' : ''}`} />
               )}
-              <span className={`text-[10px] tracking-tight ${isActive ? 'font-bold' : 'font-medium'}`}>
+              <span className={`text-[11px] tracking-tight ${isActive ? 'font-bold' : 'font-medium'}`}>
                 {item.label}
               </span>
             </button>
@@ -110,4 +114,3 @@ export function BarberBottomNavigation({}: BarberBottomNavigationProps = {}) {
     </motion.nav>
   );
 }
-
