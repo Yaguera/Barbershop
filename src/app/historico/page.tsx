@@ -7,6 +7,8 @@ import { CheckCircle2,Clock,RotateCcw,Scissors,Sparkles,XCircle } from 'lucide-r
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HistoricoPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const session = await auth();
 

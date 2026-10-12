@@ -2,7 +2,9 @@ import { GetBarberAvailabilityUseCase } from '@/core/usecases/GetBarberAvailabil
 import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
 import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
 import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
-import { NextRequest,NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,

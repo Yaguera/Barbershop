@@ -8,6 +8,8 @@ import { Calendar as CalendarIcon,Scissors,Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AgendaPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const session = await auth();
 

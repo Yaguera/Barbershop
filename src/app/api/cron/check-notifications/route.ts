@@ -1,6 +1,9 @@
 import { processReminders } from '@/infra/notifications/process-reminders';
 import { timingSafeEqual } from 'node:crypto';
+
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return Response.json({ error: 'Agendador não configurado.' }, { status: 503 });
