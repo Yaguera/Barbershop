@@ -3,17 +3,16 @@
 import { getNotificationsAction,markAllAsReadAction,markAsReadAction } from '@/app/actions/notification-actions';
 import { BarberBottomNavigation } from '@/components/barber/BarberBottomNavigation';
 import {
-AlertTriangle,
-BarChart3,
-Bell,
-CalendarCheck,
-Check,
-CheckCheck,
-Clock,
-LayoutDashboard,
-LogOut,
-Settings,
-Sparkles
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  Check,
+  CheckCheck,
+  Clock,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Sparkles
 } from 'lucide-react';
 import { signOut,useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -57,7 +56,6 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
 
   useEffect(() => {
     if (session?.user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
       onEffectfetchNotifications();
       const interval = setInterval(onEffectfetchNotifications, 15000);
       const handleFocus = () => onEffectfetchNotifications();

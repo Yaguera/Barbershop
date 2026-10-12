@@ -6,7 +6,6 @@ import type { BarberDetailedMetricsReport } from '@/core/domain/repositories/App
 import {
   AlertCircle,
   Calendar,
-  CheckCircle2,
   DollarSign,
   PieChart as PieChartIcon,
   RefreshCw,

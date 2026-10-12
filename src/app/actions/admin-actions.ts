@@ -10,7 +10,6 @@ import { GetBarberPerformanceUseCase } from '@/core/usecases/GetBarberPerformanc
 import { GetClientManagementDashboardUseCase } from '@/core/usecases/GetClientManagementDashboardUseCase';
 import { GetFinanceDashboardUseCase } from '@/core/usecases/GetFinanceDashboardUseCase';
 import { RegisterBarberUseCase } from '@/core/usecases/RegisterBarberUseCase';
-import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
 import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
 import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
@@ -124,7 +123,6 @@ export async function getBarberMetricsAction(
       return { success: false, error: 'Perfil de barbeiro não encontrado para este usuário.' };
     }
 
-    const appointmentRepo = new PrismaAppointmentRepository();
     const useCase = new GetBarberPerformanceUseCase(new PrismaAppointmentReportRepository());
 
     const report = await useCase.execute({
@@ -149,7 +147,6 @@ export async function getFinanceDashboardAction(period?: 'today' | 'week' | 'mon
       return { success: false, error: 'Acesso negado. Apenas administradores.' };
     }
 
-    const appointmentRepo = new PrismaAppointmentRepository();
     const useCase = new GetFinanceDashboardUseCase(new PrismaAppointmentReportRepository());
 
     const report = await useCase.execute({
@@ -219,7 +216,6 @@ export async function getAdminDashboardAnalyticsAction(
 
     const { startDate, endDate } = reportPeriod(period);
 
-    const appointmentRepo = new PrismaAppointmentRepository();
     const useCase = new GetAdminDashboardMetricsUseCase(new PrismaAppointmentReportRepository());
 
     const report = await useCase.execute({
@@ -245,7 +241,6 @@ export async function getAdminCalendarMetricsAction(year: number, month?: number
       return { success: false, error: 'Não autorizado.' };
     }
 
-    const appointmentRepo = new PrismaAppointmentRepository();
     const useCase = new GetAdminCalendarMetricsUseCase(new PrismaAppointmentReportRepository());
     const result = await useCase.execute({ year, month, day });
 

@@ -15,7 +15,7 @@ interface BarberBottomNavigationProps {
   barberProfileId?: string;
 }
 
-export function BarberBottomNavigation({ barberProfileId }: BarberBottomNavigationProps) {
+export function BarberBottomNavigation({}: BarberBottomNavigationProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();

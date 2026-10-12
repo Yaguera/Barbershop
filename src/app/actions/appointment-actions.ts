@@ -174,8 +174,6 @@ export async function getBarberAppointmentsAction(dateStr?: string) {
     }
 
     const barberRepo = new PrismaBarberRepository();
-    const appointmentRepo = new PrismaAppointmentRepository();
-    const serviceRepo = new PrismaServiceRepository();
 
     // 1. Find Barber profile linked to current user
     let barberId = '';
@@ -225,7 +223,6 @@ export async function getBarberMonthScheduleAction(year: number, month: number, 
       barberId = barber.id;
     }
 
-    const appointmentRepo = new PrismaAppointmentRepository();
     const useCase = new GetBarberMonthScheduleUseCase(new PrismaAppointmentReportRepository());
     const occupancy = await useCase.execute({ barberId, year, month });
 
@@ -300,7 +297,6 @@ export async function getAppointmentDetailsAction(appointmentId: string) {
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
-    const serviceRepo = new PrismaServiceRepository();
     const barberRepo = new PrismaBarberRepository();
 
     const appointment = await appointmentRepo.findByIdWithRelations(appointmentId);

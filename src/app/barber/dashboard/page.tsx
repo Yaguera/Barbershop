@@ -44,6 +44,8 @@ export default function BarberDashboardHome() {
     totalCommission: number;
   }>({ totalAppointments: 0, totalRevenue: 0, totalCommission: 0 });
 
+  const [referenceTime, setReferenceTime] = useState<number>(() => Date.now());
+
   const requestIdRef = useRef(0);
 
   const loadDashboardData = useCallback(async () => {
@@ -52,6 +54,7 @@ export default function BarberDashboardHome() {
     setHasError(false);
 
     try {
+      setReferenceTime(Date.now());
       const todayStr = getYYYYMMDD(new Date());
       const [metricsRes, appointmentsRes] = await Promise.all([
         getBarberMetricsDetailedAction('month'),
@@ -120,7 +123,7 @@ export default function BarberDashboardHome() {
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   };
 
-  const nowMs = Date.now();
+  const nowMs = referenceTime;
   const sortedAppointments = [...appointments].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   );
