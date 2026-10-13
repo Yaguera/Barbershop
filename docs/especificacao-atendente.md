@@ -10,6 +10,8 @@ A atendente poderá visualizar as agendas diárias de todos os barbeiros, criar 
 
 **Regra central: concluir um atendimento não significa receber seu pagamento.** O barbeiro registra o serviço como concluído; a atendente verifica o pagamento no caixa e confirma o recebimento; somente então o valor entra nas métricas de recebido do administrador. Quantidade de concluídos e valor dos serviços realizados continuam sendo indicadores operacionais separados.
 
+**Regra obrigatória de acesso ao agendamento:** o cliente comum precisa estar autenticado para confirmar e criar sua reserva. Ele pode percorrer as etapas de escolha como visitante, mas, ao chegar à finalização, deve entrar em sua conta ou realizar cadastro e autenticar-se. Somente a atendente autenticada no perfil RECEPTIONIST pode criar uma reserva manual para uma pessoa sem conta, preenchendo seu nome e demais dados necessários. Isso não é agendamento anônimo: a atendente é identificada como autora, enquanto a pessoa atendida pode não ter login.
+
 Este documento reúne e substitui as especificações anteriores da atendente e do fluxo de caixa. Base: texto fornecido pelo usuário, solicitações desta conversa e diagnóstico do código local realizado em 13/10/2026. Entidades, campos e rotas propostos ainda precisam ser implementados. Seguir os padrões visuais de [Refatoração do frontend](./refatoracao-frontend.md) e [Área do barbeiro](./redesign-area-barbeiro.md); para recebimentos, prevalecem as definições desta especificação.
 
 ## 2. Responsabilidades e escopo
@@ -19,7 +21,7 @@ Este documento reúne e substitui as especificações anteriores da atendente e 
 | Barbeiro | Consultar a própria agenda e registrar o resultado do atendimento conforme as regras existentes |
 | Atendente | Consultar agendas da equipe, criar reservas manuais, conferir pagamento no caixa e registrar recebimento |
 | Administrador | Gerenciar acessos, acompanhar operação e financeiro, e realizar correções auditáveis |
-| Cliente | Agendar pela experiência existente e consultar os próprios registros autorizados |
+| Cliente | Confirmar reserva somente após login/cadastro e autenticação; consultar os próprios registros autorizados |
 
 ### Incluído na primeira versão
 
@@ -88,7 +90,7 @@ Propor `/admin/atendentes` com lista, cadastro e desativação:
 | --- | --- | --- | --- |
 | Consultar agendas | Próprios registros autorizados | Toda a equipe, dados necessários | Sim |
 | Buscar clientes para reserva | Conforme experiência existente | Busca limitada | Sim |
-| Criar contato/reserva manual | Não nesta nova funcionalidade | Sim | Sim |
+| Criar contato/reserva manual para pessoa sem conta | Não | Sim, autenticada como RECEPTIONIST | Não; função exclusiva da atendente nesta especificação |
 | Concluir serviço | Próprios, conforme regras atuais | Não | Conforme regras atuais |
 | Ver estado financeiro do atendimento | Próprios, sem dados sensíveis de pagamento | Sim, necessário ao caixa | Sim |
 | Confirmar recebimento de concluído | Não | Sim | Sim, com mesma trilha |
@@ -100,11 +102,13 @@ Propor `/admin/atendentes` com lista, cadastro e desativação:
 
 Toda ação verifica sessão, conta ativa e autorização no servidor. Proxy e menus são camadas de navegação, não autorização suficiente. Não adicionar RECEPTIONIST indiscriminadamente às permissões de ações administrativas/profissionais existentes.
 
+Visitante e CLIENT não podem acessar criação de ClientContact ou reserva manual, nem enviando requisição diretamente. ADMIN gerencia o acesso da atendente, mas não recebe automaticamente sua permissão de agendar pessoas sem conta. A exclusividade decorre da regra solicitada pelo usuário; eventual ampliação futura exige decisão explícita.
+
 ## 6. Dados e entidades propostos
 
 ### 6.1 Cliente existente e contato sem conta
 
-Manter User para cliente autenticado. Criar ClientContact para cadastro operacional sem login:
+Manter User para cliente autenticado. Criar ClientContact para cadastro operacional sem login, preenchido exclusivamente pela atendente autenticada no fluxo manual. Não disponibilizar esse cadastro na jornada pública do cliente:
 
 | Informação | Regra proposta |
 | --- | --- |
@@ -200,7 +204,23 @@ Administrador: gerenciamento de atendentes e indicadores separados de realizado,
 
 Barbeiro: continua concluindo o serviço, vê situação de pagamento dos próprios atendimentos e não confirma recebimento. Aviso de pagamento pendente não significa serviço não realizado.
 
-## 9. Fluxo A — agendamento manual
+## 9. Fluxos de reserva: autenticação e agendamento manual
+
+### 9.1 Cliente comum — login obrigatório antes de confirmar
+
+1. Visitante pode consultar e escolher serviço, profissional e horário, conforme a experiência pública permitida.
+2. Ao chegar à finalização sem sessão válida, solicitar Entrar ou Criar conta. Nenhuma reserva é criada antes disso.
+3. Após cadastro, concluir a autenticação; criar uma conta não significa, por si só, estar autenticado.
+4. Preservar as escolhas ao retornar e revalidar serviço, preço e disponibilidade. O rascunho não garante a vaga.
+5. Voltar à revisão e exigir clique em Confirmar agendamento. Login/cadastro não devem disparar criação automática.
+6. No servidor, exigir sessão de cliente válida e usar a identidade autenticada como cliente da reserva. Não aceitar ClientContact, clientId de terceiro ou origem manual enviados pelo cliente.
+7. Se a sessão expirar antes do envio, pedir autenticação novamente, preservando o rascunho quando possível, sem gravar reserva.
+
+Não oferecer Continuar como convidado ou formulário público de reserva apenas com nome/telefone. A exceção para pessoa sem conta existe somente no atendimento manual feito pela atendente.
+
+### 9.2 Atendente — reserva manual para pessoa com ou sem conta
+
+Pré-condição: sessão válida de atendente ativa com perfil RECEPTIONIST. Ela deve estar autenticada durante todo o processo; a dispensa de conta se aplica exclusivamente à pessoa atendida.
 
 1. Abrir Novo agendamento com data/profissional de origem quando disponíveis.
 2. Escolher WhatsApp ou Presencial explicitamente.
@@ -370,6 +390,12 @@ Esta documentação não aplica migração nem cria contas. Implementação e pu
 | Reserva com cliente existente | Histórico do cliente; autoria da atendente |
 | Horário passado, fora do expediente ou sobreposto | Rejeitado no servidor sem gravação parcial |
 | Cliente online e atendente disputam horário | Uma reserva, conflito recuperável no outro fluxo |
+| Visitante chega à finalização | Solicita login/cadastro; nenhuma reserva criada |
+| Cadastro concluído sem sessão autenticada | Confirmação bloqueada até autenticar |
+| Login após escolhas | Retorna à revisão e revalida vaga; não agenda automaticamente |
+| Cliente tenta reserva pública só com nome/telefone | Negada no servidor; sem ClientContact ou agendamento |
+| CLIENT, BARBER ou ADMIN chama criação manual sem papel RECEPTIONIST | Negado; exceção exclusiva da atendente |
+| Sessão expira no envio | Pede autenticação; não grava reserva sem autor válido |
 | Duplo envio/queda de rede na reserva | Uma operação/contato, resultado recuperável |
 | Barbeiro conclui | Concluídos aumenta; recebido não; pendência entra no caixa |
 | Atendente tenta receber agendado não concluído | Negado, sem concluir implicitamente |
@@ -398,6 +424,8 @@ Validar com a atendente: consultar profissional, reservar WhatsApp, reservar pre
 | --- | --- |
 | Perfil e tela próprios da atendente | Solicitados pelo usuário |
 | Agenda diária de cada barbeiro e reserva manual | Solicitadas pelo usuário |
+| Cliente comum precisa de login/cadastro e autenticação para confirmar | Regra obrigatória definida pelo usuário |
+| Reserva para pessoa sem conta | Exclusiva da atendente autenticada como RECEPTIONIST |
 | Barbeiro conclui; atendente confirma pagamento | Regra definida pelo usuário |
 | Recebido aumenta somente após confirmação | Regra definida pelo usuário |
 | Receptionist vinculado a User | Proposta técnica; confirmar modelagem |
@@ -413,6 +441,8 @@ Validar com a atendente: consultar profissional, reservar WhatsApp, reservar pre
 ## 18. Checklist de entrega futura
 
 - [ ] Identidade individual, gestão administrativa e revogação de acesso.
+- [ ] Cliente comum só confirma após autenticação, sem criação automática ao entrar/cadastrar.
+- [ ] Reserva manual para pessoa sem conta exclusiva da atendente autenticada, com autoria registrada.
 - [ ] Agenda por profissional/data e reserva manual para conta ou contato.
 - [ ] Origem, autoria, integridade e idempotência de reserva.
 - [ ] Serviço concluído separado do recebimento.
