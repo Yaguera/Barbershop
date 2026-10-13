@@ -19,14 +19,27 @@ export async function GET(
 
     if (!dateStr) {
       return NextResponse.json(
-        { error: 'Date query parameter is required (format: YYYY-MM-DD)' },
+        {
+          success: false,
+          code: 'BAD_REQUEST',
+          status: 400,
+          error: 'Parâmetro de data é obrigatório (formato: YYYY-MM-DD).',
+        },
         { status: 400 }
       );
     }
 
     const date = new Date(`${dateStr}T12:00:00`); // Avoid timezone shifts by setting mid-day
     if (isNaN(date.getTime())) {
-      return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          code: 'BAD_REQUEST',
+          status: 400,
+          error: 'Formato de data inválido.',
+        },
+        { status: 400 }
+      );
     }
 
     const barberRepo = new PrismaBarberRepository();
@@ -48,9 +61,25 @@ export async function GET(
     return NextResponse.json(slots);
   } catch (error: unknown) {
     console.error('Error getting availability:', error);
-    const errMsg = error instanceof Error ? error.message : 'Internal Server Error';
+    const err = error as Error;
+    if (err.message === 'Barber not found' || err.message === 'Service not found') {
+      return NextResponse.json(
+        {
+          success: false,
+          code: 'NOT_FOUND',
+          status: 404,
+          error: err.message === 'Barber not found' ? 'Barbeiro não encontrado.' : 'Serviço não encontrado.',
+        },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(
-      { error: errMsg },
+      {
+        success: false,
+        code: 'INTERNAL_ERROR',
+        status: 500,
+        error: 'Erro ao consultar horários disponíveis.',
+      },
       { status: 500 }
     );
   }

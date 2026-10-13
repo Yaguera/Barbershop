@@ -7,6 +7,7 @@ import { BarberNavbar } from '@/components/barber/BarberNavbar';
 import { ReceptionNavbar } from '@/components/reception/ReceptionNavbar';
 import { BottomNavigation } from '@/components/lux/BottomNavigation';
 import { Header } from '@/components/lux/Header';
+import { UnauthorizedView } from '@/components/auth/UnauthorizedView';
 import { compressImageClient } from '@/utils/compress-image';
 import {
   AlertCircle,
@@ -25,7 +26,6 @@ import {
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 const formatPhone = (val: string): string => {
@@ -49,7 +49,6 @@ const formatPhone = (val: string): string => {
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Dados Pessoais
@@ -88,12 +87,6 @@ export default function ProfilePage() {
     }
   }, [session?.user]);
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/auth/login');
-    }
-  }, [status, router]);
-
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col items-center justify-center gap-3">
@@ -103,11 +96,11 @@ export default function ProfilePage() {
     );
   }
 
-  if (status === 'unauthenticated') {
-    return null;
+  if (status === 'unauthenticated' || !session?.user) {
+    return <UnauthorizedView callbackUrl="/profile" />;
   }
 
-  const isReceptionistUser = session?.user?.role === 'RECEPTIONIST';
+  const isReceptionistUser = session.user.role === 'RECEPTIONIST';
   const isBarberUser = session?.user?.role === 'BARBER' || session?.user?.role === 'ADMIN';
 
   const initials = name

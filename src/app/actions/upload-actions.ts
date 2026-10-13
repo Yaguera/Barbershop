@@ -1,29 +1,42 @@
 'use server';
 
 import { auth } from '@/auth';
+import {
+  authRequiredResponse,
+  forbiddenResponse,
+  toStructuredError,
+  validationResponse,
+} from '@/core/domain/errors';
 
 export async function uploadProfileImageAction(formData: FormData): Promise<{
   success: boolean;
   imageUrl?: string;
   error?: string;
+  code?: string;
+  status?: number;
 }> {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Usuário não autenticado.' };
+      return authRequiredResponse();
     }
 
     const file = formData.get('file') as File | null;
     if (!file || !(file instanceof File) || file.size === 0) {
-      return { success: false, error: 'Nenhum arquivo válido enviado.' };
+      return validationResponse('Nenhum arquivo válido enviado.');
     }
 
     if (!file.type.startsWith('image/')) {
-      return { success: false, error: 'O arquivo deve ser uma imagem (JPG, PNG, WEBP).' };
+      return validationResponse('O arquivo deve ser uma imagem (JPG, PNG, WEBP).');
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      return { success: false, error: 'A imagem deve ter no máximo 5MB.' };
+      return {
+        success: false,
+        code: 'PAYLOAD_TOO_LARGE',
+        status: 413,
+        error: 'A imagem deve ter no máximo 5MB.',
+      };
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -65,8 +78,7 @@ export async function uploadProfileImageAction(formData: FormData): Promise<{
     return { success: true, imageUrl: base64Str };
   } catch (error: unknown) {
     console.error('Error uploading profile image action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao realizar upload da imagem.' };
+    return toStructuredError(error, 'Erro ao realizar upload da imagem.');
   }
 }
 
@@ -74,24 +86,34 @@ export async function uploadServiceImageAction(formData: FormData): Promise<{
   success: boolean;
   imageUrl?: string;
   error?: string;
+  code?: string;
+  status?: number;
 }> {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Apenas administradores podem enviar fotos de serviços.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem enviar fotos de serviços.');
     }
 
     const file = formData.get('file') as File | null;
     if (!file || !(file instanceof File) || file.size === 0) {
-      return { success: false, error: 'Nenhum arquivo válido enviado.' };
+      return validationResponse('Nenhum arquivo válido enviado.');
     }
 
     if (!file.type.startsWith('image/')) {
-      return { success: false, error: 'O arquivo deve ser uma imagem (JPG, PNG, WEBP).' };
+      return validationResponse('O arquivo deve ser uma imagem (JPG, PNG, WEBP).');
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      return { success: false, error: 'A imagem deve ter no máximo 5MB.' };
+      return {
+        success: false,
+        code: 'PAYLOAD_TOO_LARGE',
+        status: 413,
+        error: 'A imagem deve ter no máximo 5MB.',
+      };
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -132,7 +154,6 @@ export async function uploadServiceImageAction(formData: FormData): Promise<{
     return { success: true, imageUrl: base64Str };
   } catch (error: unknown) {
     console.error('Error uploading service image action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao realizar upload da imagem do serviço.' };
+    return toStructuredError(error, 'Erro ao realizar upload da imagem do serviço.');
   }
 }

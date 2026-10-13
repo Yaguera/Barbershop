@@ -3,6 +3,12 @@
 import { auth } from '@/auth';
 import { CreateManualAppointmentUseCase } from '@/core/usecases/CreateManualAppointmentUseCase';
 import { ConfirmPaymentReceiptUseCase } from '@/core/usecases/ConfirmPaymentReceiptUseCase';
+import {
+  authRequiredResponse,
+  forbiddenResponse,
+  toStructuredError,
+  validationResponse,
+} from '@/core/domain/errors';
 import { parseLocalDate } from '@/core/utils/date-utils';
 import { prisma } from '@/infra/db/prisma-client';
 import { teamAppointmentsForDate } from '@/infra/repositories/appointment-queries';
@@ -16,8 +22,11 @@ import { revalidatePath } from 'next/cache';
 export async function getReceptionAgendaAction(dateStr?: string, barberId?: string) {
   try {
     const session = await auth();
-    if (!session?.user || !['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
-      return { success: false, error: 'Acesso restrito à recepção e administração.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (!['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
+      return forbiddenResponse('Acesso restrito à recepção e administração.');
     }
 
     const targetDate = dateStr ? parseLocalDate(dateStr) : new Date();
@@ -49,7 +58,7 @@ export async function getReceptionAgendaAction(dateStr?: string, barberId?: stri
     ]);
 
     return {
-      success: true,
+      success: true as const,
       appointments,
       barbers: barbers.map((b) => ({
         id: b.id,
@@ -68,21 +77,23 @@ export async function getReceptionAgendaAction(dateStr?: string, barberId?: stri
     };
   } catch (error: unknown) {
     console.error('Error in getReceptionAgendaAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao carregar agenda da recepção.' };
+    return toStructuredError(error, 'Erro ao carregar agenda da recepção.');
   }
 }
 
 export async function searchClientsForReceptionAction(query: string) {
   try {
     const session = await auth();
-    if (!session?.user || !['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
-      return { success: false, error: 'Acesso restrito.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (!['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
+      return forbiddenResponse('Acesso restrito.');
     }
 
     const trimmed = (query || '').trim();
     if (trimmed.length < 2) {
-      return { success: true, clients: [] };
+      return { success: true as const, clients: [] };
     }
 
     const [registeredUsers, contacts] = await Promise.all([
@@ -128,11 +139,10 @@ export async function searchClientsForReceptionAction(query: string) {
       })),
     ];
 
-    return { success: true, clients: results };
+    return { success: true as const, clients: results };
   } catch (error: unknown) {
     console.error('Error in searchClientsForReceptionAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar clientes.' };
+    return toStructuredError(error, 'Erro ao buscar clientes.');
   }
 }
 
@@ -153,19 +163,18 @@ export async function createManualAppointmentAction(data: {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Sessão expirada. Faça login novamente.' };
+      return authRequiredResponse('Sessão expirada. Faça login novamente.');
     }
 
     if (session.user.role !== 'RECEPTIONIST') {
-      return {
-        success: false,
-        error: 'A criação manual de agendamentos para clientes sem conta é permitida exclusivamente para atendentes autenticadas.',
-      };
+      return forbiddenResponse(
+        'A criação manual de agendamentos para clientes sem conta é permitida exclusivamente para atendentes autenticadas.'
+      );
     }
 
     const startTime = new Date(data.startTimeStr);
     if (isNaN(startTime.getTime())) {
-      return { success: false, error: 'Data e hora inválidas.' };
+      return validationResponse('Data e hora inválidas.');
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
@@ -195,22 +204,24 @@ export async function createManualAppointmentAction(data: {
     revalidatePath('/barber/agenda');
 
     return {
-      success: true,
+      success: true as const,
       message: 'Agendamento manual criado com sucesso!',
       appointment,
     };
   } catch (error: unknown) {
     console.error('Error in createManualAppointmentAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao criar agendamento manual.' };
+    return toStructuredError(error, 'Erro ao criar agendamento manual.');
   }
 }
 
 export async function getCashRegisterDataAction(dateStr?: string, barberId?: string) {
   try {
     const session = await auth();
-    if (!session?.user || !['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
-      return { success: false, error: 'Acesso restrito ao caixa.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (!['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
+      return forbiddenResponse('Acesso restrito ao caixa.');
     }
 
     const targetDate = dateStr ? parseLocalDate(dateStr) : new Date();
@@ -230,7 +241,7 @@ export async function getCashRegisterDataAction(dateStr?: string, barberId?: str
     ]);
 
     return {
-      success: true,
+      success: true as const,
       pending,
       receiptsToday,
       summary,
@@ -238,8 +249,7 @@ export async function getCashRegisterDataAction(dateStr?: string, barberId?: str
     };
   } catch (error: unknown) {
     console.error('Error in getCashRegisterDataAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao carregar dados do caixa.' };
+    return toStructuredError(error, 'Erro ao carregar dados do caixa.');
   }
 }
 
@@ -250,8 +260,11 @@ export async function confirmPaymentReceiptAction(data: {
 }) {
   try {
     const session = await auth();
-    if (!session?.user || !['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
-      return { success: false, error: 'Acesso restrito: apenas atendente e administrador podem registrar pagamentos.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (!['RECEPTIONIST', 'ADMIN'].includes(session.user.role)) {
+      return forbiddenResponse('Acesso restrito: apenas atendente e administrador podem registrar pagamentos.');
     }
 
     const receiptRepo = new PrismaPaymentReceiptRepository();
@@ -270,13 +283,12 @@ export async function confirmPaymentReceiptAction(data: {
     revalidatePath('/admin/dashboard');
 
     return {
-      success: true,
+      success: true as const,
       message: 'Pagamento confirmado com sucesso no caixa!',
       receipt,
     };
   } catch (error: unknown) {
     console.error('Error in confirmPaymentReceiptAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao confirmar pagamento no caixa.' };
+    return toStructuredError(error, 'Erro ao confirmar pagamento no caixa.');
   }
 }

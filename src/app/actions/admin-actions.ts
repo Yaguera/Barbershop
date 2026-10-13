@@ -18,6 +18,13 @@ import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository'
 import { DeactivateReceptionistUseCase } from '@/core/usecases/DeactivateReceptionistUseCase';
 import { RegisterReceptionistUseCase } from '@/core/usecases/RegisterReceptionistUseCase';
 import { RevertPaymentReceiptUseCase } from '@/core/usecases/RevertPaymentReceiptUseCase';
+import {
+  actionSuccess,
+  authRequiredResponse,
+  forbiddenResponse,
+  notFoundResponse,
+  toStructuredError,
+} from '@/core/domain/errors';
 import { revalidatePath } from 'next/cache';
 
 export async function registerBarberAction(data: {
@@ -30,8 +37,11 @@ export async function registerBarberAction(data: {
 }) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Apenas administradores podem registrar barbeiros.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem registrar barbeiros.');
     }
 
     const userRepo = new PrismaUserRepository();
@@ -48,23 +58,24 @@ export async function registerBarberAction(data: {
       workEnd: data.workEnd,
     });
 
-    return {
-      success: true,
+    return actionSuccess({
       message: 'Barbeiro registrado com sucesso! Compartilhe a senha provisória diretamente com o profissional.',
       barber: result.barber,
-    };
+    });
   } catch (error: unknown) {
     console.error('Error registering barber action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao registrar barbeiro.' };
+    return toStructuredError(error, 'Erro ao registrar barbeiro.');
   }
 }
 
 export async function deleteBarberAction(barberId: string) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Apenas administradores podem remover barbeiros.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem remover barbeiros.');
     }
 
     const userRepo = new PrismaUserRepository();
@@ -76,19 +87,21 @@ export async function deleteBarberAction(barberId: string) {
       barberId,
     });
 
-    return { success: true, message: 'Barbeiro desativado com sucesso.' };
+    return actionSuccess({ message: 'Barbeiro desativado com sucesso.' });
   } catch (error: unknown) {
     console.error('Error deleting barber action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao remover barbeiro.' };
+    return toStructuredError(error, 'Erro ao remover barbeiro.');
   }
 }
 
 export async function getClientManagementAction() {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Acesso negado. Apenas administradores.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Acesso negado. Apenas administradores.');
     }
 
     const userRepo = new PrismaUserRepository();
@@ -98,11 +111,10 @@ export async function getClientManagementAction() {
       adminRole: session.user.role,
     });
 
-    return { success: true, clients };
+    return actionSuccess({ clients });
   } catch (error: unknown) {
     console.error('Error fetching client management action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao carregar clientes.' };
+    return toStructuredError(error, 'Erro ao carregar clientes.');
   }
 }
 
@@ -113,7 +125,7 @@ export async function getBarberMetricsAction(
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Sessão não autenticada.' };
+      return authRequiredResponse('Sessão não autenticada.');
     }
 
     // Find if requester is this barber or an admin
@@ -126,7 +138,7 @@ export async function getBarberMetricsAction(
 
     const targetBarberId = barberId || requesterBarberId;
     if (!targetBarberId) {
-      return { success: false, error: 'Perfil de barbeiro não encontrado para este usuário.' };
+      return notFoundResponse('Perfil de barbeiro não encontrado para este usuário.');
     }
 
     const useCase = new GetBarberPerformanceUseCase(new PrismaAppointmentReportRepository());
@@ -138,19 +150,21 @@ export async function getBarberMetricsAction(
       period,
     });
 
-    return { success: true, report };
+    return actionSuccess({ report });
   } catch (error: unknown) {
     console.error('Error fetching barber metrics action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar métricas do barbeiro.' };
+    return toStructuredError(error, 'Erro ao buscar métricas do barbeiro.');
   }
 }
 
 export async function getFinanceDashboardAction(period?: 'today' | 'week' | 'month' | 'year' | 'all') {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Acesso negado. Apenas administradores.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Acesso negado. Apenas administradores.');
     }
 
     const useCase = new GetFinanceDashboardUseCase(new PrismaAppointmentReportRepository());
@@ -160,11 +174,10 @@ export async function getFinanceDashboardAction(period?: 'today' | 'week' | 'mon
       period,
     });
 
-    return { success: true, report };
+    return actionSuccess({ report });
   } catch (error: unknown) {
     console.error('Error fetching finance dashboard action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao carregar dados financeiros.' };
+    return toStructuredError(error, 'Erro ao carregar dados financeiros.');
   }
 }
 
@@ -190,11 +203,10 @@ export async function getBarbersAction(options?: { activeOnly?: boolean }) {
       })
     );
 
-    return { success: true, barbers: formattedBarbers };
+    return actionSuccess({ barbers: formattedBarbers });
   } catch (error: unknown) {
     console.error('Error fetching barbers action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar barbeiros.' };
+    return toStructuredError(error, 'Erro ao buscar barbeiros.');
   }
 }
 
@@ -202,11 +214,10 @@ export async function getServicesAction() {
   try {
     const serviceRepo = new PrismaServiceRepository();
     const services = await serviceRepo.findAll();
-    return { success: true, services };
+    return actionSuccess({ services });
   } catch (error: unknown) {
     console.error('Error fetching services action:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar serviços.' };
+    return toStructuredError(error, 'Erro ao buscar serviços.');
   }
 }
 
@@ -216,8 +227,11 @@ export async function getAdminDashboardAnalyticsAction(
 ) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Acesso negado. Apenas administradores.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Acesso negado. Apenas administradores.');
     }
 
     const { startDate, endDate } = reportPeriod(period);
@@ -231,11 +245,10 @@ export async function getAdminDashboardAnalyticsAction(
       barberId: barberId === 'all' ? undefined : barberId,
     });
 
-    return { success: true, report };
+    return actionSuccess({ report });
   } catch (error: unknown) {
     console.error('Error in getAdminDashboardAnalyticsAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao carregar dados analíticos do dashboard.' };
+    return toStructuredError(error, 'Erro ao carregar dados analíticos do dashboard.');
   }
 }
 
@@ -243,33 +256,37 @@ export async function getAdminDashboardAnalyticsAction(
 export async function getAdminCalendarMetricsAction(year: number, month?: number, day?: number) {
   try {
     const session = await auth();
-    if (session?.user?.role !== 'ADMIN') {
-      return { success: false, error: 'Não autorizado.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem acessar métricas de calendário.');
     }
 
     const useCase = new GetAdminCalendarMetricsUseCase(new PrismaAppointmentReportRepository());
     const result = await useCase.execute({ year, month, day });
 
-    return { success: true, ...result };
+    return actionSuccess({ ...result });
   } catch (error: unknown) {
     console.error('Error fetching admin calendar metrics:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar métricas de calendário.' };
+    return toStructuredError(error, 'Erro ao buscar métricas de calendário.');
   }
 }
 
 export async function getReceptionistsAction() {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Acesso negado. Apenas administradores.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Acesso negado. Apenas administradores.');
     }
 
     const receptionistRepo = new PrismaReceptionistRepository();
     const list = await receptionistRepo.findAll();
 
-    return {
-      success: true,
+    return actionSuccess({
       receptionists: list.map((r) => ({
         id: r.id,
         userId: r.userId,
@@ -278,11 +295,10 @@ export async function getReceptionistsAction() {
         active: r.user.active,
         createdAt: r.createdAt,
       })),
-    };
+    });
   } catch (error: unknown) {
     console.error('Error fetching receptionists:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao carregar atendentes.' };
+    return toStructuredError(error, 'Erro ao carregar atendentes.');
   }
 }
 
@@ -293,8 +309,11 @@ export async function registerReceptionistAction(data: {
 }) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Apenas administradores podem cadastrar atendentes.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem cadastrar atendentes.');
     }
 
     const userRepo = new PrismaUserRepository();
@@ -310,23 +329,24 @@ export async function registerReceptionistAction(data: {
 
     revalidatePath('/admin/atendentes');
 
-    return {
-      success: true,
+    return actionSuccess({
       message: 'Atendente cadastrada com sucesso! Compartilhe a senha provisória de forma segura.',
       receptionist: result.receptionist,
-    };
+    });
   } catch (error: unknown) {
     console.error('Error registering receptionist:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao cadastrar atendente.' };
+    return toStructuredError(error, 'Erro ao cadastrar atendente.');
   }
 }
 
 export async function deactivateReceptionistAction(receptionistId: string) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Apenas administradores podem desativar atendentes.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem desativar atendentes.');
     }
 
     const receptionistRepo = new PrismaReceptionistRepository();
@@ -339,22 +359,23 @@ export async function deactivateReceptionistAction(receptionistId: string) {
 
     revalidatePath('/admin/atendentes');
 
-    return {
-      success: true,
+    return actionSuccess({
       message: 'Atendente desativada com sucesso. Sessões ativas foram revogadas.',
-    };
+    });
   } catch (error: unknown) {
     console.error('Error deactivating receptionist:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao desativar atendente.' };
+    return toStructuredError(error, 'Erro ao desativar atendente.');
   }
 }
 
 export async function revertPaymentReceiptAction(receiptId: string, reason: string) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Apenas administradores podem reverter recebimentos.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem reverter recebimentos.');
     }
 
     const receiptRepo = new PrismaPaymentReceiptRepository();
@@ -370,13 +391,11 @@ export async function revertPaymentReceiptAction(receiptId: string, reason: stri
     revalidatePath('/atendente/caixa');
     revalidatePath('/admin/dashboard');
 
-    return {
-      success: true,
+    return actionSuccess({
       message: 'Recebimento revertido com sucesso para conferência e auditoria.',
-    };
+    });
   } catch (error: unknown) {
     console.error('Error reverting payment receipt:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao reverter recebimento.' };
+    return toStructuredError(error, 'Erro ao reverter recebimento.');
   }
 }

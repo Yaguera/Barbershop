@@ -4,8 +4,9 @@ import { BottomNavigation } from '@/components/lux/BottomNavigation';
 import { Header } from '@/components/lux/Header';
 import { prisma } from '@/infra/db/prisma-client';
 import { CheckCircle2,Clock,RotateCcw,Scissors,Sparkles,XCircle } from 'lucide-react';
+import { ForbiddenView } from '@/components/auth/ForbiddenView';
+import { UnauthorizedView } from '@/components/auth/UnauthorizedView';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,19 +14,17 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/auth/login?callbackUrl=/historico');
+    return <UnauthorizedView callbackUrl="/historico" />;
   }
 
-  if (session.user.role === 'RECEPTIONIST') {
-    redirect('/atendente');
-  }
-
-  if (session.user.role === 'BARBER') {
-    redirect('/barber/agenda');
-  }
-
-  if (session.user.role === 'ADMIN') {
-    redirect('/admin/dashboard');
+  if (session.user.role !== 'CLIENT') {
+    return (
+      <ForbiddenView
+        currentRole={session.user.role}
+        allowedRoles={['CLIENT']}
+        message="O histórico de atendimentos de cliente é exclusivo para clientes da barbearia."
+      />
+    );
   }
 
   const requestedPage = Number((await searchParams).page || 1);

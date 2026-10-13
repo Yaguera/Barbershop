@@ -1,6 +1,7 @@
 'use client';
 
 import { signUpAction } from '@/app/actions/auth-actions';
+import { sanitizeCallbackUrl } from '@/core/utils/safe-redirect';
 import { AlertCircle, ArrowLeft, CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, User as UserIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,7 +10,8 @@ import { Suspense, useState } from 'react';
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const rawCallbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl = sanitizeCallbackUrl(rawCallbackUrl, '/');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

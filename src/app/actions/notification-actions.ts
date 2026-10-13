@@ -1,13 +1,25 @@
 'use server';
 
 import { auth } from '@/auth';
+import {
+  authRequiredResponse,
+  forbiddenResponse,
+  toStructuredError,
+} from '@/core/domain/errors';
 import { prisma } from '@/infra/db/prisma-client';
 import { revalidatePath } from 'next/cache';
 
 export async function getNotificationsAction() {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, error: 'Não autenticado', notifications: [] };
+    return {
+      success: false,
+      code: 'AUTHENTICATION_REQUIRED',
+      status: 401,
+      error: 'Não autenticado.',
+      notifications: [],
+      unreadCount: 0,
+    };
   }
 
   try {
@@ -26,14 +38,21 @@ export async function getNotificationsAction() {
     };
   } catch (error) {
     console.error('Erro ao buscar notificações:', error);
-    return { success: false, error: 'Erro ao carregar notificações', notifications: [], unreadCount: 0 };
+    return {
+      success: false,
+      code: 'INTERNAL_ERROR',
+      status: 500,
+      error: 'Erro ao carregar notificações.',
+      notifications: [],
+      unreadCount: 0,
+    };
   }
 }
 
 export async function markAsReadAction(notificationId: string) {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, error: 'Não autenticado' };
+    return authRequiredResponse();
   }
 
   try {
@@ -49,14 +68,14 @@ export async function markAsReadAction(notificationId: string) {
     return { success: true };
   } catch (error) {
     console.error('Erro ao marcar notificação como lida:', error);
-    return { success: false, error: 'Erro ao atualizar notificação' };
+    return toStructuredError(error, 'Erro ao atualizar notificação.');
   }
 }
 
 export async function markAllAsReadAction() {
   const session = await auth();
   if (!session?.user?.id) {
-    return { success: false, error: 'Não autenticado' };
+    return authRequiredResponse();
   }
 
   try {
@@ -72,7 +91,7 @@ export async function markAllAsReadAction() {
     return { success: true };
   } catch (error) {
     console.error('Erro ao marcar todas como lidas:', error);
-    return { success: false, error: 'Erro ao atualizar notificações' };
+    return toStructuredError(error, 'Erro ao atualizar notificações.');
   }
 }
 
@@ -83,7 +102,13 @@ export async function createNotificationAction(data: {
   type?: 'INFO' | 'REMINDER' | 'ALERT' | 'CANCEL' | 'NO_SHOW';
 }) {
   const session = await auth();
-  if (session?.user?.role !== 'ADMIN') return { success: false, error: 'Não autorizado.' };
+  if (!session?.user) {
+    return authRequiredResponse();
+  }
+  if (session.user.role !== 'ADMIN') {
+    return forbiddenResponse('Apenas administradores podem criar notificações arbitrárias.');
+  }
+
   try {
     const notification = await prisma.notification.create({
       data: {
@@ -97,6 +122,6 @@ export async function createNotificationAction(data: {
     return { success: true, notification };
   } catch (error) {
     console.error('Erro ao criar notificação:', error);
-    return { success: false, error: 'Erro ao criar notificação' };
+    return toStructuredError(error, 'Erro ao criar notificação.');
   }
 }

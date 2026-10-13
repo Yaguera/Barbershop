@@ -1,70 +1,122 @@
 import { auth } from '@/auth';
+import { createForbiddenResponse, createUnauthorizedResponse } from '@/core/presentation/http-error-pages';
 import { NextResponse } from 'next/server';
 
 const authProxy = auth((req) => {
   const isLoggedIn = !!req.auth?.user;
   const userRole = req.auth?.user?.role;
 
-  const url = req.nextUrl;
-  const pathname = url.pathname;
-  const isAdminRoute = pathname.startsWith('/admin');
-  const isBarberRoute = pathname.startsWith('/barber') || pathname.startsWith('/barbeiro');
-  const isReceptionistRoute = pathname.startsWith('/atendente');
-  const isDashboardRoute = pathname.startsWith('/dashboard');
-  const isProfileRoute = pathname.startsWith('/profile');
-  const isClientOnlyRoute =
-    pathname === '/' ||
-    pathname.startsWith('/agenda') ||
-    pathname.startsWith('/historico');
+  const pathname = req.nextUrl.pathname;
 
-  // If not logged in and accessing protected routes, redirect to login
-  if (
-    (isAdminRoute ||
-      isBarberRoute ||
-      isReceptionistRoute ||
-      isDashboardRoute ||
-      isProfileRoute ||
-      pathname.startsWith('/agenda') ||
-      pathname.startsWith('/historico')) &&
-    !isLoggedIn
-  ) {
-    const loginUrl = new URL('/auth/login', req.url);
-    loginUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+  // Segmentos completos de rota para evitar conflitos de prefixo
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  const isBarberRoute = pathname === '/barber' || pathname.startsWith('/barber/');
+  const isBarbeiroAlias = pathname === '/barbeiro' || pathname.startsWith('/barbeiro/');
+  const isReceptionistRoute = pathname === '/atendente' || pathname.startsWith('/atendente/');
+  const isDashboardRoute = pathname === '/dashboard' || pathname.startsWith('/dashboard/');
+  const isProfileRoute = pathname === '/profile' || pathname.startsWith('/profile/');
+  const isClientAreaRoute =
+    pathname === '/agenda' ||
+    pathname.startsWith('/agenda/') ||
+    pathname === '/historico' ||
+    pathname.startsWith('/historico/');
 
-  // Atendente autenticada: isolamento estrito no painel da atendente (/atendente).
-  // Sempre que tentar acessar telas de cliente, admin, barbeiro ou dashboard geral,
-  // é redirecionada imediatamente para seu painel próprio.
-  if (isLoggedIn && userRole === 'RECEPTIONIST') {
-    if (isClientOnlyRoute || isDashboardRoute || isAdminRoute || isBarberRoute) {
-      return NextResponse.redirect(new URL('/atendente', req.url));
+  // 1. Encaminhamentos legítimos da Home pública (/)
+  if (pathname === '/') {
+    if (isLoggedIn) {
+      if (userRole === 'BARBER') {
+        return NextResponse.redirect(new URL('/barber/dashboard', req.nextUrl));
+      }
+      if (userRole === 'ADMIN') {
+        return NextResponse.redirect(new URL('/admin/dashboard', req.nextUrl));
+      }
+      if (userRole === 'RECEPTIONIST') {
+        return NextResponse.redirect(new URL('/atendente', req.nextUrl));
+      }
     }
+    return NextResponse.next();
   }
 
-  // Barbeiro autenticado: se tentar acessar home pública de agendamento de cliente
-  if (isLoggedIn && userRole === 'BARBER' && pathname === '/') {
-    return NextResponse.redirect(new URL('/barber/dashboard', req.url));
+  // 2. Encaminhamento legítimo do /dashboard (dispatcher interno por perfil)
+  if (isDashboardRoute) {
+    if (!isLoggedIn) {
+      return createUnauthorizedResponse(req, pathname);
+    }
+    if (userRole === 'ADMIN') {
+      return NextResponse.redirect(new URL('/admin/dashboard', req.nextUrl));
+    }
+    if (userRole === 'BARBER') {
+      return NextResponse.redirect(new URL('/barber/dashboard', req.nextUrl));
+    }
+    if (userRole === 'RECEPTIONIST') {
+      return NextResponse.redirect(new URL('/atendente', req.nextUrl));
+    }
+    // Clientes vão para sua agenda
+    return NextResponse.redirect(new URL('/agenda', req.nextUrl));
   }
 
-  // Admin autenticado: se tentar acessar home pública de agendamento de cliente
-  if (isLoggedIn && userRole === 'ADMIN' && pathname === '/') {
-    return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+  // 3. Alias legado /barbeiro/agenda -> /barber/agenda (autorizar antes do alias)
+  if (isBarbeiroAlias) {
+    if (!isLoggedIn) {
+      return createUnauthorizedResponse(req, pathname);
+    }
+    if (userRole !== 'BARBER' && userRole !== 'ADMIN') {
+      return createForbiddenResponse(req, pathname, userRole);
+    }
+    const targetPath = pathname.replace(/^\/barbeiro/, '/barber');
+    return NextResponse.redirect(new URL(targetPath, req.nextUrl));
   }
 
-  // Admin route requires ADMIN role
-  if (isAdminRoute && userRole !== 'ADMIN') {
-    return NextResponse.redirect(new URL('/', req.url));
+  // 4. Rotas Administrativas (/admin/*) -> Apenas ADMIN
+  if (isAdminRoute) {
+    if (!isLoggedIn) {
+      return createUnauthorizedResponse(req, pathname);
+    }
+    if (userRole !== 'ADMIN') {
+      return createForbiddenResponse(req, pathname, userRole);
+    }
+    return NextResponse.next();
   }
 
-  // Barber route requires BARBER or ADMIN role
-  if (isBarberRoute && userRole !== 'BARBER' && userRole !== 'ADMIN') {
-    return NextResponse.redirect(new URL('/', req.url));
+  // 5. Rotas do Barbeiro (/barber/*) -> BARBER ou ADMIN
+  if (isBarberRoute) {
+    if (!isLoggedIn) {
+      return createUnauthorizedResponse(req, pathname);
+    }
+    if (userRole !== 'BARBER' && userRole !== 'ADMIN') {
+      return createForbiddenResponse(req, pathname, userRole);
+    }
+    return NextResponse.next();
   }
 
-  // Receptionist route requires RECEPTIONIST or ADMIN role
-  if (isReceptionistRoute && userRole !== 'RECEPTIONIST' && userRole !== 'ADMIN') {
-    return NextResponse.redirect(new URL('/', req.url));
+  // 6. Rotas da Atendente e Caixa (/atendente/*) -> RECEPTIONIST ou ADMIN
+  if (isReceptionistRoute) {
+    if (!isLoggedIn) {
+      return createUnauthorizedResponse(req, pathname);
+    }
+    if (userRole !== 'RECEPTIONIST' && userRole !== 'ADMIN') {
+      return createForbiddenResponse(req, pathname, userRole);
+    }
+    return NextResponse.next();
+  }
+
+  // 7. Área do Cliente (/agenda, /historico) -> Apenas CLIENT
+  if (isClientAreaRoute) {
+    if (!isLoggedIn) {
+      return createUnauthorizedResponse(req, pathname);
+    }
+    if (userRole !== 'CLIENT') {
+      return createForbiddenResponse(req, pathname, userRole);
+    }
+    return NextResponse.next();
+  }
+
+  // 8. Conta e Perfil (/profile) -> Qualquer perfil autenticado
+  if (isProfileRoute) {
+    if (!isLoggedIn) {
+      return createUnauthorizedResponse(req, pathname);
+    }
+    return NextResponse.next();
   }
 
   return NextResponse.next();
@@ -76,13 +128,13 @@ export default authProxy;
 export const config = {
   matcher: [
     '/',
+    '/dashboard/:path*',
     '/agenda/:path*',
     '/historico/:path*',
     '/admin/:path*',
     '/barber/:path*',
     '/barbeiro/:path*',
     '/atendente/:path*',
-    '/dashboard/:path*',
     '/profile/:path*',
   ],
 };

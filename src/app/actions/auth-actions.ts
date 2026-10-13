@@ -1,6 +1,12 @@
 'use server';
 
 import { auth } from '@/auth';
+import {
+  authRequiredResponse,
+  conflictResponse,
+  toStructuredError,
+  validationResponse,
+} from '@/core/domain/errors';
 import { UpdatePasswordUseCase } from '@/core/usecases/UpdatePasswordUseCase';
 import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
 import bcrypt from 'bcryptjs';
@@ -37,7 +43,7 @@ export async function signUpAction(prevState: unknown, formData: FormData) {
     // 2. Check if user already exists
     const existingUser = await userRepository.findByEmail(email);
     if (existingUser) {
-      return { success: false, error: 'Este e-mail já está cadastrado.' };
+      return conflictResponse('Este e-mail já está cadastrado.');
     }
 
     // 3. Hash Password
@@ -53,17 +59,13 @@ export async function signUpAction(prevState: unknown, formData: FormData) {
       image,
     });
 
-    return { success: true, message: 'Cadastro realizado com sucesso!' };
+    return { success: true as const, message: 'Cadastro realizado com sucesso!' };
   } catch (error: unknown) {
     console.error('Sign up action error:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message || 'Dados inválidos' };
+      return validationResponse(error.issues[0]?.message || 'Dados inválidos');
     }
-    const err = error as Error;
-    return {
-      success: false,
-      error: err.message || 'Erro interno no servidor.',
-    };
+    return toStructuredError(error, 'Erro interno no servidor.');
   }
 }
 
@@ -80,7 +82,7 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return { success: false, error: 'Você precisa estar logado para editar o perfil.' };
+      return authRequiredResponse('Você precisa estar logado para editar o perfil.');
     }
 
     const userId = session.user.id;
@@ -104,7 +106,7 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
     // Check if email is in use by another user
     const existingUser = await userRepository.findByEmail(payload.email);
     if (existingUser && existingUser.id !== userId) {
-      return { success: false, error: 'Este e-mail já está sendo utilizado por outra conta.' };
+      return conflictResponse('Este e-mail já está sendo utilizado por outra conta.');
     }
 
     const updateData: {
@@ -122,7 +124,7 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
     const updatedUser = await userRepository.update(userId, updateData);
 
     return {
-      success: true,
+      success: true as const,
       message: 'Perfil atualizado com sucesso!',
       user: {
         name: updatedUser.name,
@@ -134,13 +136,9 @@ export async function updateProfileAction(prevState: unknown, formData: FormData
   } catch (error: unknown) {
     console.error('Update profile action error:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message || 'Dados inválidos' };
+      return validationResponse(error.issues[0]?.message || 'Dados inválidos');
     }
-    const err = error as Error;
-    return {
-      success: false,
-      error: err.message || 'Erro interno no servidor.',
-    };
+    return toStructuredError(error, 'Erro interno no servidor.');
   }
 }
 
@@ -152,7 +150,7 @@ export async function updatePasswordAction(data: {
     const session = await auth();
     const userId = session?.user?.id;
     if (!userId) {
-      return { success: false, error: 'Usuário não autenticado.' };
+      return authRequiredResponse('Usuário não autenticado.');
     }
 
     const userRepository = new PrismaUserRepository();
@@ -164,10 +162,9 @@ export async function updatePasswordAction(data: {
       newPassword: data.newPassword,
     });
 
-    return { success: true, message: 'Senha atualizada com sucesso!' };
+    return { success: true as const, message: 'Senha atualizada com sucesso!' };
   } catch (error: unknown) {
     console.error('Update password action error:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao alterar senha.' };
+    return toStructuredError(error, 'Erro ao alterar senha.');
   }
 }

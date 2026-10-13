@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { UnauthorizedView } from '@/components/auth/UnauthorizedView';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -7,7 +8,7 @@ export default async function DashboardRedirectPage() {
   const session = await auth();
 
   if (!session?.user) {
-    redirect('/auth/login');
+    return <UnauthorizedView callbackUrl="/dashboard" />;
   }
 
   if (session.user.role === 'ADMIN') {
@@ -22,6 +23,6 @@ export default async function DashboardRedirectPage() {
     redirect('/atendente');
   }
 
-  // Clients go to their luxury agenda/appointments experience
+  // Clientes vão para sua agenda de atendimentos
   redirect('/agenda');
 }

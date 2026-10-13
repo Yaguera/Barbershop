@@ -5,8 +5,9 @@ import { BottomNavigation } from '@/components/lux/BottomNavigation';
 import { Header } from '@/components/lux/Header';
 import { prisma } from '@/infra/db/prisma-client';
 import { Calendar as CalendarIcon,Scissors,Sparkles } from 'lucide-react';
+import { ForbiddenView } from '@/components/auth/ForbiddenView';
+import { UnauthorizedView } from '@/components/auth/UnauthorizedView';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,19 +15,17 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   const session = await auth();
 
   if (!session?.user?.id) {
-    redirect('/auth/login?callbackUrl=/agenda');
+    return <UnauthorizedView callbackUrl="/agenda" />;
   }
 
-  if (session.user.role === 'RECEPTIONIST') {
-    redirect('/atendente');
-  }
-
-  if (session.user.role === 'BARBER') {
-    redirect('/barber/agenda');
-  }
-
-  if (session.user.role === 'ADMIN') {
-    redirect('/admin/dashboard');
+  if (session.user.role !== 'CLIENT') {
+    return (
+      <ForbiddenView
+        currentRole={session.user.role}
+        allowedRoles={['CLIENT']}
+        message="A agenda de cliente é exclusiva para clientes da barbearia."
+      />
+    );
   }
 
   const requestedPage = Number((await searchParams).page || 1);

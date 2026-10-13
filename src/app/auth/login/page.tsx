@@ -1,5 +1,6 @@
 'use client';
 
+import { sanitizeCallbackUrl } from '@/core/utils/safe-redirect';
 import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
@@ -8,7 +9,8 @@ import { Suspense, useState } from 'react';
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const rawCallbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl = sanitizeCallbackUrl(rawCallbackUrl, '/');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -62,7 +64,7 @@ function LoginForm() {
           destination = '/barber/dashboard';
         }
 
-        window.location.href = destination;
+        window.location.href = sanitizeCallbackUrl(destination, '/');
       }
     } catch {
       setError('Ocorreu um erro ao fazer login.');
@@ -75,7 +77,8 @@ function LoginForm() {
     setError(null);
     setIsGoogleLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/dashboard' });
+      const safeGoogleCb = sanitizeCallbackUrl(callbackUrl, '/dashboard');
+      await signIn('google', { callbackUrl: safeGoogleCb === '/' ? '/dashboard' : safeGoogleCb });
     } catch {
       setError('Erro ao iniciar login com o Google.');
       setIsGoogleLoading(false);

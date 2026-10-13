@@ -116,14 +116,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async redirect({ url, baseUrl }) {
       let effectiveBaseUrl = baseUrl;
+      const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
       const configuredUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL;
-      if (configuredUrl && !configuredUrl.includes('localhost')) {
+
+      if (configuredUrl && (!isProd || !configuredUrl.includes('localhost'))) {
         effectiveBaseUrl = configuredUrl;
       } else if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
         effectiveBaseUrl = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
       } else if (process.env.VERCEL_URL) {
         effectiveBaseUrl = `https://${process.env.VERCEL_URL}`;
-      } else if (process.env.NODE_ENV === 'production' && effectiveBaseUrl.includes('localhost')) {
+      } else if (isProd && effectiveBaseUrl.includes('localhost')) {
         effectiveBaseUrl = 'https://barbeariajosecarlos-chi.vercel.app';
       }
 

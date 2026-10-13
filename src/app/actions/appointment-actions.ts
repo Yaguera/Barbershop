@@ -7,9 +7,18 @@ import { CreateAppointmentUseCase } from '@/core/usecases/CreateAppointmentUseCa
 import { GetBarberMetricsUseCase } from '@/core/usecases/GetBarberMetricsUseCase';
 import { GetBarberMonthScheduleUseCase } from '@/core/usecases/GetBarberMonthScheduleUseCase';
 import { RescheduleAppointmentUseCase } from '@/core/usecases/RescheduleAppointmentUseCase';
+import {
+  actionSuccess,
+  authRequiredResponse,
+  conflictResponse,
+  forbiddenResponse,
+  notFoundResponse,
+  toStructuredError,
+  validationResponse,
+} from '@/core/domain/errors';
 import { parseLocalDate } from '@/core/utils/date-utils';
 import { prisma } from '@/infra/db/prisma-client';
-import { barberAppointments,clientAppointments } from '@/infra/repositories/appointment-queries';
+import { barberAppointments, clientAppointments } from '@/infra/repositories/appointment-queries';
 import { PrismaAppointmentRepository } from '@/infra/repositories/PrismaAppointmentRepository';
 import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
 import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
@@ -24,14 +33,14 @@ export async function createAppointmentAction(data: {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Você precisa estar logado para agendar.' };
+      return authRequiredResponse('Você precisa estar logado para agendar.');
     }
 
     const { barberId, serviceId, startTimeStr } = data;
     const startTime = new Date(startTimeStr);
 
     if (isNaN(startTime.getTime())) {
-      return { success: false, error: 'Data/Hora de início inválida.' };
+      return validationResponse('Data/Hora de início inválida.');
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
@@ -100,16 +109,10 @@ export async function createAppointmentAction(data: {
       revalidatePath('/');
     }
 
-    return { success: true, appointment };
+    return actionSuccess({ appointment });
   } catch (error: unknown) {
     console.error('Error creating appointment:', error);
-    const err = error as Error & { status?: number };
-    return {
-      success: false,
-      error: err.status === 409
-        ? 'Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro horário.'
-        : err.message || 'Erro ao criar agendamento.',
-    };
+    return toStructuredError(error, 'Erro ao criar agendamento.');
   }
 }
 
@@ -121,7 +124,7 @@ export async function changeAppointmentStatusAction(data: {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Não autorizado.' };
+      return authRequiredResponse();
     }
 
     const { appointmentId, newStatus } = data;
@@ -139,11 +142,10 @@ export async function changeAppointmentStatusAction(data: {
     revalidatePath('/barber/dashboard');
     revalidatePath('/agenda');
 
-    return { success: true, message: 'Status atualizado com sucesso!' };
+    return actionSuccess({ message: 'Status atualizado com sucesso!' });
   } catch (error: unknown) {
     console.error('Error updating appointment status:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao atualizar status.' };
+    return toStructuredError(error, 'Erro ao atualizar status.');
   }
 }
 
@@ -152,16 +154,17 @@ export async function getClientAppointmentsAction(page = 1, upcomingOnly = false
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Não autorizado.' };
+      return authRequiredResponse();
     }
 
-    if (!Number.isInteger(page) || page < 1 || page > 10000) return { success: false, error: 'Página inválida.' };
+    if (!Number.isInteger(page) || page < 1 || page > 10000) {
+      return validationResponse('Página inválida.');
+    }
     const result = await clientAppointments(session.user.id, page, upcomingOnly);
-    return { success: true, ...result };
+    return actionSuccess({ ...result });
   } catch (error: unknown) {
     console.error('Error fetching client appointments:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar agendamentos.' };
+    return toStructuredError(error, 'Erro ao buscar agendamentos.');
   }
 }
 
@@ -169,8 +172,12 @@ export async function getClientAppointmentsAction(page = 1, upcomingOnly = false
 export async function getBarberAppointmentsAction(dateStr?: string) {
   try {
     const session = await auth();
-    if (!session?.user || (session.user.role !== 'BARBER' && session.user.role !== 'ADMIN')) {
-      return { success: false, error: 'Não autorizado.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+
+    if (session.user.role !== 'BARBER' && session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas barbeiros e administradores podem acessar esta agenda.');
     }
 
     const barberRepo = new PrismaBarberRepository();
@@ -180,24 +187,23 @@ export async function getBarberAppointmentsAction(dateStr?: string) {
     if (session.user.role === 'BARBER') {
       const barber = await barberRepo.findByUserId(session.user.id);
       if (!barber) {
-        return { success: false, error: 'Perfil de barbeiro não encontrado.' };
+        return notFoundResponse('Perfil de barbeiro não encontrado.');
       }
       barberId = barber.id;
     } else {
       // If Admin, they can view the first barber or we let them pass a barberId (we can fallback)
       const barbers = await barberRepo.findAll();
       if (barbers.length === 0) {
-        return { success: true, appointments: [] };
+        return actionSuccess({ appointments: [], barberId: '' });
       }
       barberId = barbers[0].id;
     }
 
     const appointments = await barberAppointments(barberId, parseLocalDate(dateStr));
-    return { success: true, appointments, barberId };
+    return actionSuccess({ appointments, barberId });
   } catch (error: unknown) {
     console.error('Error fetching barber appointments:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar agendamentos.' };
+    return toStructuredError(error, 'Erro ao buscar agendamentos.');
   }
 }
 
@@ -205,20 +211,22 @@ export async function getBarberMonthScheduleAction(year: number, month: number, 
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return { success: false, error: 'Não autenticado.' };
+      return authRequiredResponse();
     }
 
-    if (!['ADMIN', 'BARBER'].includes(session.user.role)) return { success: false, error: 'Não autorizado.' };
+    if (!['ADMIN', 'BARBER'].includes(session.user.role)) {
+      return forbiddenResponse();
+    }
     if (session.user.role === 'BARBER' && barberIdParam) {
       const ownBarber = await new PrismaBarberRepository().findByUserId(session.user.id);
-      if (ownBarber?.id !== barberIdParam) return { success: false, error: 'Acesso negado.' };
+      if (ownBarber?.id !== barberIdParam) return forbiddenResponse('Acesso negado à agenda de outro profissional.');
     }
     let barberId = barberIdParam;
     if (!barberId) {
       const barberRepo = new PrismaBarberRepository();
       const barber = await barberRepo.findByUserId(session.user.id);
       if (!barber) {
-        return { success: false, error: 'Perfil de barbeiro não encontrado.' };
+        return notFoundResponse('Perfil de barbeiro não encontrado.');
       }
       barberId = barber.id;
     }
@@ -226,11 +234,10 @@ export async function getBarberMonthScheduleAction(year: number, month: number, 
     const useCase = new GetBarberMonthScheduleUseCase(new PrismaAppointmentReportRepository());
     const occupancy = await useCase.execute({ barberId, year, month });
 
-    return { success: true, occupancy, barberId };
+    return actionSuccess({ occupancy, barberId });
   } catch (error: unknown) {
     console.error('Error fetching barber month schedule:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar agenda do mês.' };
+    return toStructuredError(error, 'Erro ao buscar agenda do mês.');
   }
 }
 
@@ -240,8 +247,11 @@ export async function getBarberMetricsDetailedAction(
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.id || (session.user.role !== 'BARBER' && session.user.role !== 'ADMIN')) {
-      return { success: false, error: 'Não autorizado ou sessão inválida.' };
+    if (!session?.user?.id) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'BARBER' && session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas barbeiros e administradores podem acessar estas métricas.');
     }
 
     const barberRepo = new PrismaBarberRepository();
@@ -251,13 +261,13 @@ export async function getBarberMetricsDetailedAction(
     } else if (session.user.role === 'BARBER') {
       const barber = await barberRepo.findByUserId(session.user.id);
       if (!barber) {
-        return { success: false, error: 'Perfil profissional do barbeiro não encontrado.' };
+        return notFoundResponse('Perfil profissional do barbeiro não encontrado.');
       }
       barberId = barber.id;
     } else {
       const barbers = await barberRepo.findAll();
       if (barbers.length === 0) {
-        return { success: true, report: null, barberId: '', barber: null };
+        return actionSuccess({ report: null, barberId: '', barber: null });
       }
       barberId = barbers[0].id;
     }
@@ -268,8 +278,7 @@ export async function getBarberMetricsDetailedAction(
     const useCase = new GetBarberMetricsUseCase(new PrismaAppointmentReportRepository());
     const report = await useCase.execute({ barberId, period });
 
-    return {
-      success: true,
+    return actionSuccess({
       report,
       barberId,
       barber: barber
@@ -281,11 +290,10 @@ export async function getBarberMetricsDetailedAction(
             specialty: specialty || 'Especialista em Cortes & Barba',
           }
         : null,
-    };
+    });
   } catch (error: unknown) {
     console.error('Error fetching detailed barber metrics:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar métricas detalhadas do barbeiro.' };
+    return toStructuredError(error, 'Erro ao buscar métricas detalhadas do barbeiro.');
   }
 }
 
@@ -293,7 +301,7 @@ export async function getAppointmentDetailsAction(appointmentId: string) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return { success: false, error: 'Não autorizado.' };
+      return authRequiredResponse();
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
@@ -301,24 +309,23 @@ export async function getAppointmentDetailsAction(appointmentId: string) {
 
     const appointment = await appointmentRepo.findByIdWithRelations(appointmentId);
     if (!appointment) {
-      return { success: false, error: 'Agendamento não encontrado.' };
+      return notFoundResponse('Agendamento não encontrado.');
     }
 
     const ownBarber = session.user.role === 'BARBER' ? await barberRepo.findByUserId(session.user.id) : null;
-    // Ownership is checked on the server, independently of page access.
+    // Ownership check: If not admin, not own barber, and not client, return 404 to avoid leaking existence
     if (
       session.user.role !== 'ADMIN' &&
       ownBarber?.id !== appointment.barberId &&
       appointment.clientId !== session.user.id
     ) {
-      return { success: false, error: 'Acesso negado a este agendamento.' };
+      return notFoundResponse('Agendamento não encontrado.');
     }
 
     const barber = await barberRepo.findById(appointment.barberId);
     const specialty = barber ? await barberRepo.getBarberSpecialty(barber.id) : null;
 
-    return {
-      success: true,
+    return actionSuccess({
       appointment: {
         id: appointment.id,
         startTime: appointment.startTime,
@@ -335,11 +342,10 @@ export async function getAppointmentDetailsAction(appointmentId: string) {
         barberImage: barber?.user?.image || null,
         clientName: appointment.client?.name || 'Cliente VIP',
       },
-    };
+    });
   } catch (error: unknown) {
     console.error('Error fetching appointment details:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao carregar detalhes.' };
+    return toStructuredError(error, 'Erro ao carregar detalhes.');
   }
 }
 
@@ -347,24 +353,29 @@ export async function cancelAppointmentByClientAction(appointmentId: string) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return { success: false, error: 'Você precisa estar logado.' };
+      return authRequiredResponse('Você precisa estar logado.');
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
     const existing = await appointmentRepo.findById(appointmentId);
     if (!existing || existing.clientId !== session.user.id) {
-      return { success: false, error: 'Agendamento não encontrado ou não autorizado.' };
+      return notFoundResponse('Agendamento não encontrado.');
     }
 
     if (existing.status !== 'CONFIRMED' && existing.status !== 'PENDING') {
-      return { success: false, error: 'Este agendamento não pode mais ser cancelado.' };
+      return conflictResponse('Este agendamento não pode mais ser cancelado.');
     }
 
     if (existing.startTime < new Date()) {
-      return { success: false, error: 'Não é possível cancelar agendamentos passados ou em andamento.' };
+      return validationResponse('Não é possível cancelar agendamentos passados ou em andamento.');
     }
 
-    await new ChangeAppointmentStatusUseCase(appointmentRepo, new PrismaBarberRepository()).execute({ appointmentId, newStatus: 'CANCELED', userId: session.user.id, userRole: 'CLIENT' });
+    await new ChangeAppointmentStatusUseCase(appointmentRepo, new PrismaBarberRepository()).execute({
+      appointmentId,
+      newStatus: 'CANCELED',
+      userId: session.user.id,
+      userRole: 'CLIENT',
+    });
 
     try {
       const barberRecord = await prisma.barber.findUnique({
@@ -397,11 +408,10 @@ export async function cancelAppointmentByClientAction(appointmentId: string) {
     revalidatePath('/agenda');
     revalidatePath(`/agenda/${appointmentId}`);
 
-    return { success: true, message: 'Agendamento cancelado com sucesso.' };
+    return actionSuccess({ message: 'Agendamento cancelado com sucesso.' });
   } catch (error: unknown) {
     console.error('Error canceling appointment:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao cancelar o agendamento.' };
+    return toStructuredError(error, 'Erro ao cancelar o agendamento.');
   }
 }
 
@@ -412,13 +422,13 @@ export async function rescheduleAppointmentAction(data: {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return { success: false, error: 'Você precisa estar logado para reagendar.' };
+      return authRequiredResponse('Você precisa estar logado para reagendar.');
     }
 
     const { appointmentId, newStartTimeStr } = data;
     const newStartTime = new Date(newStartTimeStr);
     if (isNaN(newStartTime.getTime())) {
-      return { success: false, error: 'Nova data ou horário inválido.' };
+      return validationResponse('Nova data ou horário inválido.');
     }
 
     const appointmentRepo = new PrismaAppointmentRepository();
@@ -468,16 +478,10 @@ export async function rescheduleAppointmentAction(data: {
     revalidatePath('/agenda');
     revalidatePath(`/agenda/${appointmentId}`);
 
-    return { success: true, appointment: updated, message: 'Agendamento reagendado com sucesso!' };
+    return actionSuccess({ appointment: updated, message: 'Agendamento reagendado com sucesso!' });
   } catch (error: unknown) {
     console.error('Error rescheduling appointment:', error);
-    const err = error as Error & { status?: number };
-    return {
-      success: false,
-      error: err.status === 409
-        ? 'Este horário acabou de ser reservado por outro cliente. Por favor, escolha outro.'
-        : err.message || 'Erro ao reagendar agendamento.',
-    };
+    return toStructuredError(error, 'Erro ao reagendar agendamento.');
   }
 }
 

@@ -1,6 +1,12 @@
 'use server';
 
 import { auth } from '@/auth';
+import {
+  actionSuccess,
+  authRequiredResponse,
+  forbiddenResponse,
+  toStructuredError,
+} from '@/core/domain/errors';
 import { CreateServiceUseCase } from '@/core/usecases/CreateServiceUseCase';
 import { DeleteServiceUseCase } from '@/core/usecases/DeleteServiceUseCase';
 import { UpdateServiceUseCase } from '@/core/usecases/UpdateServiceUseCase';
@@ -10,15 +16,17 @@ import { revalidatePath } from 'next/cache';
 export async function getServicesAdminAction(activeOnly: boolean = false) {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== 'ADMIN') {
-      return { success: false, error: 'Acesso negado. Requer permissão de administrador.' };
+    if (!session?.user) {
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Acesso negado. Requer permissão de administrador.');
     }
 
     const serviceRepo = new PrismaServiceRepository();
     const services = await serviceRepo.findAll({ activeOnly });
 
-    return {
-      success: true,
+    return actionSuccess({
       services: services.map((s) => ({
         id: s.id,
         name: s.name,
@@ -28,11 +36,10 @@ export async function getServicesAdminAction(activeOnly: boolean = false) {
         image: s.image || null,
         active: s.active,
       })),
-    };
+    });
   } catch (error: unknown) {
     console.error('Erro em getServicesAdminAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao buscar serviços.' };
+    return toStructuredError(error, 'Erro ao buscar serviços.');
   }
 }
 
@@ -40,7 +47,10 @@ export async function createServiceAction(formData: FormData) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Usuário não autenticado.' };
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem criar serviços.');
     }
 
     const name = formData.get('name') as string;
@@ -69,8 +79,7 @@ export async function createServiceAction(formData: FormData) {
     revalidatePath('/admin/servicos');
     revalidatePath('/admin/dashboard');
 
-    return {
-      success: true,
+    return actionSuccess({
       service: {
         id: created.id,
         name: created.name,
@@ -80,11 +89,10 @@ export async function createServiceAction(formData: FormData) {
         image: created.image || null,
         active: created.active,
       },
-    };
+    });
   } catch (error: unknown) {
     console.error('Erro em createServiceAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao criar serviço.' };
+    return toStructuredError(error, 'Erro ao criar serviço.');
   }
 }
 
@@ -92,7 +100,10 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Usuário não autenticado.' };
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem atualizar serviços.');
     }
 
     const name = formData.has('name') ? (formData.get('name') as string) : undefined;
@@ -125,8 +136,7 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
     revalidatePath('/admin/servicos');
     revalidatePath('/admin/dashboard');
 
-    return {
-      success: true,
+    return actionSuccess({
       service: {
         id: updated.id,
         name: updated.name,
@@ -136,11 +146,10 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
         image: updated.image || null,
         active: updated.active,
       },
-    };
+    });
   } catch (error: unknown) {
     console.error('Erro em updateServiceAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao atualizar serviço.' };
+    return toStructuredError(error, 'Erro ao atualizar serviço.');
   }
 }
 
@@ -148,7 +157,10 @@ export async function deleteServiceAction(serviceId: string) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: 'Usuário não autenticado.' };
+      return authRequiredResponse();
+    }
+    if (session.user.role !== 'ADMIN') {
+      return forbiddenResponse('Apenas administradores podem excluir serviços.');
     }
 
     const serviceRepo = new PrismaServiceRepository();
@@ -163,10 +175,9 @@ export async function deleteServiceAction(serviceId: string) {
     revalidatePath('/admin/servicos');
     revalidatePath('/admin/dashboard');
 
-    return { success: true };
+    return actionSuccess({});
   } catch (error: unknown) {
     console.error('Erro em deleteServiceAction:', error);
-    const err = error as Error;
-    return { success: false, error: err.message || 'Erro ao excluir serviço.' };
+    return toStructuredError(error, 'Erro ao excluir serviço.');
   }
 }

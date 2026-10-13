@@ -171,7 +171,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
     if (isSubmitting) return;
 
     if (status !== 'authenticated') {
-      router.push(`/auth/login?callbackUrl=/?action=agendar`);
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent('/?action=agendar')}`);
       return;
     }
     if (!barberId || !serviceId || !startTime) {
