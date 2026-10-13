@@ -105,6 +105,26 @@ export default function AtendenteAgendaPage() {
   const [selectedSlotTime, setSelectedSlotTime] = useState('');
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
+  // Data do agendamento manual no modal
+  const [modalDate, setModalDate] = useState(() => getYYYYMMDD(new Date()));
+
+  const todayDateStr = getYYYYMMDD(new Date());
+  const tomorrowDateStr = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return getYYYYMMDD(d);
+  })();
+
+  const formatModalDateDisplay = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString('pt-BR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+    });
+  };
+
   // Submissão
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
@@ -170,7 +190,7 @@ export default function AtendenteAgendaPage() {
 
   // Carregar slots disponíveis para a reserva manual
   useEffect(() => {
-    if (!isModalOpen || !modalBarberId || !modalServiceId) {
+    if (!isModalOpen || !modalBarberId || !modalServiceId || !modalDate) {
       setAvailableSlots([]);
       return;
     }
@@ -179,7 +199,7 @@ export default function AtendenteAgendaPage() {
       setIsLoadingSlots(true);
       setSelectedSlotTime('');
       try {
-        const res = await fetch(`/api/barbers/${modalBarberId}/availability?date=${selectedDate}&serviceId=${modalServiceId}`);
+        const res = await fetch(`/api/barbers/${modalBarberId}/availability?date=${modalDate}&serviceId=${modalServiceId}`);
         if (!res.ok) throw new Error('Falha ao carregar horários disponíveis');
         const data = await res.json();
         setAvailableSlots(data);
@@ -191,7 +211,7 @@ export default function AtendenteAgendaPage() {
     };
 
     fetchSlots();
-  }, [isModalOpen, modalBarberId, modalServiceId, selectedDate]);
+  }, [isModalOpen, modalBarberId, modalServiceId, modalDate]);
 
   const handleOpenModal = () => {
     setModalError(null);
@@ -205,6 +225,7 @@ export default function AtendenteAgendaPage() {
     setNewContactEmail('');
     setModalBarberId(barbers[0]?.id || '');
     setModalServiceId(services[0]?.id || '');
+    setModalDate(selectedDate >= todayDateStr ? selectedDate : todayDateStr);
     setSelectedSlotTime('');
     setIsModalOpen(true);
   };
@@ -264,8 +285,12 @@ export default function AtendenteAgendaPage() {
       });
 
       if (res.success) {
-        setModalSuccess('Reserva manual confirmada com sucesso!');
-        loadAgenda();
+        setModalSuccess(`Reserva confirmada com sucesso para ${formatModalDateDisplay(modalDate)}!`);
+        if (modalDate !== selectedDate) {
+          setSelectedDate(modalDate);
+        } else {
+          loadAgenda();
+        }
         setTimeout(() => {
           setIsModalOpen(false);
         }, 1200);
@@ -697,6 +722,90 @@ export default function AtendenteAgendaPage() {
                 )}
               </div>
 
+              {/* Data do Agendamento */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="modal-date-input" className="block font-semibold text-white/70 text-xs">
+                    Data do Agendamento *
+                  </label>
+                  <span className="text-[11px] text-[#D4AF37] font-medium capitalize">
+                    {formatModalDateDisplay(modalDate)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <CalendarIcon className="w-4 h-4 text-[#D4AF37] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      id="modal-date-input"
+                      type="date"
+                      min={todayDateStr}
+                      value={modalDate}
+                      onChange={(e) => {
+                        if (e.target.value) setModalDate(e.target.value);
+                      }}
+                      className="w-full bg-[#1C1C1C] border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#D4AF37] cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Atalhos Rápidos */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const [y, m, d] = modalDate.split('-').map(Number);
+                        const dt = new Date(y, m - 1, d);
+                        dt.setDate(dt.getDate() - 1);
+                        const newStr = getYYYYMMDD(dt);
+                        if (newStr >= todayDateStr) setModalDate(newStr);
+                      }}
+                      disabled={modalDate <= todayDateStr}
+                      className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white text-xs transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Dia anterior"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalDate(todayDateStr)}
+                      className={`px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                        modalDate === todayDateStr
+                          ? 'bg-[#D4AF37]/20 border-[#D4AF37]/50 text-[#D4AF37]'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                      }`}
+                      title="Agendar para hoje"
+                    >
+                      Hoje
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalDate(tomorrowDateStr)}
+                      className={`px-2.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                        modalDate === tomorrowDateStr
+                          ? 'bg-[#D4AF37]/20 border-[#D4AF37]/50 text-[#D4AF37]'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                      }`}
+                      title="Agendar para amanhã"
+                    >
+                      Amanhã
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const [y, m, d] = modalDate.split('-').map(Number);
+                        const dt = new Date(y, m - 1, d);
+                        dt.setDate(dt.getDate() + 1);
+                        setModalDate(getYYYYMMDD(dt));
+                      }}
+                      className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white text-xs transition-all cursor-pointer"
+                      title="Próximo dia"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Barbeiro e Serviço */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -732,8 +841,8 @@ export default function AtendenteAgendaPage() {
 
               {/* Grade de Horários */}
               <div>
-                <label className="block font-semibold text-white/70 mb-1.5">
-                  Horário Disponível para {selectedDate} *
+                <label className="block font-semibold text-white/70 mb-1.5 text-xs">
+                  Horário Disponível para {formatModalDateDisplay(modalDate)} *
                 </label>
                 {isLoadingSlots ? (
                   <div className="py-4 text-center text-white/40 flex items-center justify-center gap-2">
@@ -741,8 +850,8 @@ export default function AtendenteAgendaPage() {
                     <span>Consultando disponibilidade...</span>
                   </div>
                 ) : availableSlots.length === 0 ? (
-                  <p className="text-white/40 py-3 text-center bg-white/[0.02] rounded-xl border border-white/5">
-                    Nenhum horário disponível para este profissional nesta data.
+                  <p className="text-white/40 py-3 text-center bg-white/[0.02] rounded-xl border border-white/5 text-xs">
+                    Nenhum horário disponível para este profissional em {formatModalDateDisplay(modalDate)}.
                   </p>
                 ) : (
                   <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-36 overflow-y-auto p-1">
