@@ -4,6 +4,7 @@ import { updatePasswordAction, updateProfileAction } from '@/app/actions/auth-ac
 import { uploadProfileImageAction } from '@/app/actions/upload-actions';
 import { BarberBottomNavigation } from '@/components/barber/BarberBottomNavigation';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
+import { ReceptionNavbar } from '@/components/reception/ReceptionNavbar';
 import { BottomNavigation } from '@/components/lux/BottomNavigation';
 import { Header } from '@/components/lux/Header';
 import { compressImageClient } from '@/utils/compress-image';
@@ -106,6 +107,7 @@ export default function ProfilePage() {
     return null;
   }
 
+  const isReceptionistUser = session?.user?.role === 'RECEPTIONIST';
   const isBarberUser = session?.user?.role === 'BARBER' || session?.user?.role === 'ADMIN';
 
   const initials = name
@@ -245,7 +247,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 selection:bg-[#D4AF37]/30 font-sans">
       {/* Barra de Navegação Superior Conforme o Perfil */}
-      {isBarberUser ? <BarberNavbar /> : <Header />}
+      {isReceptionistUser ? <ReceptionNavbar /> : isBarberUser ? <BarberNavbar /> : <Header />}
 
       <main className="flex-grow max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-6">
         
@@ -570,7 +572,7 @@ export default function ProfilePage() {
       </main>
 
       {/* Navegação Inferior Conforme o Perfil */}
-      {isBarberUser ? <BarberBottomNavigation /> : <BottomNavigation activeTab="mais" />}
+      {isReceptionistUser ? null : isBarberUser ? <BarberBottomNavigation /> : <BottomNavigation activeTab="mais" />}
     </div>
   );
 }

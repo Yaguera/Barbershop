@@ -28,7 +28,7 @@ interface AppointmentDetail {
   startTime: string | Date;
   endTime: string | Date;
   status: string;
-  clientId: string;
+  clientId: string | null;
   barberId: string;
   serviceId: string;
   serviceName: string;

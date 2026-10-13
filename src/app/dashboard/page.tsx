@@ -18,6 +18,10 @@ export default async function DashboardRedirectPage() {
     redirect('/barber/dashboard');
   }
 
+  if (session.user.role === 'RECEPTIONIST') {
+    redirect('/atendente');
+  }
+
   // Clients go to their luxury agenda/appointments experience
   redirect('/agenda');
 }

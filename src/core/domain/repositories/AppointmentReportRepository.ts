@@ -44,13 +44,18 @@ export interface AdminCalendarDayResult {
 
 export interface AdminDashboardMetricsReport {
   totalRevenue: number;
+  totalRealized?: number;
+  totalReceived?: number;
+  totalPending?: number;
   completedCount: number;
+  receivedCount?: number;
+  pendingPaymentCount?: number;
   canceledCount: number;
   noShowCount?: number;
   newClientsCount: number;
   growthPercentage: string;
   growthTrend?: 'up' | 'down' | 'neutral' | 'no_basis';
-  revenueByTime: { timeLabel: string; revenue: number; completed: number }[];
+  revenueByTime: { timeLabel: string; revenue: number; completed: number; received?: number }[];
   servicesDistribution: { name: string; value: number; revenue?: number; percentage: number; fill: string }[];
   periodLabel?: string;
 }

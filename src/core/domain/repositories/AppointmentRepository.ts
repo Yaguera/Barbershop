@@ -1,9 +1,21 @@
-import { Appointment,Service,User } from '@/core/domain/models';
+import { Appointment, ClientContact, Service, User } from '@/core/domain/models';
 
 export type AppointmentWithRelations = Appointment & {
-  client: User;
+  client: User | null;
+  clientContact?: ClientContact | null;
   service: Service;
 };
+
+export interface CreateAppointmentData {
+  clientId?: string | null;
+  clientContactId?: string | null;
+  barberId: string;
+  serviceId: string;
+  startTime: Date;
+  endTime: Date;
+  origin?: 'ONLINE' | 'WHATSAPP' | 'WALK_IN' | string;
+  createdById?: string | null;
+}
 
 export interface AppointmentRepository {
   findById(id: string): Promise<Appointment | null>;
@@ -11,13 +23,7 @@ export interface AppointmentRepository {
   findByBarberAndDate(barberId: string, startOfDay: Date, endOfDay: Date): Promise<Appointment[]>;
   findByClient(clientId: string): Promise<Appointment[]>;
   createTransactional(
-    data: {
-      clientId: string;
-      barberId: string;
-      serviceId: string;
-      startTime: Date;
-      endTime: Date;
-    },
+    data: CreateAppointmentData,
     conflictingStatuses: string[]
   ): Promise<Appointment | null>;
   rescheduleTransactional(

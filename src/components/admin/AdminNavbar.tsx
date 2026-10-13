@@ -1,23 +1,24 @@
 'use client';
 
 import {
-CalendarDays,
-LayoutDashboard,
-LogOut,
-Menu,
-Scissors,
-User,
-Users,
-X
+  CalendarDays,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Scissors,
+  User,
+  UserCheck,
+  Users,
+  X,
 } from 'lucide-react';
-import { signOut,useSession } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState,useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
 interface AdminNavbarProps {
-  activePage?: 'dashboard' | 'calendario' | 'clientes' | 'servicos';
+  activePage?: 'dashboard' | 'calendario' | 'clientes' | 'servicos' | 'atendentes';
 }
 
 const subscribe = () => () => {};
@@ -45,7 +46,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
         </Link>
 
         {/* Desktop Navigation (hidden on mobile) */}
-        <div className="hidden md:flex items-center gap-2.5">
+        <div className="hidden md:flex items-center gap-2">
           {session?.user && (
             <div className="flex items-center gap-2 mr-2 pr-3 border-r border-zinc-800">
               {session.user.image && (
@@ -65,7 +66,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/dashboard"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'dashboard'
                 ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
                 : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
@@ -77,7 +78,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/calendario"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'calendario'
                 ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
                 : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
@@ -89,7 +90,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/clientes"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'clientes'
                 ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
                 : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
@@ -101,7 +102,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <Link
             href="/admin/servicos"
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
               activePage === 'servicos'
                 ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
                 : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
@@ -112,8 +113,20 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
           </Link>
 
           <Link
+            href="/admin/atendentes"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
+              activePage === 'atendentes'
+                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
+                : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            Atendentes
+          </Link>
+
+          <Link
             href="/profile"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
           >
             <User className="w-3.5 h-3.5" />
             Perfil
@@ -121,7 +134,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
           <button
             onClick={() => signOut({ callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/' })}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-all motion-btn cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-all motion-btn cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             Sair
@@ -239,6 +252,19 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                 >
                   <Scissors className="w-4 h-4 text-amber-400" />
                   Gestão de Serviços
+                </Link>
+
+                <Link
+                  href="/admin/atendentes"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all ${
+                    activePage === 'atendentes'
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
+                      : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
+                  }`}
+                >
+                  <UserCheck className="w-4 h-4 text-amber-400" />
+                  Gestão de Atendentes
                 </Link>
 
                 <Link

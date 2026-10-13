@@ -11,8 +11,14 @@ import { GetClientManagementDashboardUseCase } from '@/core/usecases/GetClientMa
 import { GetFinanceDashboardUseCase } from '@/core/usecases/GetFinanceDashboardUseCase';
 import { RegisterBarberUseCase } from '@/core/usecases/RegisterBarberUseCase';
 import { PrismaBarberRepository } from '@/infra/repositories/PrismaBarberRepository';
+import { PrismaPaymentReceiptRepository } from '@/infra/repositories/PrismaPaymentReceiptRepository';
+import { PrismaReceptionistRepository } from '@/infra/repositories/PrismaReceptionistRepository';
 import { PrismaServiceRepository } from '@/infra/repositories/PrismaServiceRepository';
 import { PrismaUserRepository } from '@/infra/repositories/PrismaUserRepository';
+import { DeactivateReceptionistUseCase } from '@/core/usecases/DeactivateReceptionistUseCase';
+import { RegisterReceptionistUseCase } from '@/core/usecases/RegisterReceptionistUseCase';
+import { RevertPaymentReceiptUseCase } from '@/core/usecases/RevertPaymentReceiptUseCase';
+import { revalidatePath } from 'next/cache';
 
 export async function registerBarberAction(data: {
   name: string;
@@ -249,5 +255,128 @@ export async function getAdminCalendarMetricsAction(year: number, month?: number
     console.error('Error fetching admin calendar metrics:', error);
     const err = error as Error;
     return { success: false, error: err.message || 'Erro ao buscar métricas de calendário.' };
+  }
+}
+
+export async function getReceptionistsAction() {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return { success: false, error: 'Acesso negado. Apenas administradores.' };
+    }
+
+    const receptionistRepo = new PrismaReceptionistRepository();
+    const list = await receptionistRepo.findAll();
+
+    return {
+      success: true,
+      receptionists: list.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        name: r.user.name || 'Atendente',
+        email: r.user.email,
+        active: r.user.active,
+        createdAt: r.createdAt,
+      })),
+    };
+  } catch (error: unknown) {
+    console.error('Error fetching receptionists:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao carregar atendentes.' };
+  }
+}
+
+export async function registerReceptionistAction(data: {
+  name: string;
+  email: string;
+  passwordHash: string;
+}) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return { success: false, error: 'Apenas administradores podem cadastrar atendentes.' };
+    }
+
+    const userRepo = new PrismaUserRepository();
+    const receptionistRepo = new PrismaReceptionistRepository();
+    const useCase = new RegisterReceptionistUseCase(userRepo, receptionistRepo);
+
+    const result = await useCase.execute({
+      adminRole: session.user.role,
+      name: data.name,
+      email: data.email,
+      passwordHash: data.passwordHash,
+    });
+
+    revalidatePath('/admin/atendentes');
+
+    return {
+      success: true,
+      message: 'Atendente cadastrada com sucesso! Compartilhe a senha provisória de forma segura.',
+      receptionist: result.receptionist,
+    };
+  } catch (error: unknown) {
+    console.error('Error registering receptionist:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao cadastrar atendente.' };
+  }
+}
+
+export async function deactivateReceptionistAction(receptionistId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return { success: false, error: 'Apenas administradores podem desativar atendentes.' };
+    }
+
+    const receptionistRepo = new PrismaReceptionistRepository();
+    const useCase = new DeactivateReceptionistUseCase(receptionistRepo);
+
+    await useCase.execute({
+      adminRole: session.user.role,
+      receptionistId,
+    });
+
+    revalidatePath('/admin/atendentes');
+
+    return {
+      success: true,
+      message: 'Atendente desativada com sucesso. Sessões ativas foram revogadas.',
+    };
+  } catch (error: unknown) {
+    console.error('Error deactivating receptionist:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao desativar atendente.' };
+  }
+}
+
+export async function revertPaymentReceiptAction(receiptId: string, reason: string) {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return { success: false, error: 'Apenas administradores podem reverter recebimentos.' };
+    }
+
+    const receiptRepo = new PrismaPaymentReceiptRepository();
+    const useCase = new RevertPaymentReceiptUseCase(receiptRepo);
+
+    await useCase.execute({
+      receiptId,
+      reason,
+      operatorUserId: session.user.id,
+      operatorRole: session.user.role,
+    });
+
+    revalidatePath('/atendente/caixa');
+    revalidatePath('/admin/dashboard');
+
+    return {
+      success: true,
+      message: 'Recebimento revertido com sucesso para conferência e auditoria.',
+    };
+  } catch (error: unknown) {
+    console.error('Error reverting payment receipt:', error);
+    const err = error as Error;
+    return { success: false, error: err.message || 'Erro ao reverter recebimento.' };
   }
 }

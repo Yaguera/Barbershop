@@ -1,4 +1,4 @@
-import { AppointmentRepository,AppointmentWithRelations } from '@/core/domain/repositories/AppointmentRepository';
+import { AppointmentRepository, AppointmentWithRelations, CreateAppointmentData } from '@/core/domain/repositories/AppointmentRepository';
 import { Appointment } from '@/generated/prisma/client';
 import { prisma } from '../db/prisma-client';
 import { toService } from './mappers';
@@ -15,6 +15,7 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       where: { id },
       include: {
         client: true,
+        clientContact: true,
         service: true,
       },
     });
@@ -44,13 +45,7 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
   }
 
   async createTransactional(
-    data: {
-      clientId: string;
-      barberId: string;
-      serviceId: string;
-      startTime: Date;
-      endTime: Date;
-    },
+    data: CreateAppointmentData,
     conflictingStatuses: string[]
   ): Promise<Appointment | null> {
     // Encapsulate read/write inside an interactive transaction
@@ -84,11 +79,14 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       // 3. Create the appointment if no conflict exists
       return await tx.appointment.create({
         data: {
-          clientId: data.clientId,
+          clientId: data.clientId ?? null,
+          clientContactId: data.clientContactId ?? null,
           barberId: data.barberId,
           serviceId: data.serviceId,
           startTime: data.startTime,
           endTime: data.endTime,
+          origin: data.origin ?? 'ONLINE',
+          createdById: data.createdById ?? null,
           status: 'PENDING',
           priceCents,
           commissionCents,
@@ -145,5 +143,4 @@ export class PrismaAppointmentRepository implements AppointmentRepository {
       data: { status },
     });
   }
-
 }

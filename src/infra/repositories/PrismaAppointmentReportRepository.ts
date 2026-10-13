@@ -307,6 +307,7 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
         },
         include: {
           client: true,
+          clientContact: true,
           service: true,
           barber: {
             include: {
@@ -325,8 +326,8 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
         startTime: app.startTime,
         endTime: app.endTime,
         status: app.status,
-        clientName: app.client?.name || 'Cliente',
-        clientEmail: app.client?.email || '',
+        clientName: app.client?.name || app.clientContact?.name || 'Cliente',
+        clientEmail: app.client?.email || app.clientContact?.email || '',
         barberName: app.barber?.user?.name || 'Barbeiro',
         serviceName: app.service?.name || 'Serviço',
         servicePrice: app.priceCents / 100,
@@ -511,12 +512,12 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
     ] = await Promise.all([
       prisma.appointment.findMany({
         where: { ...baseWhere, status: 'COMPLETED' },
-        include: { service: true },
+        include: { service: true, receipt: true },
         orderBy: { startTime: 'asc' },
       }),
       prisma.appointment.findMany({
         where: prevWhere,
-        include: { service: true },
+        include: { service: true, receipt: true },
       }),
       prisma.appointment.groupBy({
         by: ['status'],
@@ -540,8 +541,22 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
       prisma.service.findMany(),
     ]);
 
-    const totalRevenue = completedAppointments.reduce((sum, app) => sum + (app.priceCents / 100), 0);
-    const prevTotalRevenue = prevCompletedAppointments.reduce((sum, app) => sum + (app.priceCents / 100), 0);
+    const totalRealized = completedAppointments.reduce((sum, app) => sum + (app.priceCents / 100), 0);
+    const confirmedReceipts = completedAppointments.filter((app) => app.receipt?.status === 'CONFIRMED');
+    const totalReceived = confirmedReceipts.reduce((sum, app) => sum + (app.receipt!.amountCents / 100), 0);
+    const pendingAppointments = completedAppointments.filter((app) => !app.receipt || app.receipt.status !== 'CONFIRMED');
+    const totalPending = pendingAppointments.reduce((sum, app) => sum + (app.priceCents / 100), 0);
+    const receivedCount = confirmedReceipts.length;
+    const pendingPaymentCount = pendingAppointments.length;
+
+    // totalRevenue reflete o recebido confirmado; se não houver registros de caixa legados, cai para realizado
+    const totalRevenue = totalReceived > 0 || confirmedReceipts.length > 0 ? totalReceived : totalRealized;
+    const prevTotalRevenue = prevCompletedAppointments.reduce((sum, app) => {
+      if (app.receipt?.status === 'CONFIRMED') {
+        return sum + (app.receipt.amountCents / 100);
+      }
+      return sum + (app.priceCents / 100);
+    }, 0);
     
     let growthPercentage = '+0.0%';
     let growthTrend: 'up' | 'down' | 'neutral' | 'no_basis' = 'neutral';
@@ -633,7 +648,12 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
 
     return {
       totalRevenue,
+      totalRealized,
+      totalReceived,
+      totalPending,
       completedCount,
+      receivedCount,
+      pendingPaymentCount,
       canceledCount,
       noShowCount,
       newClientsCount,

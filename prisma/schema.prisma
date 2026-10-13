@@ -11,23 +11,48 @@ datasource db {
 }
 
 model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String          @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?         // Optional because Google users won't have it initially
-  phone         String?
-  sessionVersion Int           @default(0)
-  role          String          @default("CLIENT") // ADMIN, BARBER, CLIENT
-  active        Boolean         @default(true)     // Soft delete status
-  accounts      Account[]
-  sessions      Session[]
-  appointments  Appointment[]   @relation("ClientAppointments")
-  notifications Notification[]
-  barber        Barber?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                  String            @id @default(cuid())
+  name                String?
+  email               String            @unique
+  emailVerified       DateTime?
+  image               String?
+  passwordHash        String?           // Optional because Google users won't have it initially
+  phone               String?
+  sessionVersion      Int               @default(0)
+  role                String            @default("CLIENT") // ADMIN, BARBER, CLIENT, RECEPTIONIST
+  active              Boolean           @default(true)     // Soft delete status
+  accounts            Account[]
+  sessions            Session[]
+  appointments        Appointment[]     @relation("ClientAppointments")
+  createdAppointments Appointment[]     @relation("CreatedAppointments")
+  confirmedReceipts   PaymentReceipt[]  @relation("ConfirmedReceipts")
+  revertedReceipts    PaymentReversal[] @relation("RevertedReceipts")
+  notifications       Notification[]
+  barber              Barber?
+  receptionist        Receptionist?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+}
+
+model Receptionist {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClientContact {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String?
+  email        String?
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([name])
+  @@index([phone])
 }
 
 model Account {
@@ -91,28 +116,69 @@ model Service {
 }
 
 model Appointment {
-  id            String    @id @default(cuid())
-  clientId      String
-  client        User      @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
-  barberId      String
-  barber        Barber    @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  serviceId     String
-  service       Service   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  startTime     DateTime
-  endTime       DateTime
-  status        String    @default("PENDING") // PENDING, COMPLETED, CANCELED, NO_SHOW (RN07.1)
-  priceCents    Int
+  id              String          @id @default(cuid())
+  clientId        String?
+  client          User?           @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  clientContactId String?
+  clientContact   ClientContact?  @relation(fields: [clientContactId], references: [id], onDelete: Cascade)
+  barberId        String
+  barber          Barber          @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  serviceId       String
+  service         Service         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  startTime       DateTime
+  endTime         DateTime
+  status          String          @default("PENDING") // PENDING, COMPLETED, CANCELED, NO_SHOW (RN07.1)
+  origin          String          @default("ONLINE")  // ONLINE, WHATSAPP, WALK_IN
+  createdById     String?
+  createdBy       User?           @relation("CreatedAppointments", fields: [createdById], references: [id], onDelete: SetNull)
+  priceCents      Int
   commissionCents Int
-  reminded24h   Boolean   @default(false)
-  reminded1h    Boolean   @default(false)
-  reminded15m   Boolean   @default(false)
-  remindedStart Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  reminded24h     Boolean         @default(false)
+  reminded1h      Boolean         @default(false)
+  reminded15m     Boolean         @default(false)
+  remindedStart   Boolean         @default(false)
+  receipt         PaymentReceipt?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   @@index([barberId, startTime, endTime])
   @@index([clientId, startTime])
+  @@index([clientContactId, startTime])
   @@index([status, startTime])
+  @@index([createdById])
+}
+
+model PaymentReceipt {
+  id             String           @id @default(cuid())
+  appointmentId  String           @unique
+  appointment    Appointment      @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  amountCents    Int
+  method         String           // MONEY, PIX, CARD
+  confirmedById  String
+  confirmedBy    User             @relation("ConfirmedReceipts", fields: [confirmedById], references: [id], onDelete: Restrict)
+  confirmedAt    DateTime         @default(now())
+  idempotencyKey String?          @unique
+  status         String           @default("CONFIRMED") // CONFIRMED, REVERSED
+  reversal       PaymentReversal?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([confirmedAt])
+  @@index([method, confirmedAt])
+  @@index([status, confirmedAt])
+}
+
+model PaymentReversal {
+  id             String         @id @default(cuid())
+  receiptId      String         @unique
+  receipt        PaymentReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  reason         String
+  revertedById   String
+  revertedBy     User           @relation("RevertedReceipts", fields: [revertedById], references: [id], onDelete: Restrict)
+  revertedAt     DateTime       @default(now())
+  createdAt      DateTime       @default(now())
+
+  @@index([revertedAt])
 }
 
 model Notification {
