@@ -15,6 +15,9 @@ export default async function Home() {
     if (session.user.role === 'ADMIN') {
       redirect('/admin/dashboard');
     }
+    if (session.user.role === 'RECEPTIONIST') {
+      redirect('/atendente');
+    }
   }
 
   // 1. Fetch Barbers and Services from Repositories
@@ -58,4 +61,3 @@ export default async function Home() {
     </div>
   );
 }
-

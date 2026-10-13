@@ -1,13 +1,12 @@
 'use client';
 
 import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
-import { signIn } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
 
@@ -33,8 +32,37 @@ function LoginForm() {
       if (result?.error) {
         setError('Credenciais inválidas. Verifique seu e-mail e senha.');
       } else {
-        router.refresh();
-        router.push(callbackUrl);
+        const session = await getSession();
+        const role = session?.user?.role;
+
+        let destination = callbackUrl;
+        if (!callbackUrl || callbackUrl === '/') {
+          if (role === 'RECEPTIONIST') {
+            destination = '/atendente';
+          } else if (role === 'ADMIN') {
+            destination = '/admin/dashboard';
+          } else if (role === 'BARBER') {
+            destination = '/barber/dashboard';
+          } else {
+            destination = '/';
+          }
+        } else if (
+          role === 'RECEPTIONIST' &&
+          (callbackUrl === '/' ||
+            callbackUrl.startsWith('/agenda') ||
+            callbackUrl.startsWith('/historico'))
+        ) {
+          destination = '/atendente';
+        } else if (
+          role === 'BARBER' &&
+          (callbackUrl === '/' ||
+            callbackUrl.startsWith('/agenda') ||
+            callbackUrl.startsWith('/historico'))
+        ) {
+          destination = '/barber/dashboard';
+        }
+
+        window.location.href = destination;
       }
     } catch {
       setError('Ocorreu um erro ao fazer login.');
@@ -47,7 +75,7 @@ function LoginForm() {
     setError(null);
     setIsGoogleLoading(true);
     try {
-      await signIn('google', { callbackUrl });
+      await signIn('google', { callbackUrl: '/dashboard' });
     } catch {
       setError('Erro ao iniciar login com o Google.');
       setIsGoogleLoading(false);

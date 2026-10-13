@@ -16,6 +16,18 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
     redirect('/auth/login?callbackUrl=/historico');
   }
 
+  if (session.user.role === 'RECEPTIONIST') {
+    redirect('/atendente');
+  }
+
+  if (session.user.role === 'BARBER') {
+    redirect('/barber/agenda');
+  }
+
+  if (session.user.role === 'ADMIN') {
+    redirect('/admin/dashboard');
+  }
+
   const requestedPage = Number((await searchParams).page || 1);
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1;
   const now = new Date();

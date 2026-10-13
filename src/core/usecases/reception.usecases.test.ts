@@ -66,15 +66,6 @@ describe('Reception and Cash Register Use Cases', () => {
         findByIdWithRelations: vi.fn(),
         findByBarberAndDate: vi.fn().mockResolvedValue([]),
         findByClient: vi.fn(),
-        findOverlapping: vi.fn().mockResolvedValue(null),
-        create: vi.fn().mockImplementation((data) =>
-          Promise.resolve({
-            id: 'appt-123',
-            ...data,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          } as Appointment)
-        ),
         createTransactional: vi.fn().mockImplementation((data) =>
           Promise.resolve({
             id: 'appt-123',
@@ -84,18 +75,15 @@ describe('Reception and Cash Register Use Cases', () => {
             updatedAt: new Date(),
           } as Appointment)
         ),
-        update: vi.fn(),
+        rescheduleTransactional: vi.fn(),
         updateStatus: vi.fn(),
-        delete: vi.fn(),
       };
 
       serviceRepo = {
         findAll: vi.fn(),
-        findActiveOnly: vi.fn(),
         findById: vi.fn().mockResolvedValue(mockService),
         create: vi.fn(),
         update: vi.fn(),
-        delete: vi.fn(),
       };
 
       barberRepo = {
@@ -108,8 +96,7 @@ describe('Reception and Cash Register Use Cases', () => {
 
       contactRepo = {
         findById: vi.fn(),
-        findByPhone: vi.fn(),
-        searchByNameOrPhone: vi.fn(),
+        search: vi.fn(),
         create: vi.fn().mockImplementation((data) =>
           Promise.resolve({
             id: 'contact-999',
@@ -232,8 +219,9 @@ describe('Reception and Cash Register Use Cases', () => {
 
     beforeEach(() => {
       receiptRepo = {
-        findReceiptById: vi.fn(),
-        findReceiptByAppointmentId: vi.fn(),
+        findById: vi.fn(),
+        findByAppointmentId: vi.fn(),
+        findByIdempotencyKey: vi.fn(),
         confirmPayment: vi.fn().mockImplementation((data) =>
           Promise.resolve({
             id: 'receipt-1',
@@ -316,8 +304,9 @@ describe('Reception and Cash Register Use Cases', () => {
 
     beforeEach(() => {
       receiptRepo = {
-        findReceiptById: vi.fn(),
-        findReceiptByAppointmentId: vi.fn(),
+        findById: vi.fn(),
+        findByAppointmentId: vi.fn(),
+        findByIdempotencyKey: vi.fn(),
         confirmPayment: vi.fn(),
         revertPayment: vi.fn().mockImplementation((data) =>
           Promise.resolve({
