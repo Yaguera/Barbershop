@@ -1,15 +1,20 @@
-'use client';
+"use client";
 
 import {
   deleteBarberAction,
-  getAdminDashboardAnalyticsAction,
   getBarbersAction,
-} from '@/app/actions/admin-actions';
-import { AdminNavbar } from '@/components/admin/AdminNavbar';
-import { DashboardAnalytics } from '@/components/admin/DashboardAnalytics';
-import { DashboardFilters } from '@/components/admin/DashboardFilters';
-import { RegisterBarberForm } from '@/components/admin/RegisterBarberForm';
-import type { AdminBarberProp, AnalyticsReport, DashboardPeriod } from '@/components/admin/dashboard-types';
+} from "@/app/actions/admin-actions";
+import { getAdminInsightsAction } from "@/app/actions/admin-insights-actions";
+import { CommissionSettings } from "@/components/admin/CommissionSettings";
+import type { AdminInsights } from "@/core/domain/repositories/AdminInsightsRepository";
+import { AdminNavbar } from "@/components/admin/AdminNavbar";
+import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
+import { DashboardFilters } from "@/components/admin/DashboardFilters";
+import { RegisterBarberForm } from "@/components/admin/RegisterBarberForm";
+import type {
+  AdminBarberProp,
+  DashboardPeriod,
+} from "@/components/admin/dashboard-types";
 import {
   AlertCircle,
   BarChart3,
@@ -17,27 +22,34 @@ import {
   RefreshCw,
   Trash2,
   UserCheck,
-} from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Read initial filter from URL params or default
-  const paramPeriod = (searchParams.get('period') as DashboardPeriod) || 'month';
-  const paramBarber = searchParams.get('barber') || 'all';
+  const paramPeriod =
+    (searchParams.get("period") as DashboardPeriod) || "month";
+  const paramBarber = searchParams.get("barber") || "all";
 
-  const [period, setPeriod] = useState<DashboardPeriod>(
-    ['today', 'week', 'month', 'year', 'all'].includes(paramPeriod) ? paramPeriod : 'month'
-  );
-  const [selectedBarberId, setSelectedBarberId] = useState<string>(paramBarber);
-
+  const period: DashboardPeriod = [
+    "today",
+    "week",
+    "month",
+    "year",
+    "all",
+  ].includes(paramPeriod)
+    ? paramPeriod
+    : "month";
+  const selectedBarberId = paramBarber;
+  const [analyticsScope, setAnalyticsScope] = useState("");
   // Analytics & Team State
-  const [analytics, setAnalytics] = useState<AnalyticsReport | null>(null);
+  const [analytics, setAnalytics] = useState<AdminInsights | null>(null);
   const [barbers, setBarbers] = useState<AdminBarberProp[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,28 +61,37 @@ function AdminDashboardContent() {
 
   const updateUrlParams = (newPeriod: DashboardPeriod, newBarber: string) => {
     const params = new URLSearchParams();
-    if (newPeriod !== 'month') params.set('period', newPeriod);
-    if (newBarber !== 'all') params.set('barber', newBarber);
+    if (newPeriod !== "month") params.set("period", newPeriod);
+    if (newBarber !== "all") params.set("barber", newBarber);
     const queryString = params.toString();
-    router.replace(queryString ? `/admin/dashboard?${queryString}` : '/admin/dashboard', {
-      scroll: false,
-    });
+    router.replace(
+      queryString ? `/admin/dashboard?${queryString}` : "/admin/dashboard",
+      {
+        scroll: false,
+      },
+    );
   };
 
   const loadDashboardData = useCallback(
-    async (targetPeriod: DashboardPeriod, targetBarber: string, isManual = false) => {
+    async (
+      targetPeriod: DashboardPeriod,
+      targetBarber: string,
+      isManual = false,
+    ) => {
       const currentRequestId = ++requestIdRef.current;
 
-      if (isManual || analytics) {
+      if (isManual) {
         setIsRefreshing(true);
       } else {
         setIsLoading(true);
       }
+      setAnalytics(null);
+      setIsLoading(true);
       setErrorMsg(null);
 
       try {
         const [analyticsRes, barbersRes] = await Promise.all([
-          getAdminDashboardAnalyticsAction(targetPeriod, targetBarber),
+          getAdminInsightsAction(targetPeriod, targetBarber),
           getBarbersAction(),
         ]);
 
@@ -78,14 +99,20 @@ function AdminDashboardContent() {
         if (currentRequestId !== requestIdRef.current) return;
 
         if (analyticsRes.success && analyticsRes.report) {
+          setAnalyticsScope(`${targetPeriod}:${targetBarber}`);
           setAnalytics(analyticsRes.report);
           setErrorMsg(null); // Clear errors on success
           const now = new Date();
           setLastUpdated(
-            now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+            now.toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
           );
         } else {
-          setErrorMsg(analyticsRes.error || 'Erro ao carregar dados analíticos.');
+          setErrorMsg(
+            analyticsRes.error || "Erro ao carregar dados analíticos.",
+          );
         }
 
         if (barbersRes.success && barbersRes.barbers) {
@@ -93,7 +120,9 @@ function AdminDashboardContent() {
         }
       } catch {
         if (currentRequestId === requestIdRef.current) {
-          setErrorMsg('Erro inesperado ao buscar dados analíticos. Tente novamente.');
+          setErrorMsg(
+            "Erro inesperado ao buscar dados analíticos. Tente novamente.",
+          );
         }
       } finally {
         if (currentRequestId === requestIdRef.current) {
@@ -102,28 +131,22 @@ function AdminDashboardContent() {
         }
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [],
   );
 
   useEffect(() => {
-    loadDashboardData(period, selectedBarberId);
+    void loadDashboardData(period, selectedBarberId);
   }, [period, selectedBarberId, loadDashboardData]);
 
-  const handlePeriodChange = (newPeriod: DashboardPeriod) => {
-    setPeriod(newPeriod);
+  const handlePeriodChange = (newPeriod: DashboardPeriod) =>
     updateUrlParams(newPeriod, selectedBarberId);
-  };
-
-  const handleBarberFilterChange = (barberId: string) => {
-    setSelectedBarberId(barberId);
+  const handleBarberFilterChange = (barberId: string) =>
     updateUrlParams(period, barberId);
-  };
 
   const handleDeleteBarber = async (barberId: string, barberName: string) => {
     if (
       !confirm(
-        `Tem certeza de que deseja desativar o barbeiro ${barberName}? Ele não poderá receber novos agendamentos, mas seu histórico será preservado.`
+        `Tem certeza de que deseja desativar o barbeiro ${barberName}? Ele não poderá receber novos agendamentos, mas seu histórico será preservado.`,
       )
     )
       return;
@@ -133,7 +156,7 @@ function AdminDashboardContent() {
     if (res.success) {
       await loadDashboardData(period, selectedBarberId, true);
     } else {
-      setErrorMsg(res.error || 'Erro ao desativar barbeiro.');
+      setErrorMsg(res.error || "Erro ao desativar barbeiro.");
       setIsLoading(false);
     }
   };
@@ -150,36 +173,40 @@ function AdminDashboardContent() {
           period={period}
           selectedBarberId={selectedBarberId}
           barbers={barbers}
-          dateIntervalLabel={analytics?.periodLabel}
-          lastUpdated={lastUpdated || undefined}
+          dateIntervalLabel={
+            analyticsScope === `${period}:${selectedBarberId}`
+              ? analytics?.periodLabel
+              : undefined
+          }
+          lastUpdated={
+            analyticsScope === `${period}:${selectedBarberId}`
+              ? lastUpdated || undefined
+              : undefined
+          }
           isRefreshing={isRefreshing}
           onRefresh={() => loadDashboardData(period, selectedBarberId, true)}
           onPeriodChange={handlePeriodChange}
           onBarberChange={handleBarberFilterChange}
         />
 
-        {/* Banner do Calendário Interativo */}
-        <div className="bg-[#151515] border border-white/5 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 uppercase tracking-wider">
-              <CalendarDays className="w-3 h-3" />
-              Visão Cronológica
-            </div>
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              Visualização em Calendário (Anual, Mensal & Diário)
-            </h2>
-            <p className="text-xs text-white/50 max-w-2xl leading-relaxed">
-              Consulte a ocupação da barbearia mês a mês até a agenda hora a hora de cada dia.
-            </p>
-          </div>
+        <nav
+          className="flex flex-wrap gap-3 text-sm"
+          aria-label="Atalhos do painel"
+        >
           <Link
             href="/admin/calendario"
-            className="px-4 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-black font-black text-xs flex items-center gap-2 transition-all shadow-md shadow-[#D4AF37]/20 flex-shrink-0"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 px-4 text-zinc-300 hover:bg-white/5"
           >
-            <CalendarDays className="w-4 h-4" />
-            Abrir Calendário
+            <CalendarDays className="size-4" />
+            Abrir calendário
           </Link>
-        </div>
+          <a
+            href="#comissoes"
+            className="inline-flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-[#D4AF37]"
+          >
+            Configurar comissões
+          </a>
+        </nav>
 
         {/* Mensagem de Erro com Ação de Tentar Novamente */}
         {errorMsg && (
@@ -206,15 +233,24 @@ function AdminDashboardContent() {
         )}
 
         {/* Estado de Carregamento Inicial */}
-        {isLoading ? (
+        {isLoading ||
+        (analytics && analyticsScope !== `${period}:${selectedBarberId}`) ? (
           <div className="flex flex-col items-center justify-center py-24 text-white/50 gap-3">
             <RefreshCw className="w-7 h-7 animate-spin text-[#D4AF37]" />
-            <span className="text-sm font-semibold text-white/70">Carregando métricas...</span>
+            <span className="text-sm font-semibold text-white/70">
+              Carregando métricas...
+            </span>
           </div>
         ) : (
           <div className="space-y-12">
             {/* 3, 4, 5 & 6. Indicadores, Evolução e Serviços */}
-            <DashboardAnalytics analytics={analytics} />
+            <DashboardAnalytics
+              key={`${period}:${selectedBarberId}:${lastUpdated}`}
+              analytics={analytics}
+              period={period}
+              barberId={selectedBarberId}
+            />
+            <CommissionSettings />
 
             {/* Seção Separada: Gestão da Equipe de Barbeiros */}
             <section className="pt-8 border-t border-white/5 space-y-6">
@@ -225,7 +261,8 @@ function AdminDashboardContent() {
                     Equipe de Barbeiros
                   </h2>
                   <p className="text-xs text-white/50 mt-0.5">
-                    Gerencie profissionais, acesse análises individuais e cadastre novos membros.
+                    Gerencie profissionais, acesse análises individuais e
+                    cadastre novos membros.
                   </p>
                 </div>
               </div>
@@ -244,8 +281,8 @@ function AdminDashboardContent() {
                           key={b.id}
                           className={`p-4 bg-[#151515] border rounded-2xl flex flex-col justify-between gap-3 transition-colors ${
                             b.active !== false
-                              ? 'border-white/5 hover:border-white/15'
-                              : 'border-red-900/30 opacity-70'
+                              ? "border-white/5 hover:border-white/15"
+                              : "border-red-900/30 opacity-70"
                           }`}
                         >
                           <div className="flex items-start gap-3.5">
@@ -270,21 +307,24 @@ function AdminDashboardContent() {
                                 <span
                                   className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                                     b.active !== false
-                                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                      : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                      : "bg-red-500/10 text-red-400 border border-red-500/20"
                                   }`}
                                 >
-                                  {b.active !== false ? 'Ativo' : 'Inativo'}
+                                  {b.active !== false ? "Ativo" : "Inativo"}
                                 </span>
                               </div>
                               <span className="text-xs text-white/50 block truncate">
                                 {b.email}
                               </span>
                               <span className="text-[11px] text-[#D4AF37] font-medium block">
-                                {b.specialty || 'Especialista em Cortes & Barba'}
+                                {b.specialty ||
+                                  "Especialista em Cortes & Barba"}
                               </span>
                               <div className="text-[11px] text-white/40 pt-1">
-                                <span className="text-white/60 font-semibold">Horário:</span>{' '}
+                                <span className="text-white/60 font-semibold">
+                                  Horário:
+                                </span>{" "}
                                 {b.workStart} - {b.workEnd}
                               </div>
                             </div>
@@ -317,7 +357,9 @@ function AdminDashboardContent() {
 
                 {/* Formulário de Registro de Barbeiro */}
                 <RegisterBarberForm
-                  onRegistered={() => loadDashboardData(period, selectedBarberId, true)}
+                  onRegistered={() =>
+                    loadDashboardData(period, selectedBarberId, true)
+                  }
                 />
               </div>
             </section>

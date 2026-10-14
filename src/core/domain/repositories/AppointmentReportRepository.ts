@@ -64,6 +64,7 @@ export interface BarberDetailedMetricsReport {
   totalAppointments: number;
   totalRevenue: number;
   totalCommission?: number;
+  commissionBreakdown?: { serviceName: string; priceCents: number; commissionCents: number; count: number }[];
   canceledCount?: number;
   noShowCount?: number;
   dailyRevenueChart: { date: string; revenue: number; count: number }[];

@@ -1,4 +1,5 @@
 'use client';
+import { CommissionSplit } from '@/components/CommissionSplit';
 
 import { getBarberAppointmentsAction, getBarberMetricsDetailedAction } from '@/app/actions/appointment-actions';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
@@ -430,6 +431,7 @@ export default function BarberDashboardHome() {
             </Link>
           </div>
 
+          {!isLoading && <CommissionSplit revenue={monthMetrics.totalRevenue} commission={monthMetrics.totalCommission} />}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             
             {/* Card 1: Atendimentos Concluídos no Mês */}

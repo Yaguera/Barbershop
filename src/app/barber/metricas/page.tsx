@@ -1,4 +1,5 @@
 'use client';
+import { CommissionSplit } from '@/components/CommissionSplit';
 
 import { getBarberMetricsDetailedAction } from '@/app/actions/appointment-actions';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
@@ -254,6 +255,7 @@ function BarberMetricasContent() {
           </div>
         ) : (
           <div className="space-y-6">
+            <CommissionSplit revenue={totalRevenue} commission={totalCommission} breakdown={report?.commissionBreakdown} />
             
             {/* Indicadores Principais Ordenados Conforme a Especificação */}
             {/* Ordem: 1) Comissão Calculada, 2) Atendimentos Concluídos, 3) Receita dos Serviços, 4) Ticket Médio */}

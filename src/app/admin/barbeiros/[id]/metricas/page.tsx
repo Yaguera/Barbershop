@@ -1,4 +1,5 @@
 'use client';
+import { CommissionSplit } from '@/components/CommissionSplit';
 
 import { getBarberMetricsDetailedAction } from '@/app/actions/appointment-actions';
 import { AdminNavbar } from '@/components/admin/AdminNavbar';
@@ -297,6 +298,7 @@ function AdminBarberMetricsContent() {
           </div>
         ) : (
           <div className="space-y-8">
+            <CommissionSplit admin revenue={totalRevenue} commission={report?.totalCommission || 0} breakdown={report?.commissionBreakdown} />
             {/* 3. Indicadores Principais (Modelo Padronizado de 4 Cartões) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: Receita Gerada */}

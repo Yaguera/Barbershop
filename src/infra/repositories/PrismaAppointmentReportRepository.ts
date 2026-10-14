@@ -216,6 +216,14 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
       },
     });
 
+    const commissionGroups = new Map<string, { serviceName: string; priceCents: number; commissionCents: number; count: number }>();
+    for (const appointment of completedApps) {
+      const key = `${appointment.serviceId}:${appointment.priceCents}:${appointment.commissionCents}`;
+      const group = commissionGroups.get(key) || { serviceName: appointment.service.name, priceCents: appointment.priceCents, commissionCents: appointment.commissionCents, count: 0 };
+      group.count++;
+      commissionGroups.set(key, group);
+    }
+
     const totalCommission = completedApps.reduce((sum, app) => sum + (app.commissionCents / 100), 0);
 
     const durationDays = startDate.getTime() === 0
@@ -279,6 +287,7 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
       totalAppointments,
       totalRevenue,
       totalCommission,
+      commissionBreakdown: [...commissionGroups.values()],
       canceledCount,
       noShowCount,
       dailyRevenueChart,

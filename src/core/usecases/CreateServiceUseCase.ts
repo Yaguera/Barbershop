@@ -1,3 +1,4 @@
+import { ValidationError } from '../domain/errors';
 import { Service } from '@/core/domain/models';
 import { ServiceRepository } from '../domain/repositories/ServiceRepository';
 
@@ -33,8 +34,10 @@ export class CreateServiceUseCase {
     }
 
     if (!Number.isFinite(commissionRate) || commissionRate < 0 || commissionRate > 1) {
-      throw new Error('A taxa de comissão deve estar entre 0 e 1 (ex: 0.40 para 40%).');
+      throw new ValidationError('A taxa de comissão deve estar entre 0 e 1 (ex: 0.40 para 40%).');
     }
+
+    if (Math.abs(commissionRate * 10000 - Math.round(commissionRate * 10000)) > 1e-7) throw new ValidationError('A comissão aceita até duas casas decimais em percentual.');
 
     return await this.serviceRepository.create({
       name: name.trim(),

@@ -26,7 +26,6 @@ Trash2,
 UploadCloud,
 X
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useEffect,useEffectEvent,useRef,useState } from 'react';
 
@@ -41,7 +40,6 @@ interface ServiceProp {
 }
 
 export default function AdminServicesPage() {
-  const { data: session } = useSession();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [services, setServices] = useState<ServiceProp[]>([]);
@@ -59,7 +57,7 @@ export default function AdminServicesPage() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('30');
-  const [commissionRatePercent, setCommissionRatePercent] = useState('40');
+  const [commissionRatePercent, setCommissionRatePercent] = useState('50');
   const [imageUrl, setImageUrl] = useState('');
   const [active, setActive] = useState(true);
 
@@ -85,7 +83,6 @@ export default function AdminServicesPage() {
   const onEffectloadServices = useEffectEvent(loadServices);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
     onEffectloadServices();
   }, [filterActiveOnly]);
 
@@ -95,7 +92,7 @@ export default function AdminServicesPage() {
     setName('');
     setPrice('');
     setDurationMinutes('30');
-    setCommissionRatePercent('40');
+    setCommissionRatePercent('50');
     setImageUrl('');
     setActive(true);
     setErrorMsg(null);
@@ -109,7 +106,7 @@ export default function AdminServicesPage() {
     setName(service.name);
     setPrice(service.price.toString());
     setDurationMinutes(service.durationMinutes.toString());
-    setCommissionRatePercent(Math.round(service.commissionRate * 100).toString());
+    setCommissionRatePercent((Math.round(service.commissionRate * 10000) / 100).toString());
     setImageUrl(service.image || '');
     setActive(service.active);
     setErrorMsg(null);
@@ -437,7 +434,7 @@ export default function AdminServicesPage() {
                       <div className="mt-3 p-3 rounded-2xl bg-zinc-950/60 border border-zinc-800/80 space-y-2 text-xs">
                         <div className="flex justify-between items-center text-zinc-400">
                           <span>Comissão do Barbeiro:</span>
-                          <span className="font-bold text-amber-400">{Math.round(service.commissionRate * 100)}%</span>
+                          <span className="font-bold text-amber-400">{Math.round(service.commissionRate * 10000) / 100}%</span>
                         </div>
                         <div className="flex justify-between items-center pt-1 border-t border-zinc-800/60">
                           <span className="text-zinc-500">Ganho Barbeiro:</span>
@@ -577,16 +574,17 @@ export default function AdminServicesPage() {
                       type="number"
                       min="0"
                       max="100"
+                      step="0.01"
                       required
                       value={commissionRatePercent}
                       onChange={(e) => setCommissionRatePercent(e.target.value)}
-                      placeholder="40"
+                      placeholder="50"
                       className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-2xl text-sm text-slate-100 placeholder-zinc-600 focus:border-amber-500 focus:outline-none transition-all"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-400 font-bold text-sm">%</span>
                   </div>
                   <p className="text-[11px] text-zinc-500 mt-1">
-                    Exemplo: 40% significa que em um corte de R$ 40,00, o barbeiro recebe R$ 16,00.
+                    Exemplo: a 50%, um serviço de R$ 30,00 divide R$ 15,00 para o barbeiro e R$ 15,00 para a barbearia. Alterações valem para novos agendamentos.
                   </p>
                 </div>
 

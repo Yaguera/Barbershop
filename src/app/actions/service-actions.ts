@@ -6,6 +6,7 @@ import {
   authRequiredResponse,
   forbiddenResponse,
   toStructuredError,
+  ValidationError,
 } from '@/core/domain/errors';
 import { CreateServiceUseCase } from '@/core/usecases/CreateServiceUseCase';
 import { DeleteServiceUseCase } from '@/core/usecases/DeleteServiceUseCase';
@@ -61,7 +62,8 @@ export async function createServiceAction(formData: FormData) {
 
     const price = parseFloat(priceStr);
     const durationMinutes = parseInt(durationStr, 10);
-    const commissionRate = parseFloat(commissionStr);
+    const commissionRate = commissionStr?.trim() ? Number(commissionStr) : NaN;
+    if (!Number.isFinite(commissionRate)) throw new ValidationError('Informe uma comissão válida.');
 
     const serviceRepo = new PrismaServiceRepository();
     const useCase = new CreateServiceUseCase(serviceRepo);
@@ -115,7 +117,8 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
 
     const price = priceStr !== undefined ? parseFloat(priceStr) : undefined;
     const durationMinutes = durationStr !== undefined ? parseInt(durationStr, 10) : undefined;
-    const commissionRate = commissionStr !== undefined ? parseFloat(commissionStr) : undefined;
+    const commissionRate = commissionStr !== undefined ? (commissionStr.trim() ? Number(commissionStr) : NaN) : undefined;
+    if (commissionRate !== undefined && !Number.isFinite(commissionRate)) throw new ValidationError('Informe uma comissão válida.');
     const active = activeStr !== undefined ? activeStr === 'true' : undefined;
 
     const serviceRepo = new PrismaServiceRepository();
