@@ -1,6 +1,33 @@
 # Proposta de reestruturação do calendário do administrador
 
-Status: proposta; nenhuma alteração no calendário foi implementada nesta entrega.
+Status: implementado em 13/10/2026, com navegação Dia/Mês/Ano, filtros, detalhes e contextos Agenda/Caixa. A grade diária por faixa horária e a visão semanal permanecem evoluções opcionais.
+
+## Entrega realizada
+
+- Abertura no dia atual em Brasília; navegação por dia, mês ou ano com Hoje e seleção de data. Datas no fim do mês são ajustadas ao último dia válido do destino.
+- URL com `view`, `date`, `barber`, `status`, `payment` e `context`. Navegar adiciona histórico e preserva a rolagem; Voltar recupera visão e filtros.
+- Agenda diária agrupada por profissional, com horários cronológicos, identificação de inativos e lista adequada ao celular. No desktop, os grupos ficam em colunas responsivas; não há grade que simule disponibilidade não consultada.
+- Mês com dias selecionáveis por teclado/toque, contagem filtrada, hoje e seleção diferenciados. Ano com 12 meses selecionáveis. Dias de meses vizinhos ficam vazios, sem mostrar contagens falsas.
+- Filtros de profissional, situação e pagamento. No celular, ficam recolhidos em “Filtros”; filtros ativos e “Limpar filtros” continuam identificados.
+- Detalhes com cliente/contato, origem, início/fim em Brasília, profissional, serviço, situação, confirmação/estorno de pagamento e divisão da comissão registrada no agendamento.
+- Contexto Agenda: data de início do atendimento. Contexto Caixa: data de confirmação do recebimento, inclusive serviços realizados antes; exclui recebimentos atualmente estornados. O filtro de pagamento fica fixo em confirmado no Caixa.
+- Erro, carregamento e ausência de dados são estados diferentes. Respostas de consultas anteriores são descartadas. Fechar detalhes preserva data, filtros, rolagem e foco.
+
+## Arquivos e contratos da implementação
+
+`src/components/admin/AdminCalendarView.tsx` coordena URL, navegação, filtros e carregamento. `CalendarOverview.tsx`, `CalendarDailyAgenda.tsx` e `CalendarAppointmentDialog.tsx` organizam as visões e os detalhes. `src/core/utils/admin-calendar.ts` centraliza validação de datas, navegação e rótulos.
+
+`getAdminCalendarMetricsAction(year, month?, day?, filters?)` retorna `{ success: true, calendar }`, com agrupamentos, resumo e detalhes diários. A ação exige sessão ADMIN e o caso de uso reforça a autorização e valida datas e filtros. Anos suportados: 1970 a 2100. A consulta anual/mensal usa agregação; somente a visão diária busca detalhes individuais. `PrismaAdminCalendarRepository` mantém resumo e detalhes em uma transação de leitura consistente.
+
+Os valores financeiros seguem centavos inteiros, como o painel analítico. “Sem recebimento registrado” considera somente serviços concluídos sem confirmação vigente. Minutos reservados somam duração de agendados e concluídos e não são vendidos como percentual de capacidade. Nomes, e-mails e outros dados pessoais desnecessários não são incluídos nas consultas de agrupamento.
+
+## Verificações desta entrega
+
+Testes automatizados cobrem autorização, filtros, datas inválidas, anos bissextos, fim de mês, virada de ano, fuso de Brasília, consultas por data de atendimento versus data do caixa, estornos e profissionais inexistentes. Verificação no navegador com dados simulados cobre desktop e celular, navegação histórica, filtros, detalhes, foco, erro/repetição e respostas fora de ordem.
+
+A integração com PostgreSQL real exige `TEST_DATABASE_URL` apontando para um banco local terminado em `_test`; esse banco não está configurado neste ambiente. Nenhum teste modifica o banco de produção.
+
+A proposta original e os critérios que orientaram a entrega estão preservados abaixo.
 
 ## 1. Objetivo e diagnóstico do código atual
 
@@ -46,7 +73,7 @@ Definir dois contextos: agenda usa a data do atendimento; caixa usa a data da co
 
 Preservar a autorização ADMIN no servidor, fuso America/Sao_Paulo, histórico de profissionais inativos, proteção contra respostas atrasadas e estados independentes de carregamento, erro e ausência de reservas. Renderizar “Não foi possível carregar” em falhas, nunca uma agenda vazia que pareça real.
 
-## 6. Ordem de implementação futura
+## 6. Ordem de implementação adotada e evoluções futuras
 
 1. Validar os filtros e a definição das métricas com agenda e caixa.
 2. Ajustar o contrato de consulta e testes de autorização, datas e pagamento.

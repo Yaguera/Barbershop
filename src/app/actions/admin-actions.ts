@@ -1,4 +1,5 @@
 'use server';
+import type { CalendarFilters } from '@/core/domain/repositories/AdminCalendarRepository';
 import { reportPeriod } from '@/core/utils/report-period';
 import { PrismaAppointmentReportRepository } from '@/infra/repositories/PrismaAppointmentReportRepository';
 
@@ -19,6 +20,8 @@ import { DeactivateReceptionistUseCase } from '@/core/usecases/DeactivateRecepti
 import { RegisterReceptionistUseCase } from '@/core/usecases/RegisterReceptionistUseCase';
 import { RevertPaymentReceiptUseCase } from '@/core/usecases/RevertPaymentReceiptUseCase';
 import {
+  AppError,
+  internalErrorResponse,
   actionSuccess,
   authRequiredResponse,
   forbiddenResponse,
@@ -253,7 +256,7 @@ export async function getAdminDashboardAnalyticsAction(
 }
 
 
-export async function getAdminCalendarMetricsAction(year: number, month?: number, day?: number) {
+export async function getAdminCalendarMetricsAction(year: number, month?: number, day?: number, filters: CalendarFilters = {}) {
   try {
     const session = await auth();
     if (!session?.user) {
@@ -264,12 +267,12 @@ export async function getAdminCalendarMetricsAction(year: number, month?: number
     }
 
     const useCase = new GetAdminCalendarMetricsUseCase(new PrismaAppointmentReportRepository());
-    const result = await useCase.execute({ year, month, day });
+    const result = await useCase.execute({ year, month, day, filters, adminRole: session.user.role });
 
-    return actionSuccess({ ...result });
+    return actionSuccess({ calendar: result });
   } catch (error: unknown) {
     console.error('Error fetching admin calendar metrics:', error);
-    return toStructuredError(error, 'Erro ao buscar métricas de calendário.');
+    return error instanceof AppError ? toStructuredError(error) : internalErrorResponse('Não foi possível carregar o calendário. Tente novamente.');
   }
 }
 

@@ -24,4 +24,4 @@ O painel inicial e as métricas do barbeiro exibem comissão e parte da barbeari
 
 Comissão calculada não é comprovante de repasse ao barbeiro. A parte da barbearia não é lucro líquido: o projeto não desconta aluguel, materiais e outras despesas. Recebido no caixa depende da confirmação de pagamento, sem usar o valor dos serviços como substituto quando o caixa é zero. A visão segue o estado atual dos recebimentos; não constitui um livro contábil imutável de estornos e reconfirmações.
 
-Não foram alterados o fluxo de pagamentos, o banco em produção nem o calendário. A proposta do calendário está em `docs/proposta-calendario-administrador.md`.
+O fluxo de pagamentos e o banco em produção permanecem preservados. O calendário foi implementado posteriormente conforme `docs/proposta-calendario-administrador.md`, com contextos separados de Agenda e Caixa.

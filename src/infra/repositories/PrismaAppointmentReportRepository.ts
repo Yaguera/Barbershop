@@ -1,6 +1,8 @@
+import { PrismaAdminCalendarRepository } from './PrismaAdminCalendarRepository';
+import type { CalendarFilters } from '@/core/domain/repositories/AdminCalendarRepository';
 import { businessDate, formatPeriodRange, getServiceColor } from '@/core/utils/report-period';
-import { AdminCalendarDayResult,AdminDashboardMetricsReport,AppointmentReportRepository,BarberDetailedMetricsReport,BarberPerformanceReport,CalendarMetric,DayAppointmentDetail,FinanceReport } from '@/core/domain/repositories/AppointmentReportRepository';
-import { endOfDay,getYYYYMMDD,startOfDay } from '@/core/utils/date-utils';
+import { AdminDashboardMetricsReport,AppointmentReportRepository,BarberDetailedMetricsReport,BarberPerformanceReport,FinanceReport } from '@/core/domain/repositories/AppointmentReportRepository';
+import { getYYYYMMDD } from '@/core/utils/date-utils';
 import { Prisma } from '@/generated/prisma/client';
 import { prisma } from '../db/prisma-client';
 export class PrismaAppointmentReportRepository implements AppointmentReportRepository {
@@ -296,162 +298,8 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
     };
   }
 
-  async getAdminCalendarMetrics(
-    year: number,
-    month?: number,
-    day?: number
-  ): Promise<{ metrics: CalendarMetric[]; dayDetails?: AdminCalendarDayResult }> {
-    if (day !== undefined && month !== undefined) {
-      // 1. DAY VIEW: return detailed hourly appointments for this exact date using precise local boundaries
-      const baseDate = businessDate(year, month - 1, day, 12, 0, 0);
-      const start = startOfDay(baseDate);
-      const end = endOfDay(baseDate);
-
-      const appointments = await prisma.appointment.findMany({
-        where: {
-          startTime: {
-            gte: start,
-            lte: end,
-          },
-        },
-        include: {
-          client: true,
-          clientContact: true,
-          service: true,
-          barber: {
-            include: {
-              user: true,
-            },
-          },
-        },
-        orderBy: {
-          startTime: 'asc',
-        },
-      });
-
-      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const detailedList: DayAppointmentDetail[] = appointments.map((app) => ({
-        id: app.id,
-        startTime: app.startTime,
-        endTime: app.endTime,
-        status: app.status,
-        clientName: app.client?.name || app.clientContact?.name || 'Cliente',
-        clientEmail: app.client?.email || app.clientContact?.email || '',
-        barberName: app.barber?.user?.name || 'Barbeiro',
-        serviceName: app.service?.name || 'Serviço',
-        servicePrice: app.priceCents / 100,
-      }));
-
-      return {
-        metrics: [],
-        dayDetails: {
-          date: dateStr,
-          appointments: detailedList,
-        },
-      };
-    } else if (month !== undefined) {
-      // 2. MONTH VIEW: group by YYYY-MM-DD for the selected month
-      const startOfMonth = businessDate(year, month - 1, 1, 0, 0, 0, 0);
-      const endOfMonth = businessDate(year, month, 0, 23, 59, 59, 999);
-
-      interface DayGroupRow {
-        date: string;
-        count: number;
-        revenue: number;
-        completed_count: number;
-        pending_count: number;
-        canceled_count: number;
-        no_show_count: number;
-      }
-
-      const rows = await prisma.$queryRaw<DayGroupRow[]>`
-        SELECT 
-          TO_CHAR(a."startTime" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') as date,
-          COUNT(a.id)::int as count,
-          COALESCE(SUM(CASE WHEN a.status = 'COMPLETED' THEN (a."priceCents" / 100.0) ELSE 0 END), 0)::float as revenue,
-          COALESCE(SUM(CASE WHEN a.status = 'COMPLETED' THEN 1 ELSE 0 END), 0)::int as completed_count,
-          COALESCE(SUM(CASE WHEN a.status = 'PENDING' THEN 1 ELSE 0 END), 0)::int as pending_count,
-          COALESCE(SUM(CASE WHEN a.status = 'CANCELED' THEN 1 ELSE 0 END), 0)::int as canceled_count,
-          COALESCE(SUM(CASE WHEN a.status = 'NO_SHOW' THEN 1 ELSE 0 END), 0)::int as no_show_count
-        FROM "Appointment" a
-        JOIN "Service" s ON a."serviceId" = s.id
-        WHERE a."startTime" >= ${startOfMonth} AND a."startTime" <= ${endOfMonth}
-        GROUP BY TO_CHAR(a."startTime" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD')
-        ORDER BY date ASC
-      `;
-
-      return {
-        metrics: rows.map((r) => ({
-          date: r.date,
-          count: Number(r.count),
-          revenue: Number(r.revenue),
-          completed_count: Number(r.completed_count),
-          pending_count: Number(r.pending_count),
-          canceled_count: Number(r.canceled_count),
-          no_show_count: Number(r.no_show_count),
-        })),
-      };
-    } else {
-      // 3. YEAR VIEW: group by YYYY-MM for all 12 months
-      const startOfYear = businessDate(year, 0, 1, 0, 0, 0, 0);
-      const endOfYear = businessDate(year, 11, 31, 23, 59, 59, 999);
-
-      interface MonthGroupRow {
-        date: string;
-        count: number;
-        revenue: number;
-        completed_count: number;
-        pending_count: number;
-        canceled_count: number;
-        no_show_count: number;
-      }
-
-      const rows = await prisma.$queryRaw<MonthGroupRow[]>`
-        SELECT 
-          TO_CHAR(a."startTime" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') as date,
-          COUNT(a.id)::int as count,
-          COALESCE(SUM(CASE WHEN a.status = 'COMPLETED' THEN (a."priceCents" / 100.0) ELSE 0 END), 0)::float as revenue,
-          COALESCE(SUM(CASE WHEN a.status = 'COMPLETED' THEN 1 ELSE 0 END), 0)::int as completed_count,
-          COALESCE(SUM(CASE WHEN a.status = 'PENDING' THEN 1 ELSE 0 END), 0)::int as pending_count,
-          COALESCE(SUM(CASE WHEN a.status = 'CANCELED' THEN 1 ELSE 0 END), 0)::int as canceled_count,
-          COALESCE(SUM(CASE WHEN a.status = 'NO_SHOW' THEN 1 ELSE 0 END), 0)::int as no_show_count
-        FROM "Appointment" a
-        JOIN "Service" s ON a."serviceId" = s.id
-        WHERE a."startTime" >= ${startOfYear} AND a."startTime" <= ${endOfYear}
-        GROUP BY TO_CHAR(a."startTime" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM')
-        ORDER BY date ASC
-      `;
-
-      // Fill missing months with 0 so all 12 months are present
-      const map = new Map<string, { count: number; revenue: number; completed_count: number; pending_count: number; canceled_count: number; no_show_count: number }>();
-      rows.forEach((r) => {
-        map.set(r.date, {
-          count: Number(r.count),
-          revenue: Number(r.revenue),
-          completed_count: Number(r.completed_count),
-          pending_count: Number(r.pending_count),
-          canceled_count: Number(r.canceled_count),
-          no_show_count: Number(r.no_show_count),
-        });
-      });
-
-      const metrics: CalendarMetric[] = [];
-      for (let m = 1; m <= 12; m++) {
-        const key = `${year}-${String(m).padStart(2, '0')}`;
-        const item = map.get(key) || { count: 0, revenue: 0, completed_count: 0, pending_count: 0, canceled_count: 0, no_show_count: 0 };
-        metrics.push({
-          date: key,
-          count: item.count,
-          revenue: item.revenue,
-          completed_count: item.completed_count,
-          pending_count: item.pending_count,
-          canceled_count: item.canceled_count,
-          no_show_count: item.no_show_count,
-        });
-      }
-
-      return { metrics };
-    }
+  async getAdminCalendarMetrics(year: number, month?: number, day?: number, filters?: CalendarFilters) {
+    return new PrismaAdminCalendarRepository().getMetrics(year, month, day, filters);
   }
 
   async getBarberMonthOccupancy(
