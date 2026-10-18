@@ -1615,14 +1615,15 @@ function AdminFinanceiroContent() {
                     <code>CommissionPayout</code>.
                   </p>
                 </div>
-                <div className="rounded-xl border border-white/[0.06] bg-[#101010] p-3.5">
-                  <span className="font-bold text-amber-300">
-                    Fase P3 (Agenda e Snapshots) · Próxima Etapa
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3.5">
+                  <span className="font-bold text-emerald-300">
+                    Fase P3 (Capacidade, Ocupação e Coortes) · Ativa
                   </span>
-                  <p className="mt-1 text-zinc-400">
-                    Ocupação real por jornada configurada (
-                    <code>BarberAvailability</code>), congelamento de duração no
-                    agendamento e coortes com unificação de contatos.
+                  <p className="mt-1 text-zinc-300">
+                    Ocupação por jornada com exceções (
+                    <code>BarberScheduleException</code>), coortes de 30 dias
+                    maduras e vínculo canônico auditado (
+                    <code>ClientIdentityLink</code>).
                   </p>
                 </div>
               </div>

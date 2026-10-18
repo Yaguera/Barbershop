@@ -13,6 +13,7 @@ import type {
 import { AdminNavbar } from "@/components/admin/AdminNavbar";
 import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
 import { DashboardFilters } from "@/components/admin/DashboardFilters";
+import { PhaseP3OperationsPanel } from "@/components/admin/PhaseP3OperationsPanel";
 import type {
   AdminBarberProp,
   AdminServiceProp,
@@ -425,13 +426,24 @@ function AdminDashboardContent() {
             </span>
           </div>
         ) : (
-          <DashboardAnalytics
-            key={`${filterSignature}:${lastUpdated}`}
-            analytics={analytics}
-            period={filterState.period}
-            barberId={selectedBarberId}
-            filterState={filterState}
-          />
+          <>
+            <DashboardAnalytics
+              key={`${filterSignature}:${lastUpdated}`}
+              analytics={analytics}
+              period={filterState.period}
+              barberId={selectedBarberId}
+              filterState={filterState}
+            />
+            <PhaseP3OperationsPanel
+              period={filterState.period}
+              barberId={selectedBarberId}
+              barberIds={filterState.barberIds}
+              serviceIds={filterState.serviceIds}
+              origins={filterState.origins}
+              customStart={filterState.customStart || undefined}
+              customEnd={filterState.customEnd || undefined}
+            />
+          </>
         )}
       </main>
     </div>
