@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import {
   Bar,
@@ -33,9 +34,9 @@ export function DashboardAnalytics({
   period: InsightPeriod;
   barberId: string;
 }) {
-  const [basis, setBasis] = useState<"realizedCents" | "receivedCents">(
-    "receivedCents",
-  );
+  const [basis, setBasis] = useState<
+    "receivedCents" | "realizedCents" | "completed"
+  >("receivedCents");
   const [ranking, setRanking] = useState<
     "completed" | "realizedCents" | "contributionCents"
   >("completed");
@@ -51,7 +52,13 @@ export function DashboardAnalytics({
     });
   const openDay = (point: TimelinePoint) =>
     open(
-      `${basis === "receivedCents" ? "Recebimentos" : "Serviços realizados"} · ${point.label}`,
+      `${
+        basis === "receivedCents"
+          ? "Recebimentos"
+          : basis === "realizedCents"
+            ? "Serviços realizados"
+            : "Atendimentos concluídos"
+      } · ${point.label}`,
       {
         kind: basis === "receivedCents" ? "received" : "completed",
         startDate: point.startDate,
@@ -60,44 +67,60 @@ export function DashboardAnalytics({
     );
   const barbers = [...a.barbers].sort((x, y) => y[ranking] - x[ranking]);
   const maximum = Math.max(1, ...barbers.map((b) => b[ranking]));
-  const commission = a.realizedCents - a.contributionCents;
+  const commission =
+    a.commissionCents ?? a.realizedCents - a.contributionCents;
+  const avgServiceTicket =
+    a.averageServiceTicketCents ??
+    (a.completed > 0 ? Math.round(a.realizedCents / a.completed) : 0);
+  const avgVisitTicket =
+    a.averageVisitTicketCents ??
+    (a.clients > 0 ? Math.round(a.realizedCents / a.clients) : 0);
+  const cohortRate =
+    a.cohortReceiptRate ??
+    (a.realizedCents > 0
+      ? Math.round(((a.realizedCents - a.pendingCents) / a.realizedCents) * 1000) /
+        10
+      : 0);
+
   const cards = [
     {
       title: "Recebido no caixa",
       value: money(a.receivedCents),
-      note: "Pagamentos confirmados neste período",
+      note: "Entradas confirmadas no caixa neste período (por data de confirmação)",
       kind: "received" as const,
     },
     {
       title: "Serviços realizados",
       value: money(a.realizedCents),
-      note: `${a.completed} atendimentos concluídos no período`,
+      note: `${a.completed} atendimentos concluídos no período (por data do serviço)`,
       kind: "completed" as const,
     },
     {
-      title: "Sem recebimento registrado",
-      value: money(a.pendingCents),
-      note: "Dos serviços concluídos neste período",
-      kind: "pending" as const,
+      title: "Comissão calculada",
+      value: money(commission),
+      note: `${percent(commission, a.realizedCents)} ponderado dos serviços · não representa repasse já pago`,
+      kind: "completed" as const,
     },
     {
       title: "Parte da barbearia",
       value: money(a.contributionCents),
-      note: `${percent(a.contributionCents, a.realizedCents)} dos serviços · antes das despesas`,
+      note: `${percent(a.contributionCents, a.realizedCents)} dos serviços · antes das despesas (despesas ainda não cadastradas)`,
       kind: "completed" as const,
     },
   ];
   return (
     <div className="space-y-6">
+      {/* 3. Indicadores Principais */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => (
           <button
             key={card.title}
+            type="button"
             onClick={() => open(card.title, { kind: card.kind })}
             className={`${panel} ${click} text-left`}
           >
             <span className="text-sm text-zinc-300">{card.title}</span>
-            <strong className="mt-3 block text-2xl font-semibold tabular-nums">
+            <strong className="mt-2 block text-2xl font-semibold tabular-nums">
               {card.value}
             </strong>
             <span className="mt-2 block text-xs leading-relaxed text-zinc-400">
@@ -109,59 +132,73 @@ export function DashboardAnalytics({
           </button>
         ))}
       </div>
-      <div
-        className={`${panel} flex flex-wrap items-center justify-between gap-4`}
-      >
-        <div>
-          <h2 className="font-semibold">Divisão dos serviços realizados</h2>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-            Valores gravados em cada agendamento. Não representam repasses já
-            pagos aos barbeiros.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-6 text-sm">
-          <p>
-            Barbeiros{" "}
-            <strong className="block text-[#D4AF37]">
-              {money(commission)} · {percent(commission, a.realizedCents)}
+
+      {/* Alerta acionável quando houver concluídos sem pagamento confirmado */}
+      {a.pendingCents > 0 && (
+        <div
+          role="region"
+          aria-label="Alerta de recebimentos pendentes"
+          className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 flex flex-wrap items-center justify-between gap-4"
+        >
+          <div className="space-y-1">
+            <strong className="text-sm font-semibold text-amber-300 block">
+              Atenção ao caixa: {money(a.pendingCents)} em serviços concluídos no período estão sem recebimento confirmado
             </strong>
-          </p>
-          <p>
-            Barbearia{" "}
-            <strong className="block">
-              {money(a.contributionCents)} ·{" "}
-              {percent(a.contributionCents, a.realizedCents)}
-            </strong>
-          </p>
+            <p className="text-xs text-zinc-300">
+              Taxa de recebimento da coorte atual: {cohortRate.toLocaleString("pt-BR")}% liquidado. Concluir o atendimento não registra entrada automática no caixa.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                open("Sem recebimento registrado", { kind: "pending" })
+              }
+              className="min-h-10 rounded-xl bg-[#D4AF37] px-3.5 py-1.5 text-xs font-bold text-black hover:bg-[#E2BE4D] transition-colors cursor-pointer"
+            >
+              Conferir pendentes →
+            </button>
+            <Link
+              href="/atendente/caixa"
+              className="min-h-10 inline-flex items-center rounded-xl border border-white/15 bg-[#151515] px-3.5 py-1.5 text-xs font-semibold text-zinc-200 hover:bg-white/5"
+            >
+              Ir para o Caixa
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* 4. Evolução do período */}
       <section className={panel} aria-labelledby="revenue-heading">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 id="revenue-heading" className="text-lg font-semibold">
-              Evolução financeira
+              Evolução do período
             </h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Clique em uma barra para consultar os atendimentos.
+              Clique em uma barra ou na tabela abaixo para inspecionar os atendimentos da data.
             </p>
           </div>
           <label className="text-xs text-zinc-400">
-            Mostrar
+            Mostrar série
             <select
               aria-label="Base da evolução financeira"
               value={basis}
               onChange={(e) => setBasis(e.target.value as typeof basis)}
               className="mt-1 block min-h-11 rounded-xl border border-white/15 bg-[#1C1C1C] px-3 text-sm text-white"
             >
-              <option value="receivedCents">Recebido no caixa</option>
-              <option value="realizedCents">Serviços realizados</option>
+              <option value="receivedCents">Recebido no caixa (R$)</option>
+              <option value="realizedCents">Serviços realizados (R$)</option>
+              <option value="completed">Atendimentos concluídos (Qtd.)</option>
             </select>
           </label>
         </div>
         <p className="mt-3 text-xs leading-relaxed text-zinc-400">
           {basis === "receivedCents"
             ? "Pela data de confirmação no caixa, inclusive serviços de outros períodos. Somente recebimentos atualmente confirmados."
-            : "Pela data do atendimento, inclusive valores ainda não recebidos."}
+            : basis === "realizedCents"
+              ? "Pela data agendada do atendimento (startTime), inclusive valores ainda não recebidos no caixa."
+              : "Quantidade de atendimentos com status concluído (COMPLETED) em cada data do período."}
         </p>
         {a.timeline.length ? (
           <div className="mt-6 h-64 w-full min-w-0">
@@ -182,7 +219,11 @@ export function DashboardAnalytics({
                   stroke="#A1A1AA"
                   fontSize={11}
                   tickLine={false}
-                  tickFormatter={(v) => `R$${Number(v) / 100}`}
+                  tickFormatter={(v) =>
+                    basis === "completed"
+                      ? `${Number(v)}`
+                      : `R$${Number(v) / 100}`
+                  }
                 />
                 <Tooltip
                   cursor={{ fill: "#ffffff08" }}
@@ -192,8 +233,14 @@ export function DashboardAnalytics({
                     borderRadius: 12,
                   }}
                   formatter={(v) => [
-                    money(Number(v)),
-                    basis === "receivedCents" ? "Recebido" : "Realizado",
+                    basis === "completed"
+                      ? `${Number(v)} atendimentos`
+                      : money(Number(v)),
+                    basis === "receivedCents"
+                      ? "Recebido"
+                      : basis === "realizedCents"
+                        ? "Realizado"
+                        : "Concluídos",
                   ]}
                 />
                 <Bar
@@ -218,18 +265,21 @@ export function DashboardAnalytics({
         )}
         <details className="mt-3 text-sm">
           <summary className="min-h-11 cursor-pointer py-3 text-[#D4AF37]">
-            Consultar valores e abrir detalhes por data
+            Consultar valores em tabela acessível e abrir detalhes por data
           </summary>
           <div className="max-h-60 overflow-auto">
             {a.timeline.map((point) => (
               <button
                 key={point.key}
+                type="button"
                 onClick={() => openDay(point)}
                 className={`${click} flex min-h-11 w-full items-center justify-between gap-3 px-3 text-left`}
               >
                 <span>{point.label}</span>
                 <span className="tabular-nums">
-                  {money(point[basis])}{" "}
+                  {basis === "completed"
+                    ? `${point.completed} atendimentos`
+                    : money(point[basis])}{" "}
                   <span className="text-[#D4AF37]">→</span>
                 </span>
               </button>
@@ -237,6 +287,78 @@ export function DashboardAnalytics({
           </div>
         </details>
       </section>
+
+      {/* 5. Resumo Operacional e Dicionário Financeiro Compacto */}
+      <section
+        aria-label="Resumo operacional e indicadores complementares"
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+      >
+        <button
+          type="button"
+          onClick={() =>
+            open("Sem recebimento registrado", { kind: "pending" })
+          }
+          className={`${panel} ${click} text-left`}
+        >
+          <span className="text-xs text-zinc-400">Sem recebimento (coorte)</span>
+          <strong className="mt-1 block text-lg font-semibold tabular-nums text-amber-300">
+            {money(a.pendingCents)}
+          </strong>
+          <span className="mt-1 block text-[11px] text-zinc-400">
+            Taxa liquidada: {cohortRate.toLocaleString("pt-BR")}% →
+          </span>
+        </button>
+
+        <div className={panel}>
+          <span className="text-xs text-zinc-400">Ticket médio de serviço</span>
+          <strong className="mt-1 block text-lg font-semibold tabular-nums">
+            {money(avgServiceTicket)}
+          </strong>
+          <span className="mt-1 block text-[11px] text-zinc-400">
+            Por visita: {money(avgVisitTicket)}
+          </span>
+        </div>
+
+        <div className={panel}>
+          <span className="text-xs text-zinc-400">Clientes atendidos</span>
+          <strong className="mt-1 block text-lg font-semibold tabular-nums">
+            {a.clients}
+          </strong>
+          <span className="mt-1 block text-[11px] text-zinc-400">
+            {a.recurringClients} recorrentes ({percent(a.recurringClients, a.clients)})
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => open("Cancelamentos", { kind: "canceled" })}
+          className={`${panel} ${click} text-left`}
+        >
+          <span className="text-xs text-zinc-400">Cancelamentos</span>
+          <strong className="mt-1 block text-lg font-semibold tabular-nums">
+            {a.canceled}
+          </strong>
+          <span className="mt-1 block text-[11px] text-[#D4AF37]">
+            Consultar registros →
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => open("Faltas (No-show)", { kind: "no_show" })}
+          className={`${panel} ${click} text-left`}
+        >
+          <span className="text-xs text-zinc-400">Faltas registradas</span>
+          <strong className="mt-1 block text-lg font-semibold tabular-nums">
+            {a.noShow}
+          </strong>
+          <span className="mt-1 block text-[11px] text-[#D4AF37]">
+            Consultar registros →
+          </span>
+        </button>
+      </section>
+
+      {/* 6. Desempenho dos profissionais e composição dos serviços */}
       <div className="grid gap-6 lg:grid-cols-2">
         <section className={panel}>
           <div className="flex flex-wrap items-center justify-between gap-3">

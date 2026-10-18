@@ -406,13 +406,13 @@ export class PrismaAppointmentReportRepository implements AppointmentReportRepos
     const receivedCount = confirmedReceipts.length;
     const pendingPaymentCount = pendingAppointments.length;
 
-    // totalRevenue reflete o recebido confirmado; se não houver registros de caixa legados, cai para realizado
-    const totalRevenue = totalReceived > 0 || confirmedReceipts.length > 0 ? totalReceived : totalRealized;
+    // totalRevenue reflete exclusivamente o recebido confirmado no caixa (nunca substituir por realizado quando zero)
+    const totalRevenue = totalReceived;
     const prevTotalRevenue = prevCompletedAppointments.reduce((sum, app) => {
       if (app.receipt?.status === 'CONFIRMED') {
         return sum + (app.receipt.amountCents / 100);
       }
-      return sum + (app.priceCents / 100);
+      return sum;
     }, 0);
     
     let growthPercentage = '+0.0%';

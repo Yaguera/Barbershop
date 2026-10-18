@@ -156,18 +156,47 @@ export function buildAdminInsights(
     return { ...row, visits: days.size, averageDays: gap };
   });
   const completed = production.reduce((sum, p) => sum + p.count, 0);
+  const realizedCents = production.reduce((sum, p) => sum + p.amountCents, 0);
+  const receivedCents = receipts.reduce((sum, r) => sum + r.amountCents, 0);
+  const pendingCents = production.reduce((sum, p) => sum + p.pendingCents, 0);
+  const commissionCents = production.reduce(
+    (sum, p) => sum + p.commissionCents,
+    0,
+  );
+  const contributionCents = realizedCents - commissionCents;
+  const effectiveCommissionRate =
+    realizedCents > 0
+      ? Math.round((commissionCents / realizedCents) * 1000) / 10
+      : 0;
+  const averageServiceTicketCents =
+    completed > 0 ? Math.round(realizedCents / completed) : 0;
+  const totalDistinctVisits = clientRows.reduce((sum, c) => sum + c.visits, 0);
+  const averageVisitTicketCents =
+    totalDistinctVisits > 0
+      ? Math.round(realizedCents / totalDistinctVisits)
+      : 0;
+  const liquidatedCohortCents = Math.max(0, realizedCents - pendingCents);
+  const cohortReceiptRate =
+    realizedCents > 0
+      ? Math.round((liquidatedCohortCents / realizedCents) * 1000) / 10
+      : 0;
+
   return {
     startDate,
     endDate,
     periodLabel: formatPeriodRange(range.startDate, range.endDate),
+    calculatedAt: new Date().toISOString(),
     granularity,
-    realizedCents: production.reduce((sum, p) => sum + p.amountCents, 0),
-    receivedCents: receipts.reduce((sum, r) => sum + r.amountCents, 0),
-    pendingCents: production.reduce((sum, p) => sum + p.pendingCents, 0),
-    contributionCents: production.reduce(
-      (sum, p) => sum + p.amountCents - p.commissionCents,
-      0,
-    ),
+    realizedCents,
+    receivedCents,
+    pendingCents,
+    commissionCents,
+    contributionCents,
+    effectiveCommissionRate,
+    averageServiceTicketCents,
+    totalDistinctVisits,
+    averageVisitTicketCents,
+    cohortReceiptRate,
     completed,
     clients: clientRows.length,
     recurringClients: clientRows.filter((c) => c.visits > 1).length,

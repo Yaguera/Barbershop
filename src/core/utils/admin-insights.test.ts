@@ -28,8 +28,15 @@ describe("Admin insights", () => {
       realizedCents: 3000,
       receivedCents: 0,
       pendingCents: 3000,
+      commissionCents: 1500,
+      effectiveCommissionRate: 50,
       contributionCents: 1500,
+      averageServiceTicketCents: 3000,
+      totalDistinctVisits: 1,
+      averageVisitTicketCents: 3000,
+      cohortReceiptRate: 0,
     });
+    expect(typeof report.calculatedAt).toBe("string");
     expect(report.barbers[0]).toMatchObject({
       commissionCents: 1500,
       contributionCents: 1500,
@@ -55,13 +62,13 @@ describe("Admin insights", () => {
     ).toBe(5000);
     expect(report.barbers[0].completed).toBe(0);
   });
-  it("conta retornos em dias distintos e mantém contato e cadastro com mesmo nome separados", () => {
+  it("conta retornos em dias distintos, calcula ticket médio por visita e mantém contato e cadastro com mesmo nome separados", () => {
     const report = buildAdminInsights(
       range,
       [
-        production({ count: 2 }),
-        production({ day: "2026-10-10" }),
-        production({ clientKey: "CONTACT:c1", clientType: "CONTACT" }),
+        production({ count: 2, amountCents: 6000, commissionCents: 3000, pendingCents: 0 }),
+        production({ day: "2026-10-10", amountCents: 3000, commissionCents: 1500, pendingCents: 3000 }),
+        production({ clientKey: "CONTACT:c1", clientType: "CONTACT", amountCents: 3000, commissionCents: 1500, pendingCents: 0 }),
       ],
       [],
     );
@@ -69,6 +76,12 @@ describe("Admin insights", () => {
       clients: 2,
       recurringClients: 1,
       completed: 4,
+      realizedCents: 12000,
+      pendingCents: 3000,
+      averageServiceTicketCents: 3000,
+      totalDistinctVisits: 3,
+      averageVisitTicketCents: 4000,
+      cohortReceiptRate: 75,
     });
     expect(report.topClients[0]).toMatchObject({
       visits: 2,
@@ -87,6 +100,8 @@ describe("Admin insights", () => {
       commissionCents: 2700,
       contributionCents: 3300,
     });
+    expect(report.commissionCents).toBe(2700);
+    expect(report.effectiveCommissionRate).toBe(45);
     expect(report.contributionCents + report.barbers[0].commissionCents).toBe(
       report.realizedCents,
     );

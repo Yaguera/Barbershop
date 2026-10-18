@@ -8,6 +8,7 @@ import {
 import { AdminNavbar } from '@/components/admin/AdminNavbar';
 import {
   AlertCircle,
+  Briefcase,
   CheckCircle2,
   Key,
   Loader2,
@@ -20,6 +21,7 @@ import {
   UserX,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface ReceptionistItem {
@@ -139,22 +141,47 @@ export default function AdminAtendentesPage() {
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <UserCheck className="w-7 h-7 text-[#D4AF37]" />
-              <span>Gestão de Atendentes</span>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#D4AF37]">
+              <Briefcase className="w-3.5 h-3.5" />
+              <span>Gestão de Equipe</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3 mt-1">
+              <span>Atendentes e Recepção</span>
             </h1>
             <p className="text-white/60 text-xs sm:text-sm mt-1">
               Gerencie as credenciais e permissões da equipe de recepção e caixa.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div
+              className="inline-flex rounded-xl bg-[#151515] p-1 border border-white/10"
+              role="navigation"
+              aria-label="Subnavegação de equipe"
+            >
+              <Link
+                href="/admin/barbeiros"
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-bold text-zinc-300 hover:text-white hover:bg-white/5 transition-colors"
+              >
+                <Briefcase className="w-3.5 h-3.5" />
+                Barbeiros
+              </Link>
+              <Link
+                href="/admin/atendentes"
+                aria-current="page"
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#D4AF37] px-3.5 py-1.5 text-xs font-bold text-black"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Atendentes ({receptionists.length})
+              </Link>
+            </div>
+
             <button
               onClick={loadReceptionists}
               disabled={isLoading}
-              className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+              className="min-h-11 min-w-11 p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white transition-all cursor-pointer disabled:opacity-50"
               title="Atualizar lista"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -165,7 +192,7 @@ export default function AdminAtendentesPage() {
                 setFormError(null);
                 setIsRegisterOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0A0A0A] transition-all shadow-lg shadow-[#D4AF37]/10 cursor-pointer"
+              className="min-h-11 flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0A0A0A] transition-all shadow-lg shadow-[#D4AF37]/10 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Nova Atendente</span>

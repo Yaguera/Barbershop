@@ -70,11 +70,18 @@ export interface AdminInsights {
   startDate: string;
   endDate: string;
   periodLabel: string;
+  calculatedAt: string;
   granularity: "day" | "month" | "year";
   realizedCents: number;
   receivedCents: number;
   pendingCents: number;
+  commissionCents: number;
   contributionCents: number;
+  effectiveCommissionRate: number;
+  averageServiceTicketCents: number;
+  totalDistinctVisits: number;
+  averageVisitTicketCents: number;
+  cohortReceiptRate: number;
   completed: number;
   clients: number;
   recurringClients: number;
