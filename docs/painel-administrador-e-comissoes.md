@@ -44,12 +44,13 @@ Na Fase P0, os consumidores legados foram inventariados e saneados para impedir 
 | Comissão calculada, Taxa efetiva e Parte da barbearia (antes das despesas) | **Disponível agora (P0)** | Snapshot `Appointment.priceCents` e `commissionCents` | Soma exata em centavos preservada para todo o histórico |
 | Taxa de recebimento da coorte, Ticket médio por serviço e por visita | **Disponível agora (P0)** | `buildAdminInsights` | Calculados sobre a coorte de produção do período |
 | Ranking de barbeiros, Serviços no período e Clientes recorrentes | **Disponível agora (P0)** | `PrismaAdminInsightsRepository` | Com abertura da lista paginada de agendamentos |
-| Repasse pago ao barbeiro vs saldo a pagar | **Parcial (P0)** | `Appointment.commissionCents` | O sistema calcula a comissão devida, mas ainda não possui tabela de liquidação/pagamento de comissão (`CommissionPayout`) |
-| Despesas operacionais, contas a pagar e resultado líquido após despesas | **Ainda não disponível (Fase P2)** | Requer entidade `Expense` | Não existe tabela de despesas no schema atual; o painel rotula explicitamente como "antes das despesas" |
-| Capacidade contratada, horas disponíveis e taxa de ocupação real | **Ainda não disponível (Fase P2)** | `Barber.workStart` / `workEnd` | Requer motor de disponibilidade líquida descontando pausas e bloqueios |
+| Repasse pago ao barbeiro vs saldo a pagar | **Disponível agora (P2)** | `CommissionPayout` + `Appointment.commission` | Comissão reconhecida na competência, elegível após recebimento confirmado e liquidada via `CommissionPayout` sem dupla dedução |
+| Despesas operacionais, contas a pagar e resultado líquido após despesas | **Disponível agora (P2)** | `Expense` + `FinancialMovement` | Datas separadas de competência (`competenceDate`), vencimento (`dueDate`) e pagamento (`paidAt`) |
+| Capacidade contratada, horas disponíveis e taxa de ocupação real | **Planejado (Fase P3)** | `BarberAvailability` / `ScheduleBlock` | Requer motor de disponibilidade líquida descontando pausas e bloqueios |
 | Recebimentos por meio de pagamento (`PIX`, `MONEY`, `CARD`) | **Disponível agora (P1)** | `PaymentReceipt.method` | Agregação analítica dedicada no dashboard com drill-down por forma de pagamento |
 | Matriz Profissional × Serviço | **Disponível agora (P1)** | `buildAdminInsights` | Cruzamento interativo de barbeiro e serviço com abertura dos registros correspondentes |
 | Comparações temporais (`prev_period`, `yoy`, `custom`) e multisseleção | **Disponível agora (P1)** | `resolveComparisonRange` + `buildInsightComparison` | Mês parcial acumulado (MTD) compara contra os mesmos dias decorridos da referência |
+| Cascata do Resultado de Competência vs Fluxo Líquido de Caixa | **Disponível agora (P2)** | `buildFinancialStatement` (`src/core/utils/financial-statement.ts`) | Separa competência, fluxo de caixa por liquidação e aging em duas séries independentes |
 
 ## 5. Filtros avançados e comparações temporais (Fase P1)
 

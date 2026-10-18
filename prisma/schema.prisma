@@ -11,27 +11,31 @@ datasource db {
 }
 
 model User {
-  id                  String            @id @default(cuid())
+  id                  String              @id @default(cuid())
   name                String?
-  email               String            @unique
+  email               String              @unique
   emailVerified       DateTime?
   image               String?
-  passwordHash        String?           // Optional because Google users won't have it initially
+  passwordHash        String?             // Optional because Google users won't have it initially
   phone               String?
-  sessionVersion      Int               @default(0)
-  role                String            @default("CLIENT") // ADMIN, BARBER, CLIENT, RECEPTIONIST
-  active              Boolean           @default(true)     // Soft delete status
+  sessionVersion      Int                 @default(0)
+  role                String              @default("CLIENT") // ADMIN, BARBER, CLIENT, RECEPTIONIST
+  active              Boolean             @default(true)     // Soft delete status
   accounts            Account[]
   sessions            Session[]
-  appointments        Appointment[]     @relation("ClientAppointments")
-  createdAppointments Appointment[]     @relation("CreatedAppointments")
-  confirmedReceipts   PaymentReceipt[]  @relation("ConfirmedReceipts")
-  revertedReceipts    PaymentReversal[] @relation("RevertedReceipts")
+  appointments        Appointment[]       @relation("ClientAppointments")
+  createdAppointments Appointment[]       @relation("CreatedAppointments")
+  confirmedReceipts   PaymentReceipt[]    @relation("ConfirmedReceipts")
+  revertedReceipts    PaymentReversal[]   @relation("RevertedReceipts")
+  createdExpenses     Expense[]           @relation("CreatedExpenses")
+  paidExpenses        Expense[]           @relation("PaidExpenses")
+  paidCommissions     CommissionPayout[]  @relation("PaidCommissions")
+  financialMovements  FinancialMovement[] @relation("ActorFinancialMovements")
   notifications       Notification[]
   barber              Barber?
   receptionist        Receptionist?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
 }
 
 model Receptionist {
@@ -91,15 +95,16 @@ model VerificationToken {
 }
 
 model Barber {
-  id           String        @id @default(cuid())
-  userId       String        @unique
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workDays     Int[]         // Array of weekday numbers: 0 (Sunday) to 6 (Saturday)
-  workStart    String        // HH:MM (e.g. "09:00")
-  workEnd      String        // HH:MM (e.g. "18:00")
-  appointments Appointment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                String             @id @default(cuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workDays          Int[]              // Array of weekday numbers: 0 (Sunday) to 6 (Saturday)
+  workStart         String             // HH:MM (e.g. "09:00")
+  workEnd           String             // HH:MM (e.g. "18:00")
+  appointments      Appointment[]
+  commissionPayouts CommissionPayout[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 model Service {
@@ -158,7 +163,7 @@ model PaymentReceipt {
   confirmedBy    User             @relation("ConfirmedReceipts", fields: [confirmedById], references: [id], onDelete: Restrict)
   confirmedAt    DateTime         @default(now())
   idempotencyKey String?          @unique
-  status         String           @default("CONFIRMED") // CONFIRMED, REVERSED
+  status         String           @default("CONFIRMED") // CONFIRMED, REVERSED, REFUNDED
   reversal       PaymentReversal?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -173,12 +178,83 @@ model PaymentReversal {
   receiptId      String         @unique
   receipt        PaymentReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   reason         String
+  type           String         @default("RECORD_CORRECTION") // RECORD_CORRECTION, CLIENT_REFUND
   revertedById   String
   revertedBy     User           @relation("RevertedReceipts", fields: [revertedById], references: [id], onDelete: Restrict)
   revertedAt     DateTime       @default(now())
   createdAt      DateTime       @default(now())
 
   @@index([revertedAt])
+}
+
+model Expense {
+  id             String    @id @default(cuid())
+  category       String    // RENT, UTILITIES, SUPPLIES, EQUIPMENT, MARKETING, TAXES, FIXED_PAYROLL, DIRECT_FEE, OTHER
+  description    String
+  supplier       String?
+  amountCents    Int
+  competenceDate DateTime
+  dueDate        DateTime
+  paidAt         DateTime?
+  paymentMethod  String?   // PIX, MONEY, CARD, TRANSFER
+  status         String    @default("PENDING") // PENDING, PAID, CANCELED
+  createdById    String
+  createdBy      User      @relation("CreatedExpenses", fields: [createdById], references: [id], onDelete: Restrict)
+  paidById       String?
+  paidBy         User?     @relation("PaidExpenses", fields: [paidById], references: [id], onDelete: Restrict)
+  canceledReason String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([competenceDate, status])
+  @@index([dueDate, status])
+  @@index([paidAt, status])
+  @@index([category, competenceDate])
+}
+
+model CommissionPayout {
+  id             String    @id @default(cuid())
+  barberId       String
+  barber         Barber    @relation(fields: [barberId], references: [id], onDelete: Restrict)
+  amountCents    Int
+  periodStart    DateTime
+  periodEnd      DateTime
+  paidAt         DateTime  @default(now())
+  paymentMethod  String    // PIX, MONEY, TRANSFER
+  notes          String?
+  paidById       String
+  paidBy         User      @relation("PaidCommissions", fields: [paidById], references: [id], onDelete: Restrict)
+  status         String    @default("PAID") // PAID, REVERSED
+  reversedAt     DateTime?
+  reversalReason String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([barberId, paidAt])
+  @@index([status, paidAt])
+}
+
+model FinancialMovement {
+  id             String   @id @default(cuid())
+  type           String   // RECEIPT_IN, RECORD_CORRECTION, CLIENT_REFUND_OUT, EXPENSE_OUT, COMMISSION_PAYOUT_OUT
+  amountCents    Int
+  occurredAt     DateTime @default(now())
+  recordedAt     DateTime @default(now())
+  method         String?
+  description    String
+  reason         String?
+  appointmentId  String?
+  receiptId      String?
+  expenseId      String?
+  payoutId       String?
+  actorId        String
+  actor          User     @relation("ActorFinancialMovements", fields: [actorId], references: [id], onDelete: Restrict)
+  idempotencyKey String?  @unique
+
+  @@index([occurredAt, type])
+  @@index([receiptId])
+  @@index([expenseId])
+  @@index([payoutId])
 }
 
 model Notification {
@@ -193,3 +269,4 @@ model Notification {
 
   @@index([userId, read, createdAt])
 }
+

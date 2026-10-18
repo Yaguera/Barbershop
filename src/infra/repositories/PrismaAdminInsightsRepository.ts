@@ -183,8 +183,18 @@ export class PrismaAdminInsightsRepository implements AdminInsightsRepository {
       (filter.paymentMethods ?? range.paymentMethods)?.filter(Boolean) ?? [];
 
     const where: Prisma.AppointmentWhereInput = {
-      ...(barberIds.length > 0 ? { barberId: { in: barberIds } } : {}),
-      ...(serviceIds.length > 0 ? { serviceId: { in: serviceIds } } : {}),
+      barberId:
+        barberIds.length === 1
+          ? barberIds[0]
+          : barberIds.length > 1
+            ? { in: barberIds }
+            : undefined,
+      serviceId:
+        serviceIds.length === 1
+          ? serviceIds[0]
+          : serviceIds.length > 1
+            ? { in: serviceIds }
+            : undefined,
       ...(origins.length > 0 ? { origin: { in: origins } } : {}),
       ...(filter.clientType === "REGISTERED"
         ? { clientId: filter.clientId }
@@ -271,14 +281,7 @@ export class PrismaAdminInsightsRepository implements AdminInsightsRepository {
         const sum = received
           ? (
               await tx.paymentReceipt.aggregate({
-                where: {
-                  appointment: where,
-                  status: "CONFIRMED",
-                  confirmedAt: dates,
-                  ...(paymentMethods.length > 0
-                    ? { method: { in: paymentMethods } }
-                    : {}),
-                },
+                where: { appointment: where },
                 _sum: { amountCents: true },
               })
             )._sum.amountCents || 0
