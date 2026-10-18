@@ -1,8 +1,14 @@
 import type {
   AdminInsights,
   BarberInsight,
+  BarberServiceCell,
   ClientInsight,
+  InsightComparisonMode,
+  InsightComparisonSummary,
   InsightRange,
+  MetricComparisonDelta,
+  MetricPolarity,
+  PaymentMethodInsight,
   ProductionGroup,
   ReceiptGroup,
   TimelinePoint,
@@ -14,6 +20,231 @@ const nextDay = (date: string) =>
   getYYYYMMDD(
     new Date(new Date(`${date}T12:00:00-03:00`).getTime() + 86400000),
   );
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  PIX: "Pix",
+  MONEY: "Dinheiro",
+  CARD: "Cartão",
+};
+
+const formatBrlFromCents = (cents: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(cents / 100);
+
+export function computeMetricDelta(
+  current: number,
+  reference: number,
+  unit: "cents" | "count" | "rate",
+  polarity: MetricPolarity = "higher_is_better",
+): MetricComparisonDelta {
+  const absoluteDelta =
+    unit === "rate"
+      ? Math.round((current - reference) * 10) / 10
+      : current - reference;
+
+  const formatVal = (val: number) => {
+    if (unit === "cents") return formatBrlFromCents(val);
+    if (unit === "rate") return `${val.toFixed(1).replace(".0", "")}%`;
+    return String(val);
+  };
+
+  if (current === 0 && reference === 0) {
+    return {
+      current,
+      reference,
+      absoluteDelta: 0,
+      percentDelta: 0,
+      pointsDelta: unit === "rate" ? 0 : null,
+      state: "no_movement",
+      favorable: null,
+      formattedReference: formatVal(reference),
+      formattedDelta: "Sem movimento",
+    };
+  }
+
+  if (unit === "rate") {
+    const pointsDelta = Math.round((current - reference) * 10) / 10;
+    const sign = pointsDelta > 0 ? "+" : "";
+    const state =
+      pointsDelta > 0 ? "positive" : pointsDelta < 0 ? "negative" : "neutral";
+    const favorable =
+      polarity === "neutral" || pointsDelta === 0
+        ? null
+        : polarity === "higher_is_better"
+          ? pointsDelta > 0
+          : pointsDelta < 0;
+    return {
+      current,
+      reference,
+      absoluteDelta: pointsDelta,
+      percentDelta:
+        reference > 0
+          ? Math.round(((current - reference) / reference) * 1000) / 10
+          : null,
+      pointsDelta,
+      state,
+      favorable,
+      formattedReference: formatVal(reference),
+      formattedDelta:
+        pointsDelta === 0
+          ? "Estável (0 p.p.)"
+          : `${sign}${pointsDelta.toFixed(1).replace(".0", "")} p.p.`,
+    };
+  }
+
+  if (reference === 0 && current > 0) {
+    const favorable =
+      polarity === "neutral" ? null : polarity === "higher_is_better";
+    return {
+      current,
+      reference,
+      absoluteDelta,
+      percentDelta: null,
+      pointsDelta: null,
+      state: "no_percent_base",
+      favorable,
+      formattedReference: formatVal(reference),
+      formattedDelta: `+${formatVal(absoluteDelta)} (Sem base %)`,
+    };
+  }
+
+  const percentDelta =
+    reference > 0
+      ? Math.round(((current - reference) / reference) * 1000) / 10
+      : null;
+  const state =
+    absoluteDelta > 0
+      ? "positive"
+      : absoluteDelta < 0
+        ? "negative"
+        : "neutral";
+  const favorable =
+    polarity === "neutral" || absoluteDelta === 0
+      ? null
+      : polarity === "higher_is_better"
+        ? absoluteDelta > 0
+        : absoluteDelta < 0;
+  const sign = absoluteDelta > 0 ? "+" : "";
+  const pctStr =
+    percentDelta !== null
+      ? `${sign}${percentDelta.toFixed(1).replace(".0", "")}%`
+      : "";
+  const absStr =
+    unit === "cents"
+      ? `${sign}${formatBrlFromCents(absoluteDelta)}`
+      : `${sign}${absoluteDelta}`;
+
+  return {
+    current,
+    reference,
+    absoluteDelta,
+    percentDelta,
+    pointsDelta: null,
+    state,
+    favorable,
+    formattedReference: formatVal(reference),
+    formattedDelta:
+      absoluteDelta === 0 ? "Estável (0%)" : `${pctStr} (${absStr})`,
+  };
+}
+
+export function buildInsightComparison(
+  mode: InsightComparisonMode,
+  current: AdminInsights,
+  reference: AdminInsights,
+  equivalenceNote?: string,
+): InsightComparisonSummary {
+  return {
+    mode,
+    startDate: reference.startDate,
+    endDate: reference.endDate,
+    periodLabel: reference.periodLabel,
+    equivalenceNote,
+    metrics: {
+      receivedCents: computeMetricDelta(
+        current.receivedCents,
+        reference.receivedCents,
+        "cents",
+        "higher_is_better",
+      ),
+      realizedCents: computeMetricDelta(
+        current.realizedCents,
+        reference.realizedCents,
+        "cents",
+        "higher_is_better",
+      ),
+      pendingCents: computeMetricDelta(
+        current.pendingCents,
+        reference.pendingCents,
+        "cents",
+        "lower_is_better",
+      ),
+      commissionCents: computeMetricDelta(
+        current.commissionCents,
+        reference.commissionCents,
+        "cents",
+        "neutral",
+      ),
+      contributionCents: computeMetricDelta(
+        current.contributionCents,
+        reference.contributionCents,
+        "cents",
+        "higher_is_better",
+      ),
+      effectiveCommissionRate: computeMetricDelta(
+        current.effectiveCommissionRate,
+        reference.effectiveCommissionRate,
+        "rate",
+        "neutral",
+      ),
+      completed: computeMetricDelta(
+        current.completed,
+        reference.completed,
+        "count",
+        "higher_is_better",
+      ),
+      averageServiceTicketCents: computeMetricDelta(
+        current.averageServiceTicketCents,
+        reference.averageServiceTicketCents,
+        "cents",
+        "higher_is_better",
+      ),
+      clients: computeMetricDelta(
+        current.clients,
+        reference.clients,
+        "count",
+        "higher_is_better",
+      ),
+      averageVisitTicketCents: computeMetricDelta(
+        current.averageVisitTicketCents,
+        reference.averageVisitTicketCents,
+        "cents",
+        "higher_is_better",
+      ),
+      cohortReceiptRate: computeMetricDelta(
+        current.cohortReceiptRate,
+        reference.cohortReceiptRate,
+        "rate",
+        "higher_is_better",
+      ),
+      canceled: computeMetricDelta(
+        current.canceled,
+        reference.canceled,
+        "count",
+        "lower_is_better",
+      ),
+      noShow: computeMetricDelta(
+        current.noShow,
+        reference.noShow,
+        "count",
+        "lower_is_better",
+      ),
+    },
+    timeline: reference.timeline,
+  };
+}
 
 export function buildAdminInsights(
   range: InsightRange,
@@ -79,8 +310,33 @@ export function buildAdminInsights(
   >();
   const services = new Map<
     string,
-    { id: string; name: string; count: number; amountCents: number }
+    {
+      id: string;
+      name: string;
+      count: number;
+      amountCents: number;
+      commissionCents: number;
+      contributionCents: number;
+    }
   >();
+  const matrixMap = new Map<
+    string,
+    {
+      barberId: string;
+      barberName: string;
+      serviceId: string;
+      serviceName: string;
+      completed: number;
+      realizedCents: number;
+      commissionCents: number;
+      contributionCents: number;
+    }
+  >();
+  const paymentMethodsMap = new Map<
+    string,
+    { method: string; label: string; count: number; amountCents: number }
+  >();
+
   const professional = (id: string, name: string) => {
     if (!barbers.has(id))
       barbers.set(id, {
@@ -101,10 +357,31 @@ export function buildAdminInsights(
       point.completed += group.count;
     }
     const barber = professional(group.barberId, group.barberName);
+    const contribution = group.amountCents - group.commissionCents;
     barber.completed += group.count;
     barber.realizedCents += group.amountCents;
     barber.commissionCents += group.commissionCents;
-    barber.contributionCents += group.amountCents - group.commissionCents;
+    barber.contributionCents += contribution;
+
+    const matrixKey = `${group.barberId}::${group.serviceId}`;
+    if (!matrixMap.has(matrixKey)) {
+      matrixMap.set(matrixKey, {
+        barberId: group.barberId,
+        barberName: group.barberName,
+        serviceId: group.serviceId,
+        serviceName: group.serviceName,
+        completed: 0,
+        realizedCents: 0,
+        commissionCents: 0,
+        contributionCents: 0,
+      });
+    }
+    const cell = matrixMap.get(matrixKey)!;
+    cell.completed += group.count;
+    cell.realizedCents += group.amountCents;
+    cell.commissionCents += group.commissionCents;
+    cell.contributionCents += contribution;
+
     if (!customers.has(group.clientKey))
       customers.set(group.clientKey, {
         row: {
@@ -131,16 +408,33 @@ export function buildAdminInsights(
         name: group.serviceName,
         count: 0,
         amountCents: 0,
+        commissionCents: 0,
+        contributionCents: 0,
       });
     const service = services.get(group.serviceId)!;
     service.count += group.count;
     service.amountCents += group.amountCents;
+    service.commissionCents += group.commissionCents;
+    service.contributionCents += contribution;
   }
   for (const receipt of receipts) {
     const point = timeline.get(keyFor(receipt.day));
     if (point) point.receivedCents += receipt.amountCents;
     professional(receipt.barberId, receipt.barberName).receivedCents +=
       receipt.amountCents;
+
+    const methodKey = receipt.method || "PIX";
+    if (!paymentMethodsMap.has(methodKey)) {
+      paymentMethodsMap.set(methodKey, {
+        method: methodKey,
+        label: PAYMENT_METHOD_LABELS[methodKey] || methodKey,
+        count: 0,
+        amountCents: 0,
+      });
+    }
+    const pm = paymentMethodsMap.get(methodKey)!;
+    pm.count += receipt.count ?? 1;
+    pm.amountCents += receipt.amountCents;
   }
   const clientRows = Array.from(customers.values()).map(({ row, days }) => {
     const ordered = [...days].sort();
@@ -181,6 +475,47 @@ export function buildAdminInsights(
       ? Math.round((liquidatedCohortCents / realizedCents) * 1000) / 10
       : 0;
 
+  const barberServiceMatrix: BarberServiceCell[] = Array.from(
+    matrixMap.values(),
+  )
+    .map((cell) => {
+      const barberTotal = barbers.get(cell.barberId)?.realizedCents || 0;
+      return {
+        ...cell,
+        effectiveCommissionRate:
+          cell.realizedCents > 0
+            ? Math.round((cell.commissionCents / cell.realizedCents) * 1000) /
+              10
+            : 0,
+        shareOfBarberRate:
+          barberTotal > 0
+            ? Math.round((cell.realizedCents / barberTotal) * 1000) / 10
+            : 0,
+        shareOfTotalRate:
+          realizedCents > 0
+            ? Math.round((cell.realizedCents / realizedCents) * 1000) / 10
+            : 0,
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.realizedCents - a.realizedCents ||
+        b.completed - a.completed ||
+        a.barberName.localeCompare(b.barberName),
+    );
+
+  const paymentMethods: PaymentMethodInsight[] = Array.from(
+    paymentMethodsMap.values(),
+  )
+    .map((pm) => ({
+      ...pm,
+      percentage:
+        receivedCents > 0
+          ? Math.round((pm.amountCents / receivedCents) * 1000) / 10
+          : 0,
+    }))
+    .sort((a, b) => b.amountCents - a.amountCents);
+
   return {
     startDate,
     endDate,
@@ -206,6 +541,8 @@ export function buildAdminInsights(
     barbers: [...barbers.values()].sort(
       (a, b) => b.completed - a.completed || a.name.localeCompare(b.name),
     ),
+    barberServiceMatrix,
+    paymentMethods,
     topClients: clientRows
       .sort(
         (a, b) =>
@@ -222,5 +559,13 @@ export function buildAdminInsights(
           : 0,
       }))
       .sort((a, b) => b.count - a.count),
+    appliedFilters: {
+      barberIds:
+        range.barberIds ?? (range.barberId ? [range.barberId] : []),
+      serviceIds: range.serviceIds ?? [],
+      origins: range.origins ?? [],
+      paymentMethods: range.paymentMethods ?? [],
+    },
   };
 }
+

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildAdminInsights } from "./admin-insights";
-import { startOfDay, endOfDay } from "./date-utils";
+import {
+  buildAdminInsights,
+  buildInsightComparison,
+  computeMetricDelta,
+} from "./admin-insights";
+import { startOfDay, endOfDay, getYYYYMMDD } from "./date-utils";
+import { reportPeriod, resolveComparisonRange } from "./report-period";
 import type { ProductionGroup } from "../domain/repositories/AdminInsightsRepository";
 const range = {
   startDate: startOfDay("2026-10-01"),
@@ -51,6 +56,8 @@ describe("Admin insights", () => {
           day: "2026-10-08",
           barberId: "b2",
           barberName: "Chico",
+          method: "PIX",
+          count: 1,
           amountCents: 5000,
         },
       ],
@@ -61,6 +68,15 @@ describe("Admin insights", () => {
       report.timeline.find((p) => p.key === "2026-10-08")?.receivedCents,
     ).toBe(5000);
     expect(report.barbers[0].completed).toBe(0);
+    expect(report.paymentMethods).toEqual([
+      {
+        method: "PIX",
+        label: "Pix",
+        count: 1,
+        amountCents: 5000,
+        percentage: 100,
+      },
+    ]);
   });
   it("conta retornos em dias distintos, calcula ticket médio por visita e mantém contato e cadastro com mesmo nome separados", () => {
     const report = buildAdminInsights(
@@ -127,4 +143,78 @@ describe("Admin insights", () => {
       endDate: "2025-02-28",
     });
   });
+  it("constrói a matriz Profissional × Serviço com participação no barbeiro e no total", () => {
+    const report = buildAdminInsights(
+      range,
+      [
+        production({ barberId: "b1", barberName: "Marcos", serviceId: "s1", serviceName: "Corte", count: 2, amountCents: 6000, commissionCents: 3000 }),
+        production({ barberId: "b1", barberName: "Marcos", serviceId: "s2", serviceName: "Barba", count: 1, amountCents: 4000, commissionCents: 2000 }),
+        production({ barberId: "b2", barberName: "Chico", serviceId: "s1", serviceName: "Corte", count: 1, amountCents: 10000, commissionCents: 5000 }),
+      ],
+      [],
+    );
+    expect(report.barberServiceMatrix).toHaveLength(3);
+    const marcosCorte = report.barberServiceMatrix.find(
+      (c) => c.barberId === "b1" && c.serviceId === "s1",
+    );
+    expect(marcosCorte).toMatchObject({
+      completed: 2,
+      realizedCents: 6000,
+      commissionCents: 3000,
+      contributionCents: 3000,
+      shareOfBarberRate: 60,
+      shareOfTotalRate: 30,
+    });
+  });
+  it("não compara mês parcial com mês inteiro silenciosamente e trata ano bissexto (29/02 -> 28/02)", () => {
+    const nowMidMonth = new Date("2026-10-18T15:00:00-03:00");
+    const currentMonth = reportPeriod("month", nowMidMonth);
+    const prevComp = resolveComparisonRange(
+      "month",
+      currentMonth.startDate,
+      currentMonth.endDate,
+      "prev_period",
+      nowMidMonth,
+    );
+    expect(prevComp).not.toBeNull();
+    expect(getYYYYMMDD(prevComp!.compareStartDate)).toBe("2026-09-01");
+    expect(getYYYYMMDD(prevComp!.compareEndDate)).toBe("2026-09-18");
+    expect(prevComp!.equivalenceNote).toContain("18 dias");
+
+    const leapDayNow = new Date("2024-02-29T15:00:00-03:00");
+    const leapMonth = reportPeriod("month", leapDayNow);
+    const yoyLeap = resolveComparisonRange(
+      "month",
+      leapMonth.startDate,
+      leapMonth.endDate,
+      "yoy",
+      leapDayNow,
+    );
+    expect(yoyLeap).not.toBeNull();
+    expect(getYYYYMMDD(yoyLeap!.compareStartDate)).toBe("2023-02-01");
+    expect(getYYYYMMDD(yoyLeap!.compareEndDate)).toBe("2023-02-28");
+    expect(yoyLeap!.equivalenceNote).toContain("28/02");
+  });
+  it("calcula deltas sem divisão por zero e respeita a polaridade de métricas negativas (faltas/cancelamentos)", () => {
+    const noMovement = computeMetricDelta(0, 0, "cents", "higher_is_better");
+    expect(noMovement.state).toBe("no_movement");
+    expect(noMovement.formattedDelta).toBe("Sem movimento");
+
+    const zeroRef = computeMetricDelta(3000, 0, "cents", "higher_is_better");
+    expect(zeroRef.state).toBe("no_percent_base");
+    expect(zeroRef.percentDelta).toBeNull();
+    expect(zeroRef.favorable).toBe(true);
+
+    const rateDelta = computeMetricDelta(75, 50, "rate", "higher_is_better");
+    expect(rateDelta.pointsDelta).toBe(25);
+    expect(rateDelta.formattedDelta).toBe("+25 p.p.");
+
+    const currentReport = buildAdminInsights(range, [production()], [], 5, 2);
+    const refReport = buildAdminInsights(range, [], [], 2, 0);
+    const cmp = buildInsightComparison("prev_period", currentReport, refReport);
+    expect(cmp.metrics.canceled.absoluteDelta).toBe(3);
+    expect(cmp.metrics.canceled.favorable).toBe(false);
+    expect(cmp.metrics.noShow.favorable).toBe(false);
+  });
 });
+

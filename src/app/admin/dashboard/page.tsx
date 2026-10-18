@@ -2,12 +2,21 @@
 
 import { getBarbersAction } from "@/app/actions/admin-actions";
 import { getAdminInsightsAction } from "@/app/actions/admin-insights-actions";
-import type { AdminInsights } from "@/core/domain/repositories/AdminInsightsRepository";
+import { getServicesAdminAction } from "@/app/actions/service-actions";
+import type {
+  AdminInsights,
+  BookingOriginFilter,
+  InsightComparisonMode,
+  InsightPeriod,
+  PaymentMethodFilter,
+} from "@/core/domain/repositories/AdminInsightsRepository";
 import { AdminNavbar } from "@/components/admin/AdminNavbar";
 import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
 import { DashboardFilters } from "@/components/admin/DashboardFilters";
 import type {
   AdminBarberProp,
+  AdminServiceProp,
+  DashboardFilterState,
   DashboardPeriod,
 } from "@/components/admin/dashboard-types";
 import {
@@ -21,31 +30,128 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+const VALID_PERIODS: InsightPeriod[] = [
+  "today",
+  "yesterday",
+  "week",
+  "month",
+  "prev_month",
+  "year",
+  "last_7_days",
+  "last_30_days",
+  "last_90_days",
+  "custom",
+  "all",
+];
+
+const VALID_COMPARE_MODES: InsightComparisonMode[] = [
+  "none",
+  "prev_period",
+  "yoy",
+  "custom",
+];
+
+const VALID_ORIGINS: BookingOriginFilter[] = [
+  "ONLINE",
+  "WHATSAPP",
+  "WALK_IN",
+];
+
+const VALID_METHODS: PaymentMethodFilter[] = ["MONEY", "PIX", "CARD"];
+
+function parseFilterStateFromParams(
+  searchParams: ReturnType<typeof useSearchParams>,
+): DashboardFilterState {
+  const rawPeriod = (searchParams.get("period") || "month") as InsightPeriod;
+  const period: InsightPeriod = VALID_PERIODS.includes(rawPeriod)
+    ? rawPeriod
+    : "month";
+
+  const rawCmp = (searchParams.get("cmp") || "none") as InsightComparisonMode;
+  const compareMode: InsightComparisonMode = VALID_COMPARE_MODES.includes(
+    rawCmp,
+  )
+    ? rawCmp
+    : "none";
+
+  const customStart = searchParams.get("start") || "";
+  const customEnd = searchParams.get("end") || "";
+  const compareStart = searchParams.get("cmpStart") || "";
+  const compareEnd = searchParams.get("cmpEnd") || "";
+
+  const barbersParam =
+    searchParams.get("barbers") || searchParams.get("barber") || "";
+  const barberIds = barbersParam
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s && s !== "all");
+
+  const servicesParam = searchParams.get("services") || "";
+  const serviceIds = servicesParam
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const originsParam = searchParams.get("origins") || "";
+  const origins = originsParam
+    .split(",")
+    .map((s) => s.trim() as BookingOriginFilter)
+    .filter((s) => VALID_ORIGINS.includes(s));
+
+  const methodsParam = searchParams.get("methods") || "";
+  const paymentMethods = methodsParam
+    .split(",")
+    .map((s) => s.trim() as PaymentMethodFilter)
+    .filter((s) => VALID_METHODS.includes(s));
+
+  return {
+    period,
+    customStart,
+    customEnd,
+    compareMode: period === "all" ? "none" : compareMode,
+    compareStart,
+    compareEnd,
+    barberIds,
+    serviceIds,
+    origins,
+    paymentMethods,
+  };
+}
+
+function serializeFilterSignature(f: DashboardFilterState): string {
+  return JSON.stringify({
+    p: f.period,
+    cs: f.customStart,
+    ce: f.customEnd,
+    cm: f.compareMode,
+    cms: f.compareStart,
+    cme: f.compareEnd,
+    b: [...f.barberIds].sort(),
+    s: [...f.serviceIds].sort(),
+    o: [...f.origins].sort(),
+    m: [...f.paymentMethods].sort(),
+  });
+}
 
 function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Read initial filter from URL params or default to current month
-  const paramPeriod =
-    (searchParams.get("period") as DashboardPeriod) || "month";
-  const paramBarber = searchParams.get("barber") || "all";
+  const filterState = useMemo(
+    () => parseFilterStateFromParams(searchParams),
+    [searchParams],
+  );
+  const filterSignature = useMemo(
+    () => serializeFilterSignature(filterState),
+    [filterState],
+  );
 
-  const period: DashboardPeriod = [
-    "today",
-    "week",
-    "month",
-    "year",
-    "all",
-  ].includes(paramPeriod)
-    ? paramPeriod
-    : "month";
-  const selectedBarberId = paramBarber;
   const [analyticsScope, setAnalyticsScope] = useState("");
-  // Analytics & Team Filter State
   const [analytics, setAnalytics] = useState<AdminInsights | null>(null);
   const [barbers, setBarbers] = useState<AdminBarberProp[]>([]);
+  const [services, setServices] = useState<AdminServiceProp[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -54,10 +160,34 @@ function AdminDashboardContent() {
   // Sequence ref to discard outdated responses (prevents race conditions)
   const requestIdRef = useRef(0);
 
-  const updateUrlParams = (newPeriod: DashboardPeriod, newBarber: string) => {
+  const applyFilterStateToUrl = (next: DashboardFilterState) => {
     const params = new URLSearchParams();
-    if (newPeriod !== "month") params.set("period", newPeriod);
-    if (newBarber !== "all") params.set("barber", newBarber);
+    if (next.period !== "month") params.set("period", next.period);
+    if (next.period === "custom") {
+      if (next.customStart) params.set("start", next.customStart);
+      if (next.customEnd) params.set("end", next.customEnd);
+    }
+    if (next.compareMode !== "none" && next.period !== "all") {
+      params.set("cmp", next.compareMode);
+      if (next.compareMode === "custom") {
+        if (next.compareStart) params.set("cmpStart", next.compareStart);
+        if (next.compareEnd) params.set("cmpEnd", next.compareEnd);
+      }
+    }
+    if (next.barberIds.length === 1) {
+      params.set("barber", next.barberIds[0]);
+    } else if (next.barberIds.length > 1) {
+      params.set("barbers", next.barberIds.join(","));
+    }
+    if (next.serviceIds.length > 0) {
+      params.set("services", next.serviceIds.join(","));
+    }
+    if (next.origins.length > 0) {
+      params.set("origins", next.origins.join(","));
+    }
+    if (next.paymentMethods.length > 0) {
+      params.set("methods", next.paymentMethods.join(","));
+    }
     const queryString = params.toString();
     router.replace(
       queryString ? `/admin/dashboard?${queryString}` : "/admin/dashboard",
@@ -69,8 +199,8 @@ function AdminDashboardContent() {
 
   const loadDashboardData = useCallback(
     async (
-      targetPeriod: DashboardPeriod,
-      targetBarber: string,
+      targetFilter: DashboardFilterState,
+      targetSignature: string,
       isManual = false,
     ) => {
       const currentRequestId = ++requestIdRef.current;
@@ -85,16 +215,28 @@ function AdminDashboardContent() {
       setErrorMsg(null);
 
       try {
-        const [analyticsRes, barbersRes] = await Promise.all([
-          getAdminInsightsAction(targetPeriod, targetBarber),
+        const [analyticsRes, barbersRes, servicesRes] = await Promise.all([
+          getAdminInsightsAction({
+            period: targetFilter.period,
+            customStart: targetFilter.customStart || undefined,
+            customEnd: targetFilter.customEnd || undefined,
+            compareMode: targetFilter.compareMode,
+            compareStart: targetFilter.compareStart || undefined,
+            compareEnd: targetFilter.compareEnd || undefined,
+            barberIds: targetFilter.barberIds,
+            serviceIds: targetFilter.serviceIds,
+            origins: targetFilter.origins,
+            paymentMethods: targetFilter.paymentMethods,
+          }),
           getBarbersAction(),
+          getServicesAdminAction(false),
         ]);
 
         // Discard out-of-order response if another filter change was triggered
         if (currentRequestId !== requestIdRef.current) return;
 
         if (analyticsRes.success && analyticsRes.report) {
-          setAnalyticsScope(`${targetPeriod}:${targetBarber}`);
+          setAnalyticsScope(targetSignature);
           setAnalytics(analyticsRes.report);
           setErrorMsg(null);
           const serverTimestamp = analyticsRes.report.calculatedAt
@@ -116,6 +258,9 @@ function AdminDashboardContent() {
         if (barbersRes.success && barbersRes.barbers) {
           setBarbers(barbersRes.barbers);
         }
+        if (servicesRes.success && servicesRes.services) {
+          setServices(servicesRes.services);
+        }
       } catch {
         if (currentRequestId === requestIdRef.current) {
           setErrorMsg(
@@ -133,13 +278,32 @@ function AdminDashboardContent() {
   );
 
   useEffect(() => {
-    void loadDashboardData(period, selectedBarberId);
-  }, [period, selectedBarberId, loadDashboardData]);
+    void loadDashboardData(filterState, filterSignature);
+  }, [filterState, filterSignature, loadDashboardData]);
 
   const handlePeriodChange = (newPeriod: DashboardPeriod) =>
-    updateUrlParams(newPeriod, selectedBarberId);
+    applyFilterStateToUrl({ ...filterState, period: newPeriod });
   const handleBarberFilterChange = (barberId: string) =>
-    updateUrlParams(period, barberId);
+    applyFilterStateToUrl({
+      ...filterState,
+      barberIds: barberId === "all" ? [] : [barberId],
+    });
+  const handleResetFilters = () =>
+    applyFilterStateToUrl({
+      period: "month",
+      customStart: "",
+      customEnd: "",
+      compareMode: "none",
+      compareStart: "",
+      compareEnd: "",
+      barberIds: [],
+      serviceIds: [],
+      origins: [],
+      paymentMethods: [],
+    });
+
+  const selectedBarberId =
+    filterState.barberIds.length === 1 ? filterState.barberIds[0] : "all";
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col selection:bg-[#D4AF37]/30">
@@ -148,25 +312,41 @@ function AdminDashboardContent() {
 
       {/* Main CRM Analytical Layout */}
       <main className="flex-grow container mx-auto px-4 sm:px-6 py-8 space-y-8 max-w-7xl">
-        {/* 1 & 2. Título, Contexto e Filtros Consistentes */}
+        {/* 1 & 2. Título, Contexto, Comparação e Filtros Consistentes */}
         <DashboardFilters
-          period={period}
+          period={filterState.period}
           selectedBarberId={selectedBarberId}
           barbers={barbers}
+          services={services}
+          filterState={filterState}
           dateIntervalLabel={
-            analyticsScope === `${period}:${selectedBarberId}`
+            analyticsScope === filterSignature
               ? analytics?.periodLabel
               : undefined
           }
+          comparisonIntervalLabel={
+            analyticsScope === filterSignature
+              ? analytics?.comparison?.periodLabel
+              : undefined
+          }
+          comparisonEquivalenceNote={
+            analyticsScope === filterSignature
+              ? analytics?.comparison?.equivalenceNote
+              : undefined
+          }
           lastUpdated={
-            analyticsScope === `${period}:${selectedBarberId}`
+            analyticsScope === filterSignature
               ? lastUpdated || undefined
               : undefined
           }
           isRefreshing={isRefreshing}
-          onRefresh={() => loadDashboardData(period, selectedBarberId, true)}
+          onRefresh={() =>
+            loadDashboardData(filterState, filterSignature, true)
+          }
           onPeriodChange={handlePeriodChange}
           onBarberChange={handleBarberFilterChange}
+          onApplyFilters={applyFilterStateToUrl}
+          onResetFilters={handleResetFilters}
         />
 
         <nav
@@ -218,7 +398,9 @@ function AdminDashboardContent() {
               <p>{errorMsg}</p>
             </div>
             <button
-              onClick={() => loadDashboardData(period, selectedBarberId, true)}
+              onClick={() =>
+                loadDashboardData(filterState, filterSignature, true)
+              }
               className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-xs font-bold text-red-300 transition-colors cursor-pointer"
             >
               Tentar novamente
@@ -235,8 +417,7 @@ function AdminDashboardContent() {
         )}
 
         {/* Estado de Carregamento Inicial */}
-        {isLoading ||
-        (analytics && analyticsScope !== `${period}:${selectedBarberId}`) ? (
+        {isLoading || (analytics && analyticsScope !== filterSignature) ? (
           <div className="flex flex-col items-center justify-center py-24 text-white/50 gap-3">
             <RefreshCw className="w-7 h-7 animate-spin text-[#D4AF37]" />
             <span className="text-sm font-semibold text-white/70">
@@ -245,10 +426,11 @@ function AdminDashboardContent() {
           </div>
         ) : (
           <DashboardAnalytics
-            key={`${period}:${selectedBarberId}:${lastUpdated}`}
+            key={`${filterSignature}:${lastUpdated}`}
             analytics={analytics}
-            period={period}
+            period={filterState.period}
             barberId={selectedBarberId}
+            filterState={filterState}
           />
         )}
       </main>
@@ -269,4 +451,5 @@ export default function AdminDashboard() {
     </Suspense>
   );
 }
+
 

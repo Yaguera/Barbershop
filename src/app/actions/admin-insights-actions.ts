@@ -9,13 +9,14 @@ import {
 } from "@/core/domain/errors";
 import type {
   InsightDetailFilter,
+  InsightFilterInput,
   InsightPeriod,
 } from "@/core/domain/repositories/AdminInsightsRepository";
 import { GetAdminInsightsUseCase } from "@/core/usecases/GetAdminInsightsUseCase";
 import { PrismaAdminInsightsRepository } from "@/infra/repositories/PrismaAdminInsightsRepository";
 
 export async function getAdminInsightsAction(
-  period: InsightPeriod,
+  periodOrFilter: InsightPeriod | InsightFilterInput,
   barberId?: string,
 ) {
   try {
@@ -24,7 +25,7 @@ export async function getAdminInsightsAction(
     return actionSuccess({
       report: await new GetAdminInsightsUseCase(
         new PrismaAdminInsightsRepository(),
-      ).overview(session.user.role, period, barberId),
+      ).overview(session.user.role, periodOrFilter, barberId),
     });
   } catch (error) {
     return error instanceof AppError
@@ -34,6 +35,7 @@ export async function getAdminInsightsAction(
         );
   }
 }
+
 export async function getAdminInsightDetailsAction(
   filter: InsightDetailFilter,
 ) {
@@ -53,3 +55,4 @@ export async function getAdminInsightDetailsAction(
         );
   }
 }
+

@@ -1,3 +1,10 @@
+import type {
+  BookingOriginFilter,
+  InsightComparisonMode,
+  InsightPeriod,
+  PaymentMethodFilter,
+} from "@/core/domain/repositories/AdminInsightsRepository";
+
 export interface AnalyticsReport {
   totalRevenue: number;
   completedCount: number;
@@ -5,9 +12,15 @@ export interface AnalyticsReport {
   noShowCount?: number;
   newClientsCount: number;
   growthPercentage: string;
-  growthTrend?: 'up' | 'down' | 'neutral' | 'no_basis';
+  growthTrend?: "up" | "down" | "neutral" | "no_basis";
   revenueByTime: { timeLabel: string; revenue: number; completed: number }[];
-  servicesDistribution: { name: string; value: number; revenue?: number; percentage: number; fill: string }[];
+  servicesDistribution: {
+    name: string;
+    value: number;
+    revenue?: number;
+    percentage: number;
+    fill: string;
+  }[];
   periodLabel?: string;
 }
 
@@ -23,4 +36,27 @@ export interface AdminBarberProp {
   specialty?: string;
 }
 
-export type DashboardPeriod = 'today' | 'week' | 'month' | 'year' | 'all';
+export interface AdminServiceProp {
+  id: string;
+  name: string;
+  price: number;
+  durationMinutes: number;
+  commissionRate: number;
+  active: boolean;
+}
+
+export type DashboardPeriod = InsightPeriod;
+
+export interface DashboardFilterState {
+  period: InsightPeriod;
+  customStart: string;
+  customEnd: string;
+  compareMode: InsightComparisonMode;
+  compareStart: string;
+  compareEnd: string;
+  barberIds: string[];
+  serviceIds: string[];
+  origins: BookingOriginFilter[];
+  paymentMethods: PaymentMethodFilter[];
+}
+

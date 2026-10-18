@@ -47,9 +47,21 @@ Na Fase P0, os consumidores legados foram inventariados e saneados para impedir 
 | Repasse pago ao barbeiro vs saldo a pagar | **Parcial (P0)** | `Appointment.commissionCents` | O sistema calcula a comissão devida, mas ainda não possui tabela de liquidação/pagamento de comissão (`CommissionPayout`) |
 | Despesas operacionais, contas a pagar e resultado líquido após despesas | **Ainda não disponível (Fase P2)** | Requer entidade `Expense` | Não existe tabela de despesas no schema atual; o painel rotula explicitamente como "antes das despesas" |
 | Capacidade contratada, horas disponíveis e taxa de ocupação real | **Ainda não disponível (Fase P2)** | `Barber.workStart` / `workEnd` | Requer motor de disponibilidade líquida descontando pausas e bloqueios |
-| Recebimentos por meio de pagamento (`PIX`, `CASH`, `DEBIT_CARD`, `CREDIT_CARD`) | **Parcial (P0)** | `PaymentReceipt.method` | Visível nos detalhes e no calendário de caixa; agregação analítica dedicada prevista para P1/P2 |
+| Recebimentos por meio de pagamento (`PIX`, `MONEY`, `CARD`) | **Disponível agora (P1)** | `PaymentReceipt.method` | Agregação analítica dedicada no dashboard com drill-down por forma de pagamento |
+| Matriz Profissional × Serviço | **Disponível agora (P1)** | `buildAdminInsights` | Cruzamento interativo de barbeiro e serviço com abertura dos registros correspondentes |
+| Comparações temporais (`prev_period`, `yoy`, `custom`) e multisseleção | **Disponível agora (P1)** | `resolveComparisonRange` + `buildInsightComparison` | Mês parcial acumulado (MTD) compara contra os mesmos dias decorridos da referência |
 
-## 5. Como alterar a comissão e preservação do histórico
+## 5. Filtros avançados e comparações temporais (Fase P1)
+
+- **Períodos suportados**: `today` (Hoje), `yesterday` (Ontem), `week` (Esta semana), `month` (Mês atual), `prev_month` (Mês anterior), `last_7_days`, `last_30_days`, `last_90_days`, `year` (Este ano), `custom` (Intervalo personalizado) e `all` (Geral).
+- **Modos de comparação**:
+  - `prev_period`: Período anterior equivalente. Quando o mês atual está em andamento, compara apenas os primeiros $N$ dias decorridos do mês contra os primeiros $N$ dias do mês anterior (MTD), evitando comparar mês parcial contra mês inteiro.
+  - `yoy`: Mesmo período do ano anterior, ajustando `29/02` para `28/02` quando necessário e informando o ajuste no cabeçalho.
+  - `custom`: Intervalo de comparação personalizado, emitindo aviso explícito quando a quantidade de dias difere do período atual.
+- **Filtros dimensionais e URL**: Multisseleção de barbeiros (`barbers`), serviços (`services`), origens (`origins`: `ONLINE`, `WHATSAPP`, `WALK_IN`) e formas de pagamento (`methods`: `PIX`, `MONEY`, `CARD`) sincronizada na URL. Filtrar forma de pagamento restringe exclusivamente o caixa confirmado, sem alterar a produção realizada.
+
+## 6. Como alterar a comissão e preservação do histórico
 
 Em **Configurações → Comissões** (`/admin/configuracoes/comissoes`), cada serviço apresenta seu percentual atual, preço e prévia da divisão em reais. `PrismaAppointmentRepository.createTransactional` grava `priceCents` e `commissionCents` no ato da criação do agendamento. Alterar a taxa de um serviço afeta apenas novos agendamentos criados após o salvamento, preservando integralmente o histórico passado e os agendamentos já existentes.
+
 

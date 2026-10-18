@@ -44,9 +44,14 @@ function AdminFinanceiroContent() {
 
   const period: DashboardPeriod = [
     'today',
+    'yesterday',
     'week',
     'month',
+    'prev_month',
     'year',
+    'last_7_days',
+    'last_30_days',
+    'last_90_days',
     'all',
   ].includes(paramPeriod)
     ? paramPeriod
