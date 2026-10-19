@@ -48,7 +48,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
-const moneyCents = (cents: number) => money((cents || 0) / 100);
+const moneyCents = (cents: number) => money(cents || 0);
 
 const formatDateBR = (value: string | Date | null | undefined) => {
   if (!value) return "—";

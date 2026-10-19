@@ -29,14 +29,14 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const moneyCents = (cents: number | null | undefined) =>
-  cents === null || cents === undefined ? "—" : money(cents / 100);
+  cents === null || cents === undefined ? "—" : money(cents);
 
 const formatGoalValue = (
   val: number | null | undefined,
   unit: "CENTS" | "PERCENT_TENTHS"
 ) => {
   if (val === null || val === undefined) return "—";
-  if (unit === "CENTS") return money(val / 100);
+  if (unit === "CENTS") return money(val);
   return `${(val / 10).toLocaleString("pt-BR", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,

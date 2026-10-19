@@ -28,7 +28,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const moneyCents = (cents: number | null | undefined) =>
-  cents === null || cents === undefined ? "—" : money(cents / 100);
+  cents === null || cents === undefined ? "—" : money(cents);
 
 const formatMinutes = (mins: number) => {
   const h = Math.floor(mins / 60);
