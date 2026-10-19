@@ -1,4 +1,4 @@
-import { safeRedirect } from '@/core/utils/safe-redirect';
+import { safeRedirect, sanitizeProductionAuthEnv } from '@/core/utils/safe-redirect';
 import { prisma } from '@/infra/db/prisma-client';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
@@ -6,6 +6,8 @@ import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { z } from 'zod';
+
+sanitizeProductionAuthEnv();
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),

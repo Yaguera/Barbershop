@@ -1,8 +1,12 @@
 import { auth } from '@/auth';
 import { createForbiddenResponse, createUnauthorizedResponse } from '@/core/presentation/http-error-pages';
+import { resolveSafeRedirectUrl, sanitizeProductionAuthEnv } from '@/core/utils/safe-redirect';
 import { NextResponse } from 'next/server';
 
+sanitizeProductionAuthEnv();
+
 const authProxy = auth((req) => {
+  sanitizeProductionAuthEnv();
   const isLoggedIn = !!req.auth?.user;
   const userRole = req.auth?.user?.role;
 
@@ -25,13 +29,13 @@ const authProxy = auth((req) => {
   if (pathname === '/') {
     if (isLoggedIn) {
       if (userRole === 'BARBER') {
-        return NextResponse.redirect(new URL('/barber/dashboard', req.nextUrl));
+        return NextResponse.redirect(resolveSafeRedirectUrl('/barber/dashboard', req));
       }
       if (userRole === 'ADMIN') {
-        return NextResponse.redirect(new URL('/admin/dashboard', req.nextUrl));
+        return NextResponse.redirect(resolveSafeRedirectUrl('/admin/dashboard', req));
       }
       if (userRole === 'RECEPTIONIST') {
-        return NextResponse.redirect(new URL('/atendente', req.nextUrl));
+        return NextResponse.redirect(resolveSafeRedirectUrl('/atendente', req));
       }
     }
     return NextResponse.next();
@@ -43,16 +47,16 @@ const authProxy = auth((req) => {
       return createUnauthorizedResponse(req, pathname);
     }
     if (userRole === 'ADMIN') {
-      return NextResponse.redirect(new URL('/admin/dashboard', req.nextUrl));
+      return NextResponse.redirect(resolveSafeRedirectUrl('/admin/dashboard', req));
     }
     if (userRole === 'BARBER') {
-      return NextResponse.redirect(new URL('/barber/dashboard', req.nextUrl));
+      return NextResponse.redirect(resolveSafeRedirectUrl('/barber/dashboard', req));
     }
     if (userRole === 'RECEPTIONIST') {
-      return NextResponse.redirect(new URL('/atendente', req.nextUrl));
+      return NextResponse.redirect(resolveSafeRedirectUrl('/atendente', req));
     }
     // Clientes vão para sua agenda
-    return NextResponse.redirect(new URL('/agenda', req.nextUrl));
+    return NextResponse.redirect(resolveSafeRedirectUrl('/agenda', req));
   }
 
   // 3. Alias legado /barbeiro/agenda -> /barber/agenda (autorizar antes do alias)
@@ -64,7 +68,7 @@ const authProxy = auth((req) => {
       return createForbiddenResponse(req, pathname, userRole);
     }
     const targetPath = pathname.replace(/^\/barbeiro/, '/barber');
-    return NextResponse.redirect(new URL(targetPath, req.nextUrl));
+    return NextResponse.redirect(resolveSafeRedirectUrl(targetPath, req));
   }
 
   // 4. Rotas Administrativas (/admin/*) -> Apenas ADMIN
