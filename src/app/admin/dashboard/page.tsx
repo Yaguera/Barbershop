@@ -14,6 +14,7 @@ import { AdminNavbar } from "@/components/admin/AdminNavbar";
 import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
 import { DashboardFilters } from "@/components/admin/DashboardFilters";
 import { PhaseP3OperationsPanel } from "@/components/admin/PhaseP3OperationsPanel";
+import { PhaseP4GovernancePanel } from "@/components/admin/PhaseP4GovernancePanel";
 import type {
   AdminBarberProp,
   AdminServiceProp,
@@ -442,6 +443,19 @@ function AdminDashboardContent() {
               origins={filterState.origins}
               customStart={filterState.customStart || undefined}
               customEnd={filterState.customEnd || undefined}
+            />
+            <PhaseP4GovernancePanel
+              period={filterState.period}
+              filterSignature={filterSignature}
+              barberId={selectedBarberId}
+              barberIds={filterState.barberIds}
+              serviceIds={filterState.serviceIds}
+              origins={filterState.origins}
+              customStart={filterState.customStart || undefined}
+              customEnd={filterState.customEnd || undefined}
+              receivedRevenueCents={analytics?.receivedCents ?? 0}
+              realizedProductionCents={analytics?.realizedCents ?? 0}
+              barbershopContributionCents={analytics?.contributionCents ?? 0}
             />
           </>
         )}

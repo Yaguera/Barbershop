@@ -322,4 +322,39 @@ model AppointmentStatusEvent {
   @@index([toStatus, occurredAt])
 }
 
+model InternalTelemetryEvent {
+  id             String   @id @default(cuid())
+  eventName      String   // booking_started, booking_details_selected, appointment_created, appointment_completed, appointment_canceled, appointment_no_show_marked, payment_confirmed, payment_record_reversed, payment_refunded, expense_recognized, expense_paid, commission_paid, report_exported
+  schemaVersion  Int      @default(1)
+  journeyId      String?
+  channel        String?  // ONLINE, WHATSAPP, WALK_IN
+  actorRole      String?  // CLIENT, RECEPTIONIST, BARBER, ADMIN
+  appointmentId  String?
+  serviceId      String?
+  barberId       String?
+  amountCents    Int?
+  metadataJson   String?  // Non-PII JSON metadata
+  idempotencyKey String?  @unique
+  occurredAt     DateTime @default(now())
+
+  @@index([eventName, occurredAt])
+  @@index([journeyId, eventName])
+}
+
+model ManagementGoal {
+  id          String   @id @default(cuid())
+  metricCode  String   // RECEIVED_REVENUE_CENTS, REALIZED_PRODUCTION_CENTS, BARBERSHOP_CONTRIBUTION_CENTS, OCCUPANCY_RATE_PERCENT, EXPENSE_CEILING_CENTS, NO_SHOW_MAX_RATE_PERCENT
+  monthKey    String   // "YYYY-MM"
+  barberId    String   @default("ALL") // "ALL" or specific barberId
+  targetValue Int      // Cents for CENTS metrics, or basis points / tenths of percent for PERCENT metrics
+  unit        String   // CENTS, PERCENT_TENTHS
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([metricCode, monthKey, barberId])
+  @@index([monthKey])
+}
+
+
 

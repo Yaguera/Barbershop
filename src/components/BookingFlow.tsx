@@ -1,20 +1,18 @@
 'use client';
 
 import { createAppointmentAction } from '@/app/actions/appointment-actions';
+import { trackBookingTelemetryAction } from '@/app/actions/telemetry-goals-actions';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import { useBookingStore } from '@/store/booking-store';
 import {
   AlertTriangle,
-  Calendar,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
   Edit2,
   Loader2,
-  Scissors,
   Star,
-  User as UserIcon,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -22,6 +20,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { ClientLuxDashboard } from './lux/ClientLuxDashboard';
 import SplashScreen from './SplashScreen';
+
+function getOrCreateJourneyId(): string {
+  if (typeof window === 'undefined') return '';
+  let jId = sessionStorage.getItem('barberapp_booking_journey_id');
+  if (!jId) {
+    jId = `j_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+    sessionStorage.setItem('barberapp_booking_journey_id', jId);
+  }
+  return jId;
+}
 
 interface ServiceProp {
   id: string;
@@ -127,10 +135,39 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
     }
   });
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate a sessionStorage preference unavailable during SSR.
   useEffect(() => {
     readSplashPreference();
   }, []);
+
+  // Instrumentação Fase P4: booking_started (uma vez por jornada iniciada)
+  useEffect(() => {
+    if (step >= 1) {
+      const journeyId = getOrCreateJourneyId();
+      if (journeyId) {
+        trackBookingTelemetryAction({
+          eventName: 'booking_started',
+          journeyId,
+          channel: 'ONLINE',
+        });
+      }
+    }
+  }, [step]);
+
+  // Instrumentação Fase P4: booking_details_selected (quando serviço, barbeiro e horário são escolhidos)
+  useEffect(() => {
+    if (step === 4 && serviceId && barberId && startTime) {
+      const journeyId = getOrCreateJourneyId();
+      if (journeyId) {
+        trackBookingTelemetryAction({
+          eventName: 'booking_details_selected',
+          journeyId,
+          serviceId,
+          barberId,
+          channel: 'ONLINE',
+        });
+      }
+    }
+  }, [step, serviceId, barberId, startTime]);
 
   // Quando o usuário volta autenticado com um rascunho completo, posiciona na Revisão sem disparar agendamento automático
   useEffect(() => {
@@ -190,6 +227,18 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
       });
 
       if (result.success && result.appointment) {
+        const journeyId = getOrCreateJourneyId();
+        if (journeyId) {
+          trackBookingTelemetryAction({
+            eventName: 'appointment_created',
+            journeyId,
+            serviceId,
+            barberId,
+            appointmentId: result.appointment.id,
+            channel: 'ONLINE',
+          });
+          sessionStorage.removeItem('barberapp_booking_journey_id');
+        }
         setBookingSuccess(result.appointment);
         clearBooking();
       } else {

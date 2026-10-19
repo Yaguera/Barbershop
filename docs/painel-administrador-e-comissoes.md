@@ -52,6 +52,10 @@ Na Fase P0, os consumidores legados foram inventariados e saneados para impedir 
 | Comparações temporais (`prev_period`, `yoy`, `custom`) e multisseleção | **Disponível agora (P1)** | `resolveComparisonRange` + `buildInsightComparison` | Mês parcial acumulado (MTD) compara contra os mesmos dias decorridos da referência |
 | Cascata do Resultado de Competência vs Fluxo Líquido de Caixa | **Disponível agora (P2)** | `buildFinancialStatement` (`src/core/utils/financial-statement.ts`) | Separa competência, fluxo de caixa por liquidação e aging em duas séries independentes |
 | Coortes de 30 dias, 1ª visita histórica e vínculo canônico de identidade | **Disponível agora (P3)** | `buildPhaseP3OperationsReport` + `ClientIdentityLink` | Coortes imaturas excluídas do denominador consolidado; contatos e usuários homônimos nunca mesclados automaticamente |
+| Funil digital de agendamento online (4 etapas) | **Disponível agora (P4)** | `InternalTelemetryEvent` + `Appointment` | Eventos internos deduplicados por `journeyId` (`booking_started` → `booking_details_selected` → `appointment_created` → `COMPLETED`) |
+| Metas gerenciais (`ManagementGoal`) e orçamento do período | **Disponível agora (P4)** | `ManagementGoal` + `evaluateManagementGoals` | Exibe `"Meta não definida"` quando ausente; nunca inventa metas sintéticas |
+| Projeção linear de fechamento do mês corrente | **Disponível agora (P4)** | `buildEndOfMonthProjection` | Calculada por ritmo diário real acumulado no mês (`America/Sao_Paulo`) |
+| Exportação CSV segura de visões analíticas e financeiras | **Disponível agora (P4)** | `sanitizeCsvCell` + `buildSafeCsvExport` | Proteção ativa contra CSV Formula Injection (`=`, `+`, `-`, `@`, `\t`, `\r`, `\n`) e BOM UTF-8 |
 
 ## 5. Filtros avançados e comparações temporais (Fase P1)
 
@@ -65,5 +69,19 @@ Na Fase P0, os consumidores legados foram inventariados e saneados para impedir 
 ## 6. Como alterar a comissão e preservação do histórico
 
 Em **Configurações → Comissões** (`/admin/configuracoes/comissoes`), cada serviço apresenta seu percentual atual, preço e prévia da divisão em reais. `PrismaAppointmentRepository.createTransactional` grava `priceCents` e `commissionCents` no ato da criação do agendamento. Alterar a taxa de um serviço afeta apenas novos agendamentos criados após o salvamento, preservando integralmente o histórico passado e os agendamentos já existentes.
+
+## 7. Governança, Funil Digital, Metas, Projeção e Exportação CSV Segura (Fase P4)
+
+- **Instrumentação Interna e Funil Digital de Agendamento (`InternalTelemetryEvent`)**:
+  - Registra eventos internos no `BookingFlow` (`booking_started`, `booking_details_selected`, `appointment_created`) atrelados a um `journeyId` único por sessão (`sessionStorage`), preservando o identificador mesmo quando o cliente passa pelo fluxo de login antes de confirmar.
+  - Deduplica múltiplos cliques na mesma jornada e consolida a conversão ponta a ponta até o comparecimento concluído (`COMPLETED`).
+- **Metas Gerenciais (`ManagementGoal`)**:
+  - Permite definir metas mensais, semanais ou anuais para Recebido no Caixa, Produção Realizada, Contribuição da Barbearia, Atendimentos Concluídos e Ocupação Líquida.
+  - Quando não há meta configurada para uma métrica no período, o painel exibe explicitamente `"Meta não definida"` sem fabricar valores sintéticos.
+- **Projeção de Fechamento do Mês (`buildEndOfMonthProjection`)**:
+  - Projeta Recebido no Caixa, Produção Realizada, Contribuição da Barbearia e Atendimentos Concluídos até o último dia do mês corrente com base na média diária real observada nos dias decorridos em `America/Sao_Paulo`.
+- **Exportação CSV Segura (`sanitizeCsvCell` / `buildSafeCsvExport`)**:
+  - Todas as células iniciadas por caracteres interpretáveis como fórmulas por planilhas (`=`, `+`, `-`, `@`, `\t`, `\r`, `\n`), inclusive após espaços iniciais, são neutralizadas com apóstrofo (`'`) e escapadas conforme RFC 4180 com BOM UTF-8 para compatibilidade direta com Excel e LibreOffice.
+
 
 
