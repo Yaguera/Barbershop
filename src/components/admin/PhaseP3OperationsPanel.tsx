@@ -263,13 +263,15 @@ export function PhaseP3OperationsPanel({
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-500">
-            Inteligência Operacional & Clientes · Fase P3
+            Agenda, Horários Livres e Fidelidade dos Clientes
           </span>
           <h2 className="mt-1 font-display text-2xl font-bold text-white">
-            Capacidade de Jornada, Ocupação, Cancelamentos e Retenção por Coorte
+            Ocupação da Agenda, Horários de Pico e Retorno de Clientes
           </h2>
           <p className="mt-1 max-w-3xl text-xs text-zinc-400">
-            {report.estimationNotice}
+            Veja quanto tempo da agenda dos barbeiros está preenchido, quais
+            horários ficam vazios, quantas vagas canceladas foram salvas por
+            outro cliente e quantos clientes novos voltam em até 30 dias.
           </p>
         </div>
 
@@ -281,8 +283,8 @@ export function PhaseP3OperationsPanel({
           >
             <PlusCircle className="h-3.5 w-3.5" />
             {showExceptionForm
-              ? "Fechar Exceção de Jornada"
-              : "Registrar Pausa / Bloqueio / Turno Extra"}
+              ? "Fechar Horário de Pausa / Folga"
+              : "Cadastrar Almoço / Folga / Horário Extra"}
           </button>
 
           <button
@@ -292,8 +294,8 @@ export function PhaseP3OperationsPanel({
           >
             <Link2 className="h-3.5 w-3.5 text-amber-400" />
             {showLinkForm
-              ? "Fechar Vínculo de Identidade"
-              : "Vincular Contato a Cliente Cadastrado"}
+              ? "Fechar Unificação de Ficha"
+              : "Unir Ficha da Recepção com Conta do Site"}
           </button>
         </div>
       </div>
@@ -331,11 +333,11 @@ export function PhaseP3OperationsPanel({
       {showExceptionForm && (
         <div className="rounded-2xl border border-amber-500/30 bg-[#141414] p-5">
           <h3 className="text-sm font-bold text-white">
-            Registrar Pausa, Bloqueio, Férias ou Turno Extra na Jornada
+            Cadastrar Almoço, Saída, Folga ou Horário Extra do Barbeiro
           </h3>
           <p className="mt-0.5 text-xs text-zinc-400">
-            Pausas, bloqueios e férias reduzem os minutos disponíveis no cálculo
-            de ocupação; turnos extras ampliam a capacidade do dia.
+            Almoços e folgas são descontados do tempo disponível do barbeiro
+            para não contar como cadeira vazia injustamente.
           </p>
 
           <form
@@ -363,7 +365,7 @@ export function PhaseP3OperationsPanel({
 
             <div>
               <label className="mb-1 block text-[11px] font-semibold text-zinc-300">
-                Tipo de Exceção *
+                Tipo de Horário *
               </label>
               <select
                 value={exKind}
@@ -373,9 +375,9 @@ export function PhaseP3OperationsPanel({
                 className="w-full rounded-xl border border-white/10 bg-[#0c0c0c] px-3 py-2 text-xs text-white"
               >
                 <option value="PAUSE">Pausa / Almoço</option>
-                <option value="BLOCK">Bloqueio Administrativo</option>
-                <option value="VACATION">Folga / Férias / Ausência</option>
-                <option value="EXTRA_SHIFT">Turno Extra (+ Capacidade)</option>
+                <option value="BLOCK">Saída / Compromisso</option>
+                <option value="VACATION">Folga / Férias / Falta</option>
+                <option value="EXTRA_SHIFT">Horário Extra (+ Tempo)</option>
               </select>
             </div>
 
@@ -424,7 +426,7 @@ export function PhaseP3OperationsPanel({
                 disabled={exSubmitting}
                 className="w-full rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-black hover:bg-amber-400 disabled:opacity-50"
               >
-                {exSubmitting ? "Salvando..." : "Salvar Exceção"}
+                {exSubmitting ? "Salvando..." : "Salvar Horário"}
               </button>
             </div>
           </form>
@@ -432,7 +434,7 @@ export function PhaseP3OperationsPanel({
           {(workspace?.exceptions ?? []).length > 0 && (
             <div className="mt-4 border-t border-white/[0.06] pt-3">
               <p className="text-[11px] font-bold uppercase text-zinc-400">
-                Exceções ativas no período ({workspace!.exceptions.length})
+                Pausas, folgas e horários extras cadastrados ({workspace!.exceptions.length})
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {workspace!.exceptions.map((ex) => (
@@ -449,7 +451,7 @@ export function PhaseP3OperationsPanel({
                       type="button"
                       onClick={() => handleDeleteException(ex.id)}
                       className="text-red-400 hover:text-red-300"
-                      title="Remover exceção"
+                      title="Remover"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -465,10 +467,12 @@ export function PhaseP3OperationsPanel({
       {showLinkForm && (
         <div className="rounded-2xl border border-sky-500/30 bg-[#141414] p-5">
           <h3 className="text-sm font-bold text-white">
-            Vinculação Controlada de Identidade Canônica (Contato Manual →
-            Usuário Cadastrado)
+            Unir Ficha da Recepção (WhatsApp/Balcão) com Conta do Site
           </h3>
-          <p className="mt-0.5 text-xs text-zinc-400">{report.identityNotice}</p>
+          <p className="mt-0.5 text-xs text-zinc-400">
+            Se um cliente agendava pelo WhatsApp e depois criou conta no site,
+            vincule os dois aqui para juntar todo o histórico de visitas dele.
+          </p>
 
           <form
             onSubmit={handleCreateIdentityLink}
@@ -476,7 +480,7 @@ export function PhaseP3OperationsPanel({
           >
             <div>
               <label className="mb-1 block text-[11px] font-semibold text-zinc-300">
-                Contato Manual da Recepção (ClientContact) *
+                Ficha da Recepção (WhatsApp / Balcão) *
               </label>
               <select
                 required
@@ -484,7 +488,7 @@ export function PhaseP3OperationsPanel({
                 onChange={(e) => setSelectedContactId(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-[#0c0c0c] px-3 py-2 text-xs text-white"
               >
-                <option value="">Selecione o contato sem conta...</option>
+                <option value="">Selecione a ficha da recepção...</option>
                 {(workspace?.unlinkedContacts ?? []).map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name} {c.phone ? `(${c.phone})` : ""}
@@ -495,7 +499,7 @@ export function PhaseP3OperationsPanel({
 
             <div>
               <label className="mb-1 block text-[11px] font-semibold text-zinc-300">
-                Conta de Cliente Cadastrado (User) *
+                Conta Criada pelo Cliente no Site *
               </label>
               <select
                 required
@@ -503,7 +507,7 @@ export function PhaseP3OperationsPanel({
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-[#0c0c0c] px-3 py-2 text-xs text-white"
               >
-                <option value="">Selecione o usuário canônico...</option>
+                <option value="">Selecione a conta do site...</option>
                 {(workspace?.registeredClients ?? []).map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name} ({u.email})
@@ -514,11 +518,11 @@ export function PhaseP3OperationsPanel({
 
             <div>
               <label className="mb-1 block text-[11px] font-semibold text-zinc-300">
-                Evidência / Justificativa da Unificação
+                Como você confirmou que é a mesma pessoa?
               </label>
               <input
                 type="text"
-                placeholder="Ex.: Confirmado telefone e CPF na recepção"
+                placeholder="Ex.: Mesmo celular confirmado no balcão"
                 value={linkReason}
                 onChange={(e) => setLinkReason(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-[#0c0c0c] px-3 py-2 text-xs text-white"
@@ -531,7 +535,7 @@ export function PhaseP3OperationsPanel({
                 disabled={linkSubmitting}
                 className="w-full rounded-xl bg-sky-500 px-4 py-2 text-xs font-bold text-black hover:bg-sky-400 disabled:opacity-50"
               >
-                {linkSubmitting ? "Vinculando..." : "Confirmar Vínculo Auditado"}
+                {linkSubmitting ? "Unindo..." : "Confirmar que é o Mesmo Cliente"}
               </button>
             </div>
           </form>
@@ -539,7 +543,7 @@ export function PhaseP3OperationsPanel({
           {(workspace?.identityLinks ?? []).length > 0 && (
             <div className="mt-4 border-t border-white/[0.06] pt-3">
               <p className="text-[11px] font-bold uppercase text-zinc-400">
-                Vínculos de Identidade Ativos ({workspace!.identityLinks.length})
+                Clientes já unificados ({workspace!.identityLinks.length})
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {workspace!.identityLinks.map((lk) => (
@@ -547,7 +551,7 @@ export function PhaseP3OperationsPanel({
                     key={lk.id}
                     className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-[#0c0c0c] px-3 py-1.5 text-xs text-zinc-200"
                   >
-                    <span className="text-zinc-400">Contato:</span>
+                    <span className="text-zinc-400">Ficha:</span>
                     <span className="font-semibold text-white">
                       {lk.contactName}
                     </span>
@@ -559,7 +563,7 @@ export function PhaseP3OperationsPanel({
                       type="button"
                       onClick={() => handleUnlinkContact(lk.clientContactId)}
                       className="ml-1 inline-flex items-center gap-1 text-red-400 hover:text-red-300"
-                      title="Desfazer vínculo"
+                      title="Separar novamente"
                     >
                       <Unlink className="h-3.5 w-3.5" />
                     </button>
@@ -575,47 +579,47 @@ export function PhaseP3OperationsPanel({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-5">
           <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span>Ocupação Prevista da Agenda</span>
+            <span>Agenda Preenchida (Agendados)</span>
             <CalendarClock className="h-4 w-4 text-amber-400" />
           </div>
           <p className="mt-2 font-display text-2xl font-bold text-white">
             {teamCapacity.teamScheduledOccupancyRate !== null
               ? `${teamCapacity.teamScheduledOccupancyRate.toLocaleString("pt-BR")}%`
-              : "Sem jornada"}
+              : "Sem expediente"}
           </p>
           <p className="mt-1 text-xs text-zinc-500">
-            Agendado: {formatMinutes(teamCapacity.totalScheduledMinutes)} /
-            Disponível: {formatMinutes(teamCapacity.totalAvailableMinutes)}
+            Marcado: {formatMinutes(teamCapacity.totalScheduledMinutes)} de{" "}
+            {formatMinutes(teamCapacity.totalAvailableMinutes)} livres
           </p>
         </div>
 
         <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-5">
           <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span>Ocupação Concluída (Estimada)</span>
+            <span>Tempo Cortando (Concluídos)</span>
             <Clock className="h-4 w-4 text-emerald-400" />
           </div>
           <p className="mt-2 font-display text-2xl font-bold text-emerald-400">
             {teamCapacity.teamCompletedOccupancyRate !== null
               ? `${teamCapacity.teamCompletedOccupancyRate.toLocaleString("pt-BR")}%`
-              : "Sem jornada"}
+              : "Sem expediente"}
           </p>
           <p className="mt-1 text-xs text-zinc-500">
-            Duração planejada concluída:{" "}
+            Tempo em atendimento:{" "}
             {formatMinutes(teamCapacity.totalCompletedMinutes)}
           </p>
         </div>
 
         <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-5">
           <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span>Produtividade / Hora Disponível</span>
+            <span>Faturamento por Hora Disponível</span>
             <Flame className="h-4 w-4 text-amber-500" />
           </div>
           <p className="mt-2 font-display text-2xl font-bold text-white">
             {moneyCents(teamCapacity.teamRealizedPerAvailableHourCents)}
-            <span className="text-xs font-normal text-zinc-500"> /h disp.</span>
+            <span className="text-xs font-normal text-zinc-500"> /hora</span>
           </p>
           <p className="mt-1 text-xs text-zinc-500">
-            Contribuição / Hora Ocupada:{" "}
+            Ganho da casa por hora cortando:{" "}
             <strong className="text-amber-300">
               {moneyCents(teamCapacity.teamContributionPerOccupiedHourCents)}/h
             </strong>
@@ -624,18 +628,17 @@ export function PhaseP3OperationsPanel({
 
         <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-5">
           <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span>Retenção Consolidada em 30 Dias</span>
+            <span>Clientes que Voltam em até 30 Dias</span>
             <Users className="h-4 w-4 text-sky-400" />
           </div>
           <p className="mt-2 font-display text-2xl font-bold text-sky-400">
             {retention.consolidatedRetention30dRate !== null
               ? `${retention.consolidatedRetention30dRate.toLocaleString("pt-BR")}%`
-              : "Sem coorte madura"}
+              : "Aguardando 30 dias"}
           </p>
           <p className="mt-1 text-xs text-zinc-500">
-            {retention.consolidatedReturned30dCount} de{" "}
-            {retention.consolidatedMatureClientsCount} maduros (
-            {retention.immatureExcludedFromDenominatorCount} imaturos fora)
+            {retention.consolidatedReturned30dCount} voltaram de{" "}
+            {retention.consolidatedMatureClientsCount} clientes já há +30 dias
           </p>
         </div>
       </div>
@@ -645,14 +648,14 @@ export function PhaseP3OperationsPanel({
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
-              Jornada Configurada vs Tempo Ocupado
+              Expediente vs. Tempo Atendendo
             </span>
             <h3 className="mt-0.5 text-base font-bold text-white">
-              Produtividade por Hora Disponível e Contribuição por Hora Ocupada
+              Aproveitamento do Tempo e Ganho por Hora de Cada Barbeiro
             </h3>
           </div>
           <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold text-amber-200">
-            Duração estimada pela agenda planejada
+            Calculado pelo tempo de cada serviço na agenda
           </span>
         </div>
 
@@ -661,19 +664,19 @@ export function PhaseP3OperationsPanel({
             <thead>
               <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-zinc-400">
                 <th className="pb-2.5 pr-3">Profissional</th>
-                <th className="pb-2.5 px-2 text-right">Disponível</th>
-                <th className="pb-2.5 px-2 text-right">Agendado</th>
-                <th className="pb-2.5 px-2 text-right">Concluído (Est.)</th>
-                <th className="pb-2.5 px-2 text-right">Ocup. Prevista</th>
-                <th className="pb-2.5 px-2 text-right">Ocup. Concluída</th>
+                <th className="pb-2.5 px-2 text-right">Tempo Disponível</th>
+                <th className="pb-2.5 px-2 text-right">Tempo Agendado</th>
+                <th className="pb-2.5 px-2 text-right">Tempo Cortando</th>
+                <th className="pb-2.5 px-2 text-right">% Agenda Cheia</th>
+                <th className="pb-2.5 px-2 text-right">% Tempo Cortando</th>
                 <th className="pb-2.5 px-2 text-right text-amber-300">
-                  Realizado / Hora Disp.
+                  Cortado / Hora Livre
                 </th>
                 <th className="pb-2.5 px-2 text-right text-emerald-300">
-                  Contribuição / Hora Ocup.
+                  Parte da Casa / Hora
                 </th>
                 <th className="pb-2.5 pl-2 text-right">
-                  Cancelado (Reaprov. / Perdido)
+                  Cancelados (Salvo / Perdido)
                 </th>
               </tr>
             </thead>
@@ -689,7 +692,7 @@ export function PhaseP3OperationsPanel({
                     )}
                     {!b.hasConfiguredSchedule && (
                       <span className="ml-1.5 rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-300">
-                        Sem jornada
+                        Sem expediente
                       </span>
                     )}
                   </td>
@@ -721,11 +724,11 @@ export function PhaseP3OperationsPanel({
                   <td className="py-3 pl-2 text-right text-zinc-400">
                     {formatMinutes(b.canceledMinutes)} (
                     <span className="text-emerald-300">
-                      {formatMinutes(b.reusedCanceledMinutes)} reaprov.
+                      {formatMinutes(b.reusedCanceledMinutes)} salvo
                     </span>{" "}
                     /{" "}
                     <span className="text-red-300">
-                      {formatMinutes(b.effectivelyLostMinutes)} perd.
+                      {formatMinutes(b.effectivelyLostMinutes)} perdido
                     </span>
                     )
                   </td>
@@ -741,14 +744,14 @@ export function PhaseP3OperationsPanel({
         {/* Heatmap */}
         <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-6 lg:col-span-2">
           <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
-            Gargalos e Ociosidade
+            Horários de Pico vs. Horários Vazios
           </span>
           <h3 className="mt-0.5 text-base font-bold text-white">
-            Mapa de Calor de Ocupação da Agenda (Dia da Semana × Hora)
+            Movimento da Agenda por Dia da Semana e Hora
           </h3>
           <p className="mt-0.5 text-xs text-zinc-400">
-            Percentual de minutos agendados sobre os minutos disponíveis da
-            equipe em cada faixa horária (`America/Sao_Paulo`).
+            Veja em quais dias e horários as cadeiras ficam mais cheias (dourado)
+            ou mais vazias (ótimo para criar promoções).
           </p>
 
           <div className="mt-4 overflow-x-auto">
@@ -814,19 +817,19 @@ export function PhaseP3OperationsPanel({
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-red-400" />
             <h3 className="text-base font-bold text-white">
-              Cancelamentos, Faltas e Horários Perdidos
+              Desmarcações, Faltas e Horários Salvos
             </h3>
           </div>
           <p className="mt-1 text-xs text-zinc-400">
-            Denominador elegível ({cancellations.eligibleTerminalCount} atend.
-            já transcorridos). Exclui {cancellations.futureExcludedCount}{" "}
-            reserva(s) futura(s).
+            Calculado sobre {cancellations.eligibleTerminalCount} horários que
+            já passaram (sem contar {cancellations.futureExcludedCount}{" "}
+            agendamentos futuros).
           </p>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3">
               <span className="text-[11px] text-zinc-400">
-                Taxa de Cancelamento
+                % de Desmarcações
               </span>
               <p className="mt-1 text-lg font-bold text-amber-300">
                 {cancellations.cancellationRate !== null
@@ -834,13 +837,13 @@ export function PhaseP3OperationsPanel({
                   : "—"}
               </p>
               <p className="text-[11px] text-zinc-500">
-                {cancellations.canceledTerminalCount} cancelado(s)
+                {cancellations.canceledTerminalCount} desmarcado(s)
               </p>
             </div>
 
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3">
               <span className="text-[11px] text-zinc-400">
-                Taxa de Falta (No-Show)
+                % de Faltas (Não veio)
               </span>
               <p className="mt-1 text-lg font-bold text-red-400">
                 {cancellations.noShowRate !== null
@@ -855,24 +858,24 @@ export function PhaseP3OperationsPanel({
 
           <div className="mt-4 rounded-xl border border-white/[0.06] bg-[#101010] p-3.5 text-xs">
             <p className="font-semibold text-white">
-              Reaproveitamento de Vagas Canceladas
+              Horários Desmarcados: Perdemos ou Encaixamos Outro Cliente?
             </p>
             <div className="mt-2 space-y-1.5 text-zinc-400">
               <div className="flex justify-between">
-                <span>Tempo total de reservas canceladas:</span>
+                <span>Tempo total de cortes desmarcados:</span>
                 <span className="font-bold text-zinc-200">
                   {formatMinutes(cancellations.totalCanceledMinutes)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Preenchido por outro cliente (reaproveitado):</span>
+                <span>Salvo por outro cliente encaixado no lugar:</span>
                 <span className="font-bold text-emerald-400">
                   {formatMinutes(cancellations.reusedCanceledMinutes)}
                 </span>
               </div>
               <div className="flex justify-between border-t border-white/[0.05] pt-1.5">
                 <span className="text-zinc-200">
-                  Horário efetivamente perdido:
+                  Tempo que realmente ficou vazio:
                 </span>
                 <span className="font-bold text-red-400">
                   {formatMinutes(cancellations.effectivelyLostMinutes)}
@@ -883,7 +886,7 @@ export function PhaseP3OperationsPanel({
 
           <div className="mt-4 space-y-2">
             <p className="text-[11px] font-bold uppercase text-zinc-400">
-              Perda por Canal de Origem
+              Onde Mais Desmarcam ou Faltam
             </p>
             {cancellations.byOrigin.map((orig) => (
               <div
@@ -892,7 +895,7 @@ export function PhaseP3OperationsPanel({
               >
                 <span className="text-zinc-300">{orig.label}</span>
                 <span className="text-zinc-400">
-                  {orig.canceledCount} canc. · {orig.noShowCount} faltas (
+                  {orig.canceledCount} desm. · {orig.noShowCount} faltas (
                   <strong className="text-white">
                     {orig.lossRate !== null ? `${orig.lossRate}%` : "—"}
                   </strong>
@@ -910,18 +913,18 @@ export function PhaseP3OperationsPanel({
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-sky-400">
-                Primeira Visita Histórica · Janela de 30 Dias
+                Fidelidade de Clientes Novos · Prazo de 30 Dias
               </span>
               <h3 className="mt-0.5 text-base font-bold text-white">
-                Matriz de Retenção por Coorte Mensal de Novos Clientes
+                Quantos Clientes Novos Voltaram para Cortar em até 30 Dias
               </h3>
             </div>
             <span className="text-xs text-zinc-400">
-              Intervalo médio global de retorno:{" "}
+              Tempo médio entre um corte e outro:{" "}
               <strong className="text-white">
                 {retention.globalAvgReturnIntervalDays !== null
-                  ? `${retention.globalAvgReturnIntervalDays.toLocaleString("pt-BR")} dias`
-                  : "Sem intervalo calculável"}
+                  ? `a cada ${retention.globalAvgReturnIntervalDays.toLocaleString("pt-BR")} dias`
+                  : "Ainda sem histórico suficiente"}
               </strong>
             </span>
           </div>
@@ -929,7 +932,7 @@ export function PhaseP3OperationsPanel({
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3">
               <span className="text-[11px] text-zinc-400">
-                Atendidos no Período
+                Total de Clientes no Período
               </span>
               <p className="mt-1 text-lg font-bold text-white">
                 {retention.activeClientsInPeriodCount}
@@ -937,7 +940,7 @@ export function PhaseP3OperationsPanel({
             </div>
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3">
               <span className="text-[11px] text-zinc-400">
-                Novos (1ª Visita Histórica)
+                Clientes Novos (1ª Vez na Loja)
               </span>
               <p className="mt-1 text-lg font-bold text-emerald-400">
                 {retention.newClientsInPeriodCount}
@@ -945,7 +948,7 @@ export function PhaseP3OperationsPanel({
             </div>
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3">
               <span className="text-[11px] text-zinc-400">
-                Retornantes de Meses Ant.
+                Clientes Antigos que Voltaram
               </span>
               <p className="mt-1 text-lg font-bold text-sky-400">
                 {retention.returningClientsInPeriodCount}
@@ -953,7 +956,7 @@ export function PhaseP3OperationsPanel({
             </div>
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3">
               <span className="text-[11px] text-zinc-400">
-                Recorrentes no Período (≥2d)
+                Vieram 2x ou Mais no Período
               </span>
               <p className="mt-1 text-lg font-bold text-amber-400">
                 {retention.recurringInPeriodCount}
@@ -965,15 +968,15 @@ export function PhaseP3OperationsPanel({
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-zinc-400">
-                  <th className="pb-2.5 pr-3">Coorte (1ª Visita)</th>
-                  <th className="pb-2.5 px-2 text-right">Novos Clientes</th>
-                  <th className="pb-2.5 px-2 text-right">Maduros (≥30d)</th>
-                  <th className="pb-2.5 px-2 text-right">Imaturos (&lt;30d)</th>
+                  <th className="pb-2.5 pr-3">Mês da 1ª Visita</th>
+                  <th className="pb-2.5 px-2 text-right">Clientes Novos</th>
+                  <th className="pb-2.5 px-2 text-right">Já têm +30 dias</th>
+                  <th className="pb-2.5 px-2 text-right">Ainda têm &lt;30 dias</th>
                   <th className="pb-2.5 px-2 text-right">
-                    Retornaram em ≤30d
+                    Voltaram em até 30d
                   </th>
-                  <th className="pb-2.5 px-2 text-right">Retenção 30d</th>
-                  <th className="pb-2.5 pl-2">Status da Janela</th>
+                  <th className="pb-2.5 px-2 text-right">% que Voltou</th>
+                  <th className="pb-2.5 pl-2">Situação do Prazo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
@@ -983,7 +986,7 @@ export function PhaseP3OperationsPanel({
                       colSpan={7}
                       className="py-6 text-center text-xs text-zinc-500"
                     >
-                      Nenhuma coorte de clientes concluídos encontrada.
+                      Nenhum cliente novo com corte concluído ainda.
                     </td>
                   </tr>
                 ) : (
@@ -1025,12 +1028,12 @@ export function PhaseP3OperationsPanel({
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-400" />
             <h3 className="text-base font-bold text-white">
-              Tempo Sem Retorno e Identidades
+              Clientes Sumidos (Tempo Sem Cortar)
             </h3>
           </div>
           <p className="mt-1 text-xs text-zinc-400">
-            Baseado na última visita concluída no histórico observado (sem
-            presumir perda definitiva).
+            Clientes ordenados por quantos dias faz desde o último corte
+            concluído na barbearia.
           </p>
 
           <div className="mt-4 space-y-3">
@@ -1069,18 +1072,18 @@ export function PhaseP3OperationsPanel({
 
           <div className="mt-4 rounded-xl border border-sky-500/20 bg-sky-500/[0.05] p-3.5 text-xs text-zinc-300">
             <p className="font-bold text-sky-300">
-              Governança de Identidade Canônica
+              Fichas da Recepção vs. Contas do Site
             </p>
             <p className="mt-1 text-[11px] text-zinc-400">
-              Contatos sem vínculo:{" "}
+              Fichas separadas da recepção:{" "}
               <strong className="text-white">
                 {retention.separateContactIdentitiesCount}
               </strong>{" "}
-              · Contatos vinculados:{" "}
+              · Fichas já unidas a contas do site:{" "}
               <strong className="text-emerald-300">
                 {retention.linkedIdentitiesCount}
               </strong>
-              . Homônimos nunca são fundidos automaticamente.
+              . Clientes com o mesmo nome nunca são misturados sozinhos.
             </p>
           </div>
         </div>

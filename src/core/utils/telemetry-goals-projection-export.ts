@@ -102,40 +102,40 @@ export const GOAL_METRIC_DEFINITIONS: Record<
   }
 > = {
   RECEIVED_REVENUE_CENTS: {
-    label: "Meta de Receita Recebida (Caixa)",
+    label: "Meta de Dinheiro no Caixa (Recebido)",
     unit: "CENTS",
     polarity: "higher_is_better",
-    description: "Total confirmado no caixa dentro do mês (confirmedAt).",
+    description: "Total de pagamentos confirmados no caixa dentro do mês.",
   },
   REALIZED_PRODUCTION_CENTS: {
-    label: "Meta de Produção Realizada (Competência)",
+    label: "Meta de Cortes Realizados (Produção)",
     unit: "CENTS",
     polarity: "higher_is_better",
-    description: "Total de serviços concluídos no mês (não substitui caixa).",
+    description: "Total de cortes e serviços concluídos na cadeira no mês.",
   },
   BARBERSHOP_CONTRIBUTION_CENTS: {
-    label: "Meta de Contribuição da Barbearia",
+    label: "Meta de Sobra da Barbearia (Parte da Casa)",
     unit: "CENTS",
     polarity: "higher_is_better",
-    description: "Receita líquida de serviços menos comissões reconhecidas.",
+    description: "Valor dos serviços menos a comissão dos barbeiros.",
   },
   OCCUPANCY_RATE_PERCENT: {
-    label: "Meta de Ocupação Concluída (%)",
+    label: "Meta de Agenda Preenchida (%)",
     unit: "PERCENT_TENTHS",
     polarity: "higher_is_better",
-    description: "Percentual de minutos concluídos sobre minutos disponíveis.",
+    description: "Porcentagem do tempo disponível gasto atendendo clientes.",
   },
   EXPENSE_CEILING_CENTS: {
-    label: "Teto de Despesas Operacionais",
+    label: "Limite Máximo de Gastos e Contas do Mês",
     unit: "CENTS",
     polarity: "lower_is_better",
-    description: "Limite máximo planejado para despesas e taxas na competência.",
+    description: "Teto máximo para contas de aluguel, luz, produtos e taxas.",
   },
   NO_SHOW_MAX_RATE_PERCENT: {
-    label: "Limite Máximo de Faltas (No-Show %)",
+    label: "Limite Máximo de Faltas de Clientes (%)",
     unit: "PERCENT_TENTHS",
     polarity: "lower_is_better",
-    description: "Teto aceitável de faltas sobre a agenda já transcorrida.",
+    description: "Máximo aceitável de clientes que marcam e não aparecem.",
   },
 };
 

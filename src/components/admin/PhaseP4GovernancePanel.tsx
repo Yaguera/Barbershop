@@ -262,15 +262,15 @@ export function PhaseP4GovernancePanel({
       <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-500">
-            Instrumentação, Metas, Projeções & Exportação · Fase P4
+            Metas do Mês, Previsão de Faturamento e Site
           </span>
           <h2 className="mt-1 font-display text-2xl font-bold text-white">
-            Metas Opcionais, Projeção de Fechamento e Funil Digital (7 Dias)
+            Suas Metas, Previsão de Fechamento do Mês e Agendamentos pelo Site
           </h2>
           <p className="mt-1 max-w-3xl text-xs text-zinc-400">
-            Metas não configuradas permanecem como &ldquo;Não definida&rdquo;
-            (sem números sintéticos). Projeções separam receita observada de
-            reservas futuras.
+            Acompanhe com quanto a barbearia deve fechar o mês se continuar no
+            ritmo atual, defina suas metas e veja quantas pessoas estão
+            agendando pelo celular/site.
           </p>
         </div>
 
@@ -282,8 +282,8 @@ export function PhaseP4GovernancePanel({
           >
             <Target className="h-3.5 w-3.5" />
             {showGoalForm
-              ? "Fechar Configuração de Meta"
-              : `Definir Meta (${workspace.monthKey})`}
+              ? "Fechar Meta"
+              : `Definir Meta do Mês (${workspace.monthKey})`}
           </button>
 
           <button
@@ -294,8 +294,8 @@ export function PhaseP4GovernancePanel({
           >
             <Download className="h-3.5 w-3.5" />
             {exportingCsv
-              ? "Gerando CSV Auditado..."
-              : "Exportar Relatório CSV (Seguro)"}
+              ? "Gerando Planilha..."
+              : "Baixar Planilha para Excel (CSV)"}
           </button>
         </div>
       </div>
@@ -333,11 +333,11 @@ export function PhaseP4GovernancePanel({
       {showGoalForm && (
         <div className="rounded-2xl border border-amber-500/30 bg-[#141414] p-5">
           <h3 className="text-sm font-bold text-white">
-            Configurar Meta ou Teto para a Competência {workspace.monthKey}
+            Definir Meta para o Mês {workspace.monthKey}
           </h3>
           <p className="mt-0.5 text-xs text-zinc-400">
-            Metas de produção e caixa não são intercambiáveis. Metas de
-            percentual não são somadas entre meses.
+            Escolha qual número você quer acompanhar neste mês e digite o valor
+            que deseja alcançar.
           </p>
 
           <form
@@ -346,7 +346,7 @@ export function PhaseP4GovernancePanel({
           >
             <div>
               <label className="mb-1 block text-[11px] font-semibold text-zinc-300">
-                Indicador / Rubrica *
+                O que você quer acompanhar? *
               </label>
               <select
                 value={goalMetric}
@@ -368,8 +368,8 @@ export function PhaseP4GovernancePanel({
             <div>
               <label className="mb-1 block text-[11px] font-semibold text-zinc-300">
                 {GOAL_METRIC_DEFINITIONS[goalMetric].unit === "CENTS"
-                  ? "Valor da Meta / Teto (R$) *"
-                  : "Percentual Alvo / Teto (%) *"}
+                  ? "Valor da Meta (R$) *"
+                  : "Porcentagem Desejada (%) *"}
               </label>
               <input
                 type="text"
@@ -404,10 +404,10 @@ export function PhaseP4GovernancePanel({
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
-              Projeção de Fim de Mês · Estimativa Linear + Carteira Agendada
+              Previsão de Faturamento até o Fim do Mês
             </span>
             <h3 className="mt-0.5 text-base font-bold text-white">
-              Cenário de Fechamento Mensal ({projection.monthKey})
+              Com Quanto a Barbearia Deve Fechar o Mês ({projection.monthKey})
             </h3>
           </div>
           <span
@@ -418,8 +418,8 @@ export function PhaseP4GovernancePanel({
             }`}
           >
             {projection.isEligible
-              ? `${projection.observedDays}/${projection.totalDaysInMonth} dias observados`
-              : "Projeção Linear Inativa"}
+              ? `Calculado com ${projection.observedDays} de ${projection.totalDaysInMonth} dias do mês`
+              : "Disponível para o mês atual"}
           </span>
         </div>
 
@@ -430,55 +430,55 @@ export function PhaseP4GovernancePanel({
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-4">
             <span className="text-[11px] text-zinc-400">
-              1. Realizado Observado ({projection.observedDays}d)
+              1. Já Cortado até Hoje ({projection.observedDays} dias)
             </span>
             <p className="mt-1 font-display text-xl font-bold text-white">
               {moneyCents(projection.observedRealizedCents)}
             </p>
             <p className="mt-0.5 text-[11px] text-zinc-500">
-              Ritmo médio: {moneyCents(projection.dailyPaceRealizedCents)}/dia
+              Média por dia: {moneyCents(projection.dailyPaceRealizedCents)}/dia
             </p>
           </div>
 
           <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-4">
             <span className="text-[11px] text-zinc-400">
-              2. Reservas Futuras Agendadas
+              2. Já Agendado até o Fim do Mês
             </span>
             <p className="mt-1 font-display text-xl font-bold text-sky-400">
               {moneyCents(projection.futureScheduledPendingCents)}
             </p>
             <p className="mt-0.5 text-[11px] text-zinc-500">
-              {projection.futureScheduledPendingCount} agendamento(s) futuro(s)
-              separado(s)
+              {projection.futureScheduledPendingCount} cliente(s) já marcado(s)
+              na agenda
             </p>
           </div>
 
           <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-4">
             <span className="text-[11px] text-zinc-400">
-              3. Piso (Observado + Carteira Futura)
+              3. Garantido na Agenda (Já Cortado + Agendado)
             </span>
             <p className="mt-1 font-display text-xl font-bold text-amber-300">
               {moneyCents(projection.confirmedPlusObservedFloorCents)}
             </p>
             <p className="mt-0.5 text-[11px] text-zinc-500">
-              Soma estrita sem extrapolar novos clientes
+              Soma do que já foi feito com o que já está marcado
             </p>
           </div>
 
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-emerald-300">
-                4. Projeção Linear de Fechamento
+                4. Previsão Final (Se Mantiver o Ritmo)
               </span>
               <TrendingUp className="h-4 w-4 text-emerald-400" />
             </div>
             <p className="mt-1 font-display text-xl font-bold text-emerald-300">
               {projection.isEligible
                 ? moneyCents(projection.linearProjectedRealizedCents)
-                : "Aguardando ≥5d"}
+                : "Aguardando ≥5 dias"}
             </p>
             <p className="mt-0.5 text-[11px] text-zinc-400">
-              Caixa projetado:{" "}
+              Previsão de dinheiro no caixa:{" "}
               {projection.isEligible
                 ? moneyCents(projection.linearProjectedReceivedCents)
                 : "—"}
@@ -492,10 +492,10 @@ export function PhaseP4GovernancePanel({
         <div className="flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
-              Acompanhamento de Metas e Teto de Custos ({workspace.monthKey})
+              Suas Metas do Mês ({workspace.monthKey})
             </span>
             <h3 className="mt-0.5 text-base font-bold text-white">
-              Metas Gerenciais Configuradas vs Realizado
+              Metas Definidas vs. O Que Já Foi Alcançado
             </h3>
           </div>
         </div>
@@ -551,7 +551,7 @@ export function PhaseP4GovernancePanel({
                 </span>
                 {g.hasGoal && g.deviationValue !== null && (
                   <span className="text-zinc-400">
-                    Desvio:{" "}
+                    Diferença:{" "}
                     {g.deviationValue > 0 ? "+" : ""}
                     {formatGoalValue(g.deviationValue, g.unit)}
                   </span>
@@ -568,39 +568,42 @@ export function PhaseP4GovernancePanel({
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-sky-400">
-                Funil Digital Online · Janela de {funnel.windowDays} Dias
+                Clientes Agendando pelo Site · Últimos {funnel.windowDays} Dias
               </span>
               <h3 className="mt-0.5 text-base font-bold text-white">
-                Conversão da Jornada Online vs Reservas Manuais da Recepção
+                Quantas Pessoas Abriram a Tela de Agendar e Quantas Confirmaram
               </h3>
             </div>
             <Filter className="h-4 w-4 text-sky-400" />
           </div>
 
-          <p className="mt-1 text-xs text-zinc-400">{funnel.separationNote}</p>
+          <p className="mt-1 text-xs text-zinc-400">
+            Mostra o caminho do cliente no site/celular, separado dos
+            agendamentos feitos manualmente pela recepcionista.
+          </p>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-4">
               <span className="text-[11px] text-zinc-400">
-                1. Jornadas Online Iniciadas
+                1. Abriram a Tela de Agendar
               </span>
               <p className="mt-1 font-display text-2xl font-bold text-white">
                 {funnel.onlineStartedJourneysCount}
               </p>
               <p className="mt-0.5 text-[11px] text-zinc-500">
-                Evento: <code>booking_started</code>
+                Clientes que iniciaram a escolha no site
               </p>
             </div>
 
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-4">
               <span className="text-[11px] text-zinc-400">
-                2. Seleção Válida (Serviço+Hora)
+                2. Escolheram Barbeiro e Hora
               </span>
               <p className="mt-1 font-display text-2xl font-bold text-sky-400">
                 {funnel.onlineDetailsSelectedJourneysCount}
               </p>
               <p className="mt-0.5 text-[11px] text-zinc-500">
-                Avanço:{" "}
+                Avançaram:{" "}
                 {funnel.onlineSelectionRate !== null
                   ? `${funnel.onlineSelectionRate.toLocaleString("pt-BR")}%`
                   : "—"}
@@ -609,13 +612,13 @@ export function PhaseP4GovernancePanel({
 
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
               <span className="text-[11px] text-emerald-300">
-                3. Reserva Online Confirmada
+                3. Confirmaram o Agendamento
               </span>
               <p className="mt-1 font-display text-2xl font-bold text-emerald-400">
                 {funnel.onlineConfirmedJourneysCount}
               </p>
               <p className="mt-0.5 text-[11px] text-emerald-200/80">
-                Taxa Digital:{" "}
+                Concluíram a reserva:{" "}
                 {funnel.onlineConfirmationRate !== null
                   ? `${funnel.onlineConfirmationRate.toLocaleString("pt-BR")}%`
                   : "Sem base"}
@@ -625,21 +628,21 @@ export function PhaseP4GovernancePanel({
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3 text-xs">
-              <span className="text-zinc-400">Recepção via WhatsApp:</span>
+              <span className="text-zinc-400">Marcados via WhatsApp:</span>
               <span className="ml-2 font-bold text-amber-300">
-                {funnel.whatsappCreatedCount} reserva(s)
+                {funnel.whatsappCreatedCount} agendamento(s)
               </span>
             </div>
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3 text-xs">
-              <span className="text-zinc-400">Recepção Presencial:</span>
+              <span className="text-zinc-400">Marcados no Balcão:</span>
               <span className="ml-2 font-bold text-amber-300">
-                {funnel.walkInCreatedCount} reserva(s)
+                {funnel.walkInCreatedCount} agendamento(s)
               </span>
             </div>
             <div className="rounded-xl border border-white/[0.05] bg-[#101010] p-3 text-xs">
-              <span className="text-zinc-400">Total Criado no Período:</span>
+              <span className="text-zinc-400">Total Agendado no Período:</span>
               <span className="ml-2 font-bold text-white">
-                {funnel.totalAppointmentsCreatedInPeriod} reserva(s)
+                {funnel.totalAppointmentsCreatedInPeriod} agendamento(s)
               </span>
             </div>
           </div>
@@ -651,20 +654,20 @@ export function PhaseP4GovernancePanel({
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-amber-400" />
               <h3 className="text-base font-bold text-white">
-                Telemetria Interna Auditável
+                Últimas Ações no Sistema
               </h3>
             </div>
             <ShieldCheck className="h-4 w-4 text-emerald-400" />
           </div>
           <p className="mt-1 text-xs text-zinc-400">
-            Eventos internos deduplicados sem PII (nenhum dado pessoal enviado a
-            terceiros).
+            Registro automático de agendamentos iniciados no site e planilhas
+            baixadas.
           </p>
 
           <div className="mt-4 max-h-56 space-y-2 overflow-y-auto pr-1">
             {recentEvents.length === 0 ? (
               <p className="py-6 text-center text-xs text-zinc-500">
-                Nenhum evento de telemetria registrado neste recorte ainda.
+                Nenhuma ação recente registrada neste período ainda.
               </p>
             ) : (
               recentEvents.map((ev) => (
@@ -677,7 +680,7 @@ export function PhaseP4GovernancePanel({
                       {ev.eventName}
                     </code>
                     <p className="text-zinc-500">
-                      Canal: {ev.channel || "ONLINE"} · Papel:{" "}
+                      Canal: {ev.channel || "ONLINE"} · Perfil:{" "}
                       {ev.actorRole || "—"}
                     </p>
                   </div>
@@ -695,7 +698,7 @@ export function PhaseP4GovernancePanel({
           <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.05] bg-[#101010] p-3 text-[11px] text-zinc-400">
             <Compass className="h-4 w-4 shrink-0 text-amber-400" />
             <span>
-              Índice de Prontidão Analítica: <strong>Fases P0, P1, P2, P3 e P4 concluídas</strong>.
+              Painel Completo: <strong>Financeiro, Agenda, Clientes e Metas ativos</strong>.
             </span>
           </div>
         </div>

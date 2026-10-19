@@ -176,28 +176,28 @@ export function DashboardAnalytics({
     {
       title: "Recebido no caixa",
       value: money(a.receivedCents),
-      note: "Entradas confirmadas no caixa neste período (por data de confirmação)",
+      note: "Dinheiro, Pix e Cartão já confirmados na recepção neste período",
       kind: "received" as const,
       delta: cmp?.metrics.receivedCents,
     },
     {
-      title: "Serviços realizados",
+      title: "Cortes e serviços feitos",
       value: money(a.realizedCents),
-      note: `${a.completed} atendimentos concluídos no período (por data do serviço)`,
+      note: `${a.completed} atendimentos concluídos na cadeira neste período`,
       kind: "completed" as const,
       delta: cmp?.metrics.realizedCents,
     },
     {
-      title: "Comissão calculada",
+      title: "Comissão dos barbeiros",
       value: money(commission),
-      note: `${percent(commission, a.realizedCents)} ponderado dos serviços · não representa repasse já pago`,
+      note: `${percent(commission, a.realizedCents)} dos serviços feitos · gerada na cadeira`,
       kind: "completed" as const,
       delta: cmp?.metrics.commissionCents,
     },
     {
-      title: "Parte da barbearia",
+      title: "Parte da barbearia (Casa)",
       value: money(a.contributionCents),
-      note: `${percent(a.contributionCents, a.realizedCents)} dos serviços · antes das despesas`,
+      note: `${percent(a.contributionCents, a.realizedCents)} dos serviços · o que sobra para pagar contas e lucrar`,
       kind: "completed" as const,
       delta: cmp?.metrics.contributionCents,
     },
@@ -240,13 +240,13 @@ export function DashboardAnalytics({
         >
           <div className="space-y-1">
             <strong className="text-sm font-semibold text-amber-300 block">
-              Atenção ao caixa: {money(a.pendingCents)} em serviços concluídos
-              no período estão sem recebimento confirmado
+              Atenção ao caixa: {money(a.pendingCents)} em cortes já feitos
+              ainda estão sem baixa de pagamento na recepção
             </strong>
             <p className="text-xs text-zinc-300">
-              Taxa de recebimento da coorte atual:{" "}
-              {cohortRate.toLocaleString("pt-BR")}% liquidado. Concluir o
-              atendimento não registra entrada automática no caixa.
+              Dos cortes feitos neste período,{" "}
+              {cohortRate.toLocaleString("pt-BR")}% já foram pagos no caixa.
+              Finalizar o corte na agenda não marca como pago automaticamente.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -504,12 +504,12 @@ export function DashboardAnalytics({
         <button
           type="button"
           onClick={() =>
-            open("Sem recebimento registrado", { kind: "pending" })
+            open("Cortes feitos sem pagamento registrado", { kind: "pending" })
           }
           className={`${panel} ${click} text-left`}
         >
           <span className="text-xs text-zinc-400">
-            Sem recebimento (coorte)
+            Cortes sem baixa no caixa
           </span>
           <strong className="mt-1 block text-lg font-semibold tabular-nums text-amber-300">
             {money(a.pendingCents)}
@@ -519,7 +519,7 @@ export function DashboardAnalytics({
             periodLabel={cmp?.periodLabel}
           />
           <span className="mt-1 block text-[11px] text-zinc-400">
-            Taxa liquidada: {cohortRate.toLocaleString("pt-BR")}% →
+            Já pagos deste período: {cohortRate.toLocaleString("pt-BR")}% →
           </span>
         </button>
 
@@ -762,15 +762,15 @@ export function DashboardAnalytics({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 id="matrix-heading" className="text-lg font-semibold">
-              Matriz Profissional × Serviço
+              O Que Cada Barbeiro Mais Cortou (Barbeiro × Serviço)
             </h2>
             <p className="mt-1 text-xs text-zinc-400">
-              Cruzamento de produção por barbeiro e serviço no período. Clique
-              em qualquer combinação para abrir os atendimentos correspondentes.
+              Veja quais serviços cada profissional mais realizou. Clique em
+              qualquer valor para abrir a lista de cortes.
             </p>
           </div>
           <label className="text-xs text-zinc-400">
-            Métrica da matriz
+            Mostrar na tabela
             <select
               aria-label="Métrica exibida na matriz profissional por serviço"
               value={matrixMetric}
@@ -779,11 +779,11 @@ export function DashboardAnalytics({
               }
               className="mt-1 block min-h-10 rounded-xl border border-white/15 bg-[#1C1C1C] px-3 text-xs text-white"
             >
-              <option value="realizedCents">Valor realizado (R$)</option>
+              <option value="realizedCents">Valor cortado (R$)</option>
               <option value="contributionCents">
                 Parte da barbearia (R$)
               </option>
-              <option value="completed">Qtd. de atendimentos</option>
+              <option value="completed">Qtd. de cortes</option>
             </select>
           </label>
         </div>

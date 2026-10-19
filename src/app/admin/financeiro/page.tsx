@@ -379,15 +379,16 @@ function AdminFinanceiroContent() {
         <div className="mb-8 flex flex-col justify-between gap-4 border-b border-white/[0.06] pb-6 lg:flex-row lg:items-end">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-amber-500">
-              Gestão Financeira Completa · Fase P2
+              Financeiro da Barbearia
             </p>
             <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-white">
-              Resultado de Competência, Caixa, Despesas e Repasses
+              Lucro do Mês, Caixa, Contas e Comissões
             </h1>
             <p className="mt-1.5 max-w-3xl text-sm text-zinc-400">
-              Separação rigorosa entre o que foi produzido na competência, o que
-              entrou e saiu efetivamente do caixa, obrigações a vencer/vencidas e
-              liquidação de comissões elegíveis.
+              Veja de forma simples quanto a barbearia produziu na cadeira,
+              quanto dinheiro entrou e saiu do caixa, quais contas estão para
+              vencer e quanto de comissão já está liberado para pagar aos
+              barbeiros.
             </p>
           </div>
 
@@ -397,7 +398,7 @@ function AdminFinanceiroContent() {
               className="inline-flex min-h-[42px] items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:border-amber-500/30 hover:text-amber-300"
             >
               <CalendarDays className="h-4 w-4 text-amber-500" />
-              Voltar ao Dashboard Executivo
+              Voltar ao Painel Principal
             </Link>
             <button
               type="button"
@@ -405,7 +406,7 @@ function AdminFinanceiroContent() {
               className="inline-flex min-h-[42px] items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-black transition hover:bg-amber-400"
             >
               <PlusCircle className="h-4 w-4" />
-              {showExpenseForm ? "Fechar Formulário" : "Lançar Despesa / Taxa"}
+              {showExpenseForm ? "Fechar Formulário" : "Cadastrar Conta / Gasto"}
             </button>
           </div>
         </div>
@@ -457,11 +458,11 @@ function AdminFinanceiroContent() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-white">
-                  Cadastrar Despesa ou Obrigação Financeira
+                  Cadastrar Conta ou Despesa da Barbearia
                 </h2>
                 <p className="text-xs text-zinc-400">
-                  Datas de competência, vencimento e pagamento são registradas
-                  separadamente (sem rateio automático).
+                  Informe o valor, a qual mês essa conta pertence e a data de
+                  vencimento do boleto.
                 </p>
               </div>
             </div>
@@ -472,7 +473,7 @@ function AdminFinanceiroContent() {
             >
               <div>
                 <label className="mb-1 block text-xs font-semibold text-zinc-300">
-                  Categoria
+                  Tipo de Gasto
                 </label>
                 <select
                   value={expCategory}
@@ -493,7 +494,7 @@ function AdminFinanceiroContent() {
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-zinc-300">
-                  Descrição da Despesa *
+                  Nome da Conta / Despesa *
                 </label>
                 <input
                   type="text"
@@ -507,7 +508,7 @@ function AdminFinanceiroContent() {
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-zinc-300">
-                  Fornecedor / Beneficiário
+                  Fornecedor / Para quem vai pagar
                 </label>
                 <input
                   type="text"
@@ -534,7 +535,7 @@ function AdminFinanceiroContent() {
 
               <div>
                 <label className="mb-1 block text-xs font-semibold text-zinc-300">
-                  Data de Competência (Fato Gerador) *
+                  Data da Conta (Mês a que pertence) *
                 </label>
                 <input
                   type="date"
@@ -619,9 +620,11 @@ function AdminFinanceiroContent() {
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
                 <div>
                   <span className="font-bold uppercase tracking-wider text-amber-300">
-                    Aviso de Cobertura Contábil:{" "}
+                    Dica de Gestão:{" "}
                   </span>
-                  {comp.coverageNote}
+                  Para ver o lucro líquido exato já descontando aluguel, luz e
+                  produtos, cadastre as contas do mês clicando em &ldquo;Cadastrar
+                  Conta / Gasto&rdquo; acima.
                 </div>
               </div>
             )}
@@ -630,15 +633,15 @@ function AdminFinanceiroContent() {
             <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-5">
                 <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span>Receita Líquida de Serviços (Competência)</span>
+                  <span>Valor dos Cortes Feitos (Líquido)</span>
                   <DollarSign className="h-4 w-4 text-amber-500" />
                 </div>
                 <p className="mt-2 font-display text-2xl font-bold text-white">
                   {moneyCents(comp.netServiceRevenueCents)}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
-                  Bruta: {moneyCents(comp.grossRealizedCents)} · Devoluções:{" "}
-                  {moneyCents(comp.competenceAdjustmentsCents)}
+                  Total cortado: {moneyCents(comp.grossRealizedCents)} ·
+                  Devoluções: {moneyCents(comp.competenceAdjustmentsCents)}
                 </p>
               </div>
 
@@ -646,8 +649,8 @@ function AdminFinanceiroContent() {
                 <div className="flex items-center justify-between text-xs text-zinc-400">
                   <span>
                     {comp.isCompleteResult
-                      ? "Resultado Gerencial (Competência)"
-                      : "Contribuição da Barbearia (Parcial)"}
+                      ? "Lucro / Resultado do Mês"
+                      : "Parte da Barbearia (Sem Contas)"}
                   </span>
                   <Layers className="h-4 w-4 text-emerald-400" />
                 </div>
@@ -661,7 +664,7 @@ function AdminFinanceiroContent() {
                   {moneyCents(comp.managementResultCents)}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
-                  Margem:{" "}
+                  Margem de lucro:{" "}
                   {comp.managementMarginRate !== null
                     ? `${comp.managementMarginRate.toLocaleString("pt-BR")}%`
                     : "—"}{" "}
@@ -671,7 +674,7 @@ function AdminFinanceiroContent() {
 
               <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-5">
                 <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span>Fluxo Líquido de Caixa do Período</span>
+                  <span>Saldo do Caixa (Entrou − Saiu)</span>
                   <Wallet className="h-4 w-4 text-sky-400" />
                 </div>
                 <p
@@ -684,7 +687,7 @@ function AdminFinanceiroContent() {
                   {moneyCents(cash.netCashFlowCents)}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
-                  Entradas: {moneyCents(cash.cashInReceiptsCents)} · Saídas:{" "}
+                  Entrou: {moneyCents(cash.cashInReceiptsCents)} · Saiu:{" "}
                   {moneyCents(
                     cash.cashOutRefundsCents +
                       cash.cashOutExpensesPaidCents +
@@ -695,7 +698,7 @@ function AdminFinanceiroContent() {
 
               <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-5">
                 <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span>Passivo Elegível + Obrigações</span>
+                  <span>Comissões Liberadas + Contas a Pagar</span>
                   <Clock className="h-4 w-4 text-amber-400" />
                 </div>
                 <p className="mt-2 font-display text-2xl font-bold text-amber-400">
@@ -706,8 +709,9 @@ function AdminFinanceiroContent() {
                   )}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
-                  Repasses a pagar: {moneyCents(recSummary.payableCommissionsCents)}{" "}
-                  · Sem caixa: {moneyCents(recSummary.completedWithoutReceiptCents)}
+                  Comissões a pagar:{" "}
+                  {moneyCents(recSummary.payableCommissionsCents)} · Cortes sem
+                  baixa: {moneyCents(recSummary.completedWithoutReceiptCents)}
                 </p>
               </div>
             </section>
@@ -719,10 +723,10 @@ function AdminFinanceiroContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
-                      Regime de Competência (Fato Gerador)
+                      O Trabalho Feito no Mês (Produção)
                     </span>
                     <h2 className="mt-1 text-lg font-bold text-white">
-                      Cascata do Resultado Operacional
+                      Cálculo do Lucro da Barbearia (Passo a Passo)
                     </h2>
                   </div>
                   <span
@@ -733,15 +737,15 @@ function AdminFinanceiroContent() {
                     }`}
                   >
                     {comp.isCompleteResult
-                      ? "Resultado Completo"
-                      : "Cobertura Parcial"}
+                      ? "Com Contas do Mês"
+                      : "Sem Contas Lançadas"}
                   </span>
                 </div>
 
                 <div className="mt-5 space-y-2.5 text-sm">
                   <div className="flex items-center justify-between rounded-xl border border-white/[0.05] bg-[#101010] px-4 py-3">
                     <span className="text-zinc-300">
-                      (+) Receita Bruta Realizada (Concluídos)
+                      (+) Total Bruto de Cortes Concluídos
                     </span>
                     <span className="font-bold text-white">
                       {moneyCents(comp.grossRealizedCents)}
@@ -750,7 +754,7 @@ function AdminFinanceiroContent() {
 
                   <div className="flex items-center justify-between rounded-xl border border-white/[0.05] bg-[#101010] px-4 py-3">
                     <span className="text-zinc-400">
-                      (−) Devoluções e Ajustes de Competência
+                      (−) Devoluções e Ajustes
                     </span>
                     <span className="font-semibold text-red-300">
                       - {moneyCents(comp.competenceAdjustmentsCents)}
@@ -759,7 +763,7 @@ function AdminFinanceiroContent() {
 
                   <div className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
                     <span className="font-semibold text-zinc-200">
-                      (=) Receita Líquida de Serviços
+                      (=) Valor Líquido dos Serviços
                     </span>
                     <span className="font-bold text-white">
                       {moneyCents(comp.netServiceRevenueCents)}
@@ -769,10 +773,10 @@ function AdminFinanceiroContent() {
                   <div className="flex items-center justify-between rounded-xl border border-white/[0.05] bg-[#101010] px-4 py-3">
                     <div>
                       <span className="text-zinc-300">
-                        (−) Comissões Reconhecidas (Competência)
+                        (−) Comissão dos Barbeiros (Parte da Equipe)
                       </span>
                       <p className="text-[11px] text-zinc-500">
-                        Deduzida uma única vez na conclusão do serviço
+                        Descontada uma única vez quando o serviço é concluído
                       </p>
                     </div>
                     <span className="font-semibold text-amber-300">
@@ -782,7 +786,7 @@ function AdminFinanceiroContent() {
 
                   <div className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-4 py-3">
                     <span className="font-bold text-amber-200">
-                      (=) Contribuição da Barbearia
+                      (=) Parte da Barbearia (Antes das Contas da Loja)
                     </span>
                     <span className="font-bold text-amber-300">
                       {moneyCents(comp.barbershopContributionCents)}
@@ -791,7 +795,7 @@ function AdminFinanceiroContent() {
 
                   <div className="flex items-center justify-between rounded-xl border border-white/[0.05] bg-[#101010] px-4 py-3">
                     <span className="text-zinc-400">
-                      (−) Taxas Diretas de Meio de Pagamento
+                      (−) Taxas de Maquininha / Cartão / Pix
                     </span>
                     <span className="font-semibold text-red-300">
                       - {moneyCents(comp.recognizedDirectFeesCents)}
@@ -800,7 +804,7 @@ function AdminFinanceiroContent() {
 
                   <div className="flex items-center justify-between rounded-xl border border-white/[0.05] bg-[#101010] px-4 py-3">
                     <span className="text-zinc-400">
-                      (−) Despesas Operacionais do Período
+                      (−) Contas da Loja no Período (Aluguel, Luz, Produtos)
                     </span>
                     <span className="font-semibold text-red-300">
                       - {moneyCents(comp.recognizedOperatingExpensesCents)}
@@ -812,12 +816,12 @@ function AdminFinanceiroContent() {
                       <span className="font-bold text-white">
                         (=){" "}
                         {comp.isCompleteResult
-                          ? "Resultado Gerencial do Período"
-                          : "Resultado Parcial (Sem Despesas Lançadas)"}
+                          ? "Lucro / Resultado Líquido do Período"
+                          : "Sobra Parcial (Falta Cadastrar Contas do Mês)"}
                       </span>
                       {comp.managementMarginRate !== null && (
                         <p className="text-xs text-emerald-300">
-                          Margem Gerencial:{" "}
+                          Margem de Lucro:{" "}
                           {comp.managementMarginRate.toLocaleString("pt-BR")}%
                         </p>
                       )}
@@ -834,14 +838,14 @@ function AdminFinanceiroContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-sky-400">
-                      Regime de Caixa (Movimentação Efetiva)
+                      Dinheiro Vivo, Pix e Cartão
                     </span>
                     <h2 className="mt-1 text-lg font-bold text-white">
-                      Fluxo Líquido de Caixa do Período
+                      Movimento Real do Caixa (O que Entrou e Saiu)
                     </h2>
                   </div>
                   <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] font-bold text-sky-300">
-                    Por Data de Liquidação
+                    Por Data de Pagamento
                   </span>
                 </div>
 
@@ -851,10 +855,10 @@ function AdminFinanceiroContent() {
                       <ArrowUpRight className="h-4 w-4 text-emerald-400" />
                       <div>
                         <span className="text-zinc-200">
-                          (+) Recebimentos Confirmados no Caixa
+                          (+) Pagamentos Recebidos dos Clientes
                         </span>
                         <p className="text-[11px] text-zinc-500">
-                          Agrupados por confirmedAt dentro do período
+                          Dinheiro, Pix e Cartão confirmados no caixa neste período
                         </p>
                       </div>
                     </div>
@@ -868,10 +872,10 @@ function AdminFinanceiroContent() {
                       <ArrowDownRight className="h-4 w-4 text-red-400" />
                       <div>
                         <span className="text-zinc-300">
-                          (−) Devoluções Reais ao Cliente (Refunds)
+                          (−) Dinheiro Devolvido a Clientes (Reembolsos)
                         </span>
                         <p className="text-[11px] text-zinc-500">
-                          Saída efetiva de caixa por revertedAt
+                          Quando um pagamento precisou ser estornado ao cliente
                         </p>
                       </div>
                     </div>
@@ -885,10 +889,10 @@ function AdminFinanceiroContent() {
                       <ArrowDownRight className="h-4 w-4 text-red-400" />
                       <div>
                         <span className="text-zinc-300">
-                          (−) Despesas e Obrigações Pagas no Período
+                          (−) Contas e Despesas Pagas no Período
                         </span>
                         <p className="text-[11px] text-zinc-500">
-                          Agrupadas por paidAt (independente da competência)
+                          Boletos e gastos que foram efetivamente pagos neste período
                         </p>
                       </div>
                     </div>
@@ -902,10 +906,10 @@ function AdminFinanceiroContent() {
                       <ArrowDownRight className="h-4 w-4 text-amber-400" />
                       <div>
                         <span className="text-zinc-300">
-                          (−) Repasses de Comissão Pagos aos Barbeiros
+                          (−) Comissões Já Transferidas aos Barbeiros
                         </span>
                         <p className="text-[11px] text-zinc-500">
-                          Saída financeira de liquidação (não duplica competência)
+                          Pagamentos e adiantamentos feitos para a equipe
                         </p>
                       </div>
                     </div>
@@ -917,11 +921,10 @@ function AdminFinanceiroContent() {
                   <div className="flex items-center justify-between rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3.5">
                     <div>
                       <span className="font-bold text-white">
-                        (=) Geração / Consumo Líquido de Caixa
+                        (=) Saldo do Caixa no Período (Entrou − Saiu)
                       </span>
                       <p className="text-[11px] text-sky-200">
-                        Movimento líquido do período (não representa saldo bancário
-                        acumulado)
+                        Diferença entre o dinheiro que entrou e o que saiu neste período
                       </p>
                     </div>
                     <span className="font-display text-xl font-bold text-sky-300">
@@ -932,9 +935,8 @@ function AdminFinanceiroContent() {
                   <div className="mt-2 rounded-xl border border-white/[0.05] bg-[#101010] px-4 py-3 text-xs text-zinc-400">
                     <div className="flex items-center justify-between">
                       <span>
-                        Correções administrativas de registro no período (
-                        <code className="text-zinc-300">RECORD_CORRECTION</code>
-                        ):
+                        Correções de baixa por engano na recepção (sem devolver
+                        dinheiro):
                       </span>
                       <span className="font-bold text-zinc-200">
                         {cash.recordCorrectionsCount} reg. (
@@ -951,15 +953,15 @@ function AdminFinanceiroContent() {
               <div className="flex flex-col justify-between gap-4 border-b border-white/[0.06] pb-4 lg:flex-row lg:items-center">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
-                    Política Recomendada · Elegível Após Conclusão + Recebimento
+                    Controle Seguro · Só Libera Comissão Após o Cliente Pagar
                   </span>
                   <h2 className="mt-1 text-lg font-bold text-white">
-                    Folha de Comissões e Liquidação de Repasses por Profissional
+                    Comissões dos Barbeiros: Quanto Pagar para Cada Um
                   </h2>
                   <p className="text-xs text-zinc-400">
-                    A comissão reconhecida entra na competência na conclusão do
-                    serviço; torna-se elegível para pagamento após confirmação no
-                    caixa.
+                    Veja quanto cada barbeiro gerou de comissão na cadeira, quanto
+                    já está liberado (clientes que já pagaram no caixa) e quanto
+                    falta você transferir hoje.
                   </p>
                 </div>
               </div>
@@ -969,22 +971,22 @@ function AdminFinanceiroContent() {
                   <thead>
                     <tr className="border-b border-white/[0.06] text-[11px] uppercase tracking-wider text-zinc-400">
                       <th className="pb-3 pr-4">Profissional</th>
-                      <th className="pb-3 px-3 text-right">Concluídos</th>
-                      <th className="pb-3 px-3 text-right">Receita Bruta</th>
+                      <th className="pb-3 px-3 text-right">Cortes Feitos</th>
+                      <th className="pb-3 px-3 text-right">Total Cortado</th>
                       <th className="pb-3 px-3 text-right">
-                        Comissão Reconhecida
+                        Comissão Total Gerada
                       </th>
                       <th className="pb-3 px-3 text-right">
-                        Aguardando Caixa
+                        Falta Cliente Pagar
                       </th>
                       <th className="pb-3 px-3 text-right text-emerald-400">
-                        Comissão Elegível
+                        Liberada (Cliente Pagou)
                       </th>
                       <th className="pb-3 px-3 text-right text-sky-400">
-                        Já Repassada
+                        Já Pago ao Barbeiro
                       </th>
                       <th className="pb-3 px-3 text-right text-amber-400">
-                        Saldo a Pagar
+                        Falta Pagar Hoje
                       </th>
                       <th className="pb-3 pl-3 text-right">Ação</th>
                     </tr>
@@ -996,8 +998,7 @@ function AdminFinanceiroContent() {
                           colSpan={9}
                           className="py-6 text-center text-xs text-zinc-500"
                         >
-                          Nenhuma comissão gerada ou repassada no período
-                          selecionado.
+                          Nenhuma comissão gerada ou paga no período selecionado.
                         </td>
                       </tr>
                     ) : (
@@ -1042,7 +1043,7 @@ function AdminFinanceiroContent() {
                               }}
                               className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
                             >
-                              Registrar Repasse
+                              Pagar Barbeiro
                             </button>
                           </td>
                         </tr>
@@ -1136,17 +1137,17 @@ function AdminFinanceiroContent() {
               {/* Despesas por Categoria */}
               <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-6">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
-                  Composição de Custos
+                  Resumo dos Gastos
                 </span>
                 <h2 className="mt-1 text-base font-bold text-white">
-                  Despesas por Categoria na Competência
+                  Para Onde Estão Indo os Gastos do Mês
                 </h2>
 
                 {stmt.expensesByCategory.length === 0 ? (
                   <p className="mt-6 text-xs text-zinc-500">
-                    Nenhuma despesa registrada na competência selecionada. Use o
-                    botão &ldquo;Lançar Despesa / Taxa&rdquo; no topo para
-                    registrar aluguel, insumos, energia ou taxas.
+                    Nenhuma conta ou despesa cadastrada neste período. Use o
+                    botão &ldquo;Cadastrar Conta / Gasto&rdquo; no topo para
+                    registrar aluguel, produtos, luz ou taxas.
                   </p>
                 ) : (
                   <div className="mt-4 space-y-3">
@@ -1175,7 +1176,7 @@ function AdminFinanceiroContent() {
                         <div className="mt-1.5 flex items-center justify-between text-[11px] text-zinc-500">
                           <span>Pago: {moneyCents(cat.paidInPeriodCents)}</span>
                           <span>
-                            Em aberto: {moneyCents(cat.pendingAmountCents)}
+                            Falta pagar: {moneyCents(cat.pendingAmountCents)}
                           </span>
                         </div>
                       </div>
@@ -1189,14 +1190,14 @@ function AdminFinanceiroContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">
-                      Contas a Pagar e Pagas
+                      Boletos e Despesas da Loja
                     </span>
                     <h2 className="mt-1 text-base font-bold text-white">
-                      Obrigações e Despesas Registradas
+                      Contas a Pagar e Contas Já Pagas
                     </h2>
                   </div>
                   <span className="text-xs text-zinc-400">
-                    {(workspace?.expenses ?? []).length} registro(s)
+                    {(workspace?.expenses ?? []).length} conta(s)
                   </span>
                 </div>
 
@@ -1204,12 +1205,12 @@ function AdminFinanceiroContent() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-wider text-zinc-400">
-                        <th className="pb-2.5 pr-3">Descrição / Categoria</th>
-                        <th className="pb-2.5 px-2">Competência</th>
+                        <th className="pb-2.5 pr-3">Conta / Tipo</th>
+                        <th className="pb-2.5 px-2">Data da Conta</th>
                         <th className="pb-2.5 px-2">Vencimento</th>
-                        <th className="pb-2.5 px-2">Pagamento</th>
+                        <th className="pb-2.5 px-2">Pago em</th>
                         <th className="pb-2.5 px-2 text-right">Valor</th>
-                        <th className="pb-2.5 px-2">Status</th>
+                        <th className="pb-2.5 px-2">Situação</th>
                         <th className="pb-2.5 pl-2 text-right">Ações</th>
                       </tr>
                     </thead>
@@ -1220,7 +1221,7 @@ function AdminFinanceiroContent() {
                             colSpan={7}
                             className="py-6 text-center text-xs text-zinc-500"
                           >
-                            Nenhuma despesa cadastrada para este filtro.
+                            Nenhuma conta cadastrada para este período.
                           </td>
                         </tr>
                       ) : (
@@ -1320,7 +1321,7 @@ function AdminFinanceiroContent() {
                                         }
                                         className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20"
                                       >
-                                        Dar Baixa
+                                        Marcar como Paga
                                       </button>
                                       <button
                                         type="button"
@@ -1328,7 +1329,7 @@ function AdminFinanceiroContent() {
                                           handleCancelExpense(exp.id)
                                         }
                                         className="rounded-lg border border-red-500/20 bg-red-500/10 p-1 text-red-300 hover:bg-red-500/20"
-                                        title="Cancelar despesa"
+                                        title="Cancelar conta"
                                       >
                                         <XCircle className="h-3.5 w-3.5" />
                                       </button>
@@ -1352,10 +1353,10 @@ function AdminFinanceiroContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">
-                      Série 1 · Dias Desde o Serviço
+                      Clientes que ainda não tiveram baixa no caixa
                     </span>
                     <h2 className="mt-1 text-base font-bold text-white">
-                      Atendimentos Concluídos Sem Recebimento por Idade
+                      Cortes Feitos sem Pagamento Confirmado (Por Tempo de Atraso)
                     </h2>
                   </div>
                   <button
@@ -1369,7 +1370,7 @@ function AdminFinanceiroContent() {
                     }
                     className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20"
                   >
-                    Inspecionar Fila ({recSummary.completedWithoutReceiptCount})
+                    Ver Pendentes ({recSummary.completedWithoutReceiptCount})
                   </button>
                 </div>
 
@@ -1386,7 +1387,7 @@ function AdminFinanceiroContent() {
                         {moneyCents(b.amountCents)}
                       </p>
                       <p className="text-[11px] text-zinc-500">
-                        {b.count} atend.
+                        {b.count} corte(s)
                       </p>
                     </div>
                   ))}
@@ -1396,10 +1397,10 @@ function AdminFinanceiroContent() {
               <div className="rounded-2xl border border-white/[0.07] bg-[#141414] p-6">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">
-                    Série 2 · Dias Desde o Vencimento
+                    Contas da Barbearia
                   </span>
                   <h2 className="mt-1 text-base font-bold text-white">
-                    Obrigações e Despesas Pendentes por Vencimento
+                    Contas a Pagar ou Vencidas por Prazo
                   </h2>
                 </div>
 
@@ -1431,14 +1432,13 @@ function AdminFinanceiroContent() {
                 <div className="flex items-center gap-2">
                   <RotateCcw className="h-4 w-4 text-amber-500" />
                   <h2 className="text-base font-bold text-white">
-                    Registrar Correção Operacional ou Devolução ao Cliente
+                    Desfazer Baixa Marcada por Engano ou Devolver Dinheiro
                   </h2>
                 </div>
                 <p className="mt-1 text-xs text-zinc-400">
-                  Separa erro administrativo de marcação (
-                  <code className="text-zinc-300">RECORD_CORRECTION</code>) de
-                  devolução real de dinheiro (
-                  <code className="text-zinc-300">CLIENT_REFUND</code>).
+                  Escolha se foi apenas um clique errado na recepção (sem
+                  devolver dinheiro) ou se você realmente devolveu o valor ao
+                  cliente.
                 </p>
 
                 <form
@@ -1447,7 +1447,7 @@ function AdminFinanceiroContent() {
                 >
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-zinc-300">
-                      Recebimento Confirmado no Período
+                      Pagamento Confirmado no Período
                     </label>
                     <select
                       value={selectedReceiptId}
@@ -1455,7 +1455,7 @@ function AdminFinanceiroContent() {
                       className="w-full rounded-xl border border-white/10 bg-[#0c0c0c] px-3 py-2.5 text-xs text-white"
                     >
                       <option value="">
-                        Selecione um comprovante confirmado...
+                        Selecione o pagamento para corrigir...
                       </option>
                       {(workspace?.confirmedReceiptsForAdjustment ?? []).map(
                         (item) => (
@@ -1475,7 +1475,7 @@ function AdminFinanceiroContent() {
 
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-zinc-300">
-                      Natureza do Ajuste
+                      O que aconteceu?
                     </label>
                     <select
                       value={reversalType}
@@ -1485,24 +1485,23 @@ function AdminFinanceiroContent() {
                       className="w-full rounded-xl border border-white/10 bg-[#0c0c0c] px-3 py-2.5 text-xs text-white"
                     >
                       <option value="RECORD_CORRECTION">
-                        Correção Administrativa de Registro (não houve saída de
-                        dinheiro ao cliente)
+                        Foi apenas marcado como pago por engano (não devolvi
+                        dinheiro)
                       </option>
                       <option value="CLIENT_REFUND">
-                        Devolução Financeira ao Cliente (dinheiro entrou e foi
-                        devolvido)
+                        Devolvi o dinheiro/Pix para o cliente (reembolso real)
                       </option>
                     </select>
                   </div>
 
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-zinc-300">
-                      Justificativa Obrigatória para Auditoria *
+                      Motivo da Correção *
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="Ex.: Recebimento confirmado no agendamento errado / Estorno Pix ao cliente"
+                      placeholder="Ex.: Recepcionista deu baixa no cliente errado / Estorno Pix"
                       value={reversalReason}
                       onChange={(e) => setReversalReason(e.target.value)}
                       className="w-full rounded-xl border border-white/10 bg-[#0c0c0c] px-3 py-2.5 text-xs text-white"
@@ -1516,8 +1515,8 @@ function AdminFinanceiroContent() {
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     {reversalSubmitting
-                      ? "Processando..."
-                      : "Executar Ajuste Auditável"}
+                      ? "Salvando..."
+                      : "Confirmar Correção / Estorno"}
                   </button>
                 </form>
               </div>
@@ -1528,22 +1527,23 @@ function AdminFinanceiroContent() {
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-sky-400" />
                     <h2 className="text-base font-bold text-white">
-                      Livro-Razão de Movimentos Financeiros Imutáveis
+                      Histórico de Pagamentos, Repasses e Correções
                     </h2>
                   </div>
                   <span className="text-xs text-zinc-400">
-                    {(workspace?.movements ?? []).length} evento(s)
+                    {(workspace?.movements ?? []).length} registro(s)
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-zinc-400">
-                  Trilha cronológica de baixas de despesas, repasses de comissão,
-                  devoluções e correções administrativas.
+                  Tudo o que foi pago (contas, comissões, estornos e correções)
+                  fica salvo aqui em ordem de data.
                 </p>
 
                 <div className="mt-4 max-h-72 space-y-2.5 overflow-y-auto pr-1">
                   {(workspace?.movements ?? []).length === 0 ? (
                     <p className="py-8 text-center text-xs text-zinc-500">
-                      Nenhum movimento manual registrado neste período ainda.
+                      Nenhum pagamento de conta ou comissão registrado neste
+                      período ainda.
                     </p>
                   ) : (
                     (workspace?.movements ?? []).map((mov) => (
@@ -1577,53 +1577,49 @@ function AdminFinanceiroContent() {
               </div>
             </section>
 
-            {/* Matriz de Disponibilidade de Métricas */}
+            {/* Resumo das Funcionalidades Ativas */}
             <section className="mt-8 rounded-2xl border border-white/[0.07] bg-[#141414] p-6">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-white">
-                  Matriz de Disponibilidade de Métricas e Governança Contábil
+                  Como o Sistema Protege o Seu Dinheiro
                 </h2>
               </div>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3.5">
                   <span className="font-bold text-emerald-300">
-                    Fase P0 & P1 · Ativas
+                    1. Produção vs. Caixa Separados
                   </span>
                   <p className="mt-1 text-zinc-300">
-                    Produção, Caixa confirmado, Pendentes, Comissões geradas,
-                    Comparativos MTD/YTD, Meios de Pagamento e Matriz Barbeiro ×
-                    Serviço.
+                    Finalizar um corte na agenda nunca finge que o dinheiro já
+                    entrou. O caixa só soma o que foi realmente recebido.
                   </p>
                 </div>
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3.5">
                   <span className="font-bold text-emerald-300">
-                    Fase P2 (Despesas e Resultado) · Ativa
+                    2. Lucro Real do Mês
                   </span>
                   <p className="mt-1 text-zinc-300">
-                    Despesas com competência, vencimento e pagamento separados;
-                    Cascata de Competência vs Fluxo Líquido de Caixa.
+                    Calcula automaticamente quanto sobra para a barbearia depois
+                    de tirar as comissões dos barbeiros e as contas da loja.
                   </p>
                 </div>
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3.5">
                   <span className="font-bold text-emerald-300">
-                    Fase P2 (Liquidação de Comissões) · Ativa
+                    3. Comissão Sem Pagar Duas Vezes
                   </span>
                   <p className="mt-1 text-zinc-300">
-                    Dedução única na competência; comissão elegível após
-                    recebimento e baixa de passivo via{" "}
-                    <code>CommissionPayout</code>.
+                    Só libera comissão dos cortes que os clientes já pagaram e
+                    desconta tudo o que você já adiantou para o barbeiro.
                   </p>
                 </div>
                 <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3.5">
                   <span className="font-bold text-emerald-300">
-                    Fase P3 (Capacidade, Ocupação e Coortes) · Ativa
+                    4. Controle de Pendências
                   </span>
                   <p className="mt-1 text-zinc-300">
-                    Ocupação por jornada com exceções (
-                    <code>BarberScheduleException</code>), coortes de 30 dias
-                    maduras e vínculo canônico auditado (
-                    <code>ClientIdentityLink</code>).
+                    Mostra na hora se algum corte ficou sem baixa no caixa ou se
+                    alguma conta da loja está perto de vencer.
                   </p>
                 </div>
               </div>
@@ -1635,7 +1631,7 @@ function AdminFinanceiroContent() {
       {detailFilter && (
         <InsightDetailsDialog
           filter={detailFilter}
-          title="Concluídos sem recebimento confirmado"
+          title="Cortes concluídos sem pagamento confirmado"
           onClose={() => setDetailFilter(null)}
         />
       )}
