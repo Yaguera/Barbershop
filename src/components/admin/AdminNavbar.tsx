@@ -18,6 +18,7 @@ import {
 import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -40,11 +41,34 @@ const subscribe = () => () => {};
 
 export function AdminNavbar({ activePage }: AdminNavbarProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
 
-  const isTeamActive = activePage === 'barbeiros' || activePage === 'atendentes';
-  const isSettingsActive = activePage === 'comissoes' || activePage === 'permissoes';
+  const resolvedPage: AdminActivePage | undefined =
+    activePage ??
+    (pathname?.startsWith('/admin/financeiro')
+      ? 'financeiro'
+      : pathname?.startsWith('/admin/calendario')
+        ? 'calendario'
+        : pathname?.startsWith('/admin/clientes')
+          ? 'clientes'
+          : pathname?.startsWith('/admin/atendentes')
+            ? 'atendentes'
+            : pathname?.startsWith('/admin/barbeiros')
+              ? 'barbeiros'
+              : pathname?.startsWith('/admin/servicos')
+                ? 'servicos'
+                : pathname?.startsWith('/admin/configuracoes/permissoes')
+                  ? 'permissoes'
+                  : pathname?.startsWith('/admin/configuracoes')
+                    ? 'comissoes'
+                    : pathname?.startsWith('/admin/dashboard')
+                      ? 'dashboard'
+                      : undefined);
+
+  const isTeamActive = resolvedPage === 'barbeiros' || resolvedPage === 'atendentes';
+  const isSettingsActive = resolvedPage === 'comissoes' || resolvedPage === 'permissoes';
 
   const navItemClass = (active: boolean) =>
     `group relative inline-flex h-16 items-center gap-2 px-3.5 text-xs font-medium tracking-wide transition-colors ${
@@ -91,23 +115,23 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
 
         {/* Center: Desktop Navigation (flat architectural tabs, no pill capsules) */}
         <nav className="hidden xl:flex items-center h-full" aria-label="Navegação administrativa">
-          <Link href="/admin/dashboard" className={navItemClass(activePage === 'dashboard')}>
-            <LayoutDashboard className={navIconClass(activePage === 'dashboard')} />
+          <Link href="/admin/dashboard" className={navItemClass(resolvedPage === 'dashboard')}>
+            <LayoutDashboard className={navIconClass(resolvedPage === 'dashboard')} />
             <span>Painel</span>
           </Link>
 
-          <Link href="/admin/calendario" className={navItemClass(activePage === 'calendario')}>
-            <CalendarDays className={navIconClass(activePage === 'calendario')} />
+          <Link href="/admin/calendario" className={navItemClass(resolvedPage === 'calendario')}>
+            <CalendarDays className={navIconClass(resolvedPage === 'calendario')} />
             <span>Calendário & Caixa</span>
           </Link>
 
-          <Link href="/admin/financeiro" className={navItemClass(activePage === 'financeiro')}>
-            <DollarSign className={navIconClass(activePage === 'financeiro')} />
+          <Link href="/admin/financeiro" className={navItemClass(resolvedPage === 'financeiro')}>
+            <DollarSign className={navIconClass(resolvedPage === 'financeiro')} />
             <span>Financeiro</span>
           </Link>
 
-          <Link href="/admin/clientes" className={navItemClass(activePage === 'clientes')}>
-            <Users className={navIconClass(activePage === 'clientes')} />
+          <Link href="/admin/clientes" className={navItemClass(resolvedPage === 'clientes')}>
+            <Users className={navIconClass(resolvedPage === 'clientes')} />
             <span>Clientes</span>
           </Link>
 
@@ -116,8 +140,8 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
             <span>Equipe</span>
           </Link>
 
-          <Link href="/admin/servicos" className={navItemClass(activePage === 'servicos')}>
-            <Scissors className={navIconClass(activePage === 'servicos')} />
+          <Link href="/admin/servicos" className={navItemClass(resolvedPage === 'servicos')}>
+            <Scissors className={navIconClass(resolvedPage === 'servicos')} />
             <span>Serviços</span>
           </Link>
 
@@ -241,7 +265,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/dashboard"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'dashboard')}
+                    className={drawerLinkClass(resolvedPage === 'dashboard')}
                   >
                     <LayoutDashboard className="w-4 h-4 text-amber-400" />
                     Painel Analítico
@@ -250,7 +274,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/calendario"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'calendario')}
+                    className={drawerLinkClass(resolvedPage === 'calendario')}
                   >
                     <CalendarDays className="w-4 h-4 text-amber-400" />
                     Calendário e Caixa
@@ -259,7 +283,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/financeiro"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'financeiro')}
+                    className={drawerLinkClass(resolvedPage === 'financeiro')}
                   >
                     <DollarSign className="w-4 h-4 text-amber-400" />
                     Financeiro
@@ -268,7 +292,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/clientes"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'clientes')}
+                    className={drawerLinkClass(resolvedPage === 'clientes')}
                   >
                     <Users className="w-4 h-4 text-amber-400" />
                     Clientes
@@ -280,7 +304,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/barbeiros"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'barbeiros')}
+                    className={drawerLinkClass(resolvedPage === 'barbeiros')}
                   >
                     <Briefcase className="w-4 h-4 text-amber-400" />
                     Equipe: Barbeiros
@@ -289,7 +313,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/atendentes"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'atendentes')}
+                    className={drawerLinkClass(resolvedPage === 'atendentes')}
                   >
                     <UserCheck className="w-4 h-4 text-amber-400" />
                     Equipe: Atendentes
@@ -298,7 +322,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/servicos"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'servicos')}
+                    className={drawerLinkClass(resolvedPage === 'servicos')}
                   >
                     <Scissors className="w-4 h-4 text-amber-400" />
                     Serviços
@@ -310,7 +334,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/configuracoes/comissoes"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'comissoes')}
+                    className={drawerLinkClass(resolvedPage === 'comissoes')}
                   >
                     <Percent className="w-4 h-4 text-amber-400" />
                     Política de Comissões
@@ -319,7 +343,7 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                   <Link
                     href="/admin/configuracoes/permissoes"
                     onClick={() => setIsOpen(false)}
-                    className={drawerLinkClass(activePage === 'permissoes')}
+                    className={drawerLinkClass(resolvedPage === 'permissoes')}
                   >
                     <ShieldCheck className="w-4 h-4 text-amber-400" />
                     Permissões e Perfis
