@@ -124,6 +124,11 @@ export function InsightDetailsDialog({
   return (
     <dialog
       ref={dialog}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
       onKeyDown={(event) => {
         if (event.key !== "Tab") return;
         const controls = Array.from(
@@ -150,9 +155,13 @@ export function InsightDetailsDialog({
         onClose();
       }}
       aria-labelledby="insight-detail-title"
-      className="m-auto w-[calc(100%-2rem)] max-w-3xl max-h-[85dvh] overflow-y-auto rounded-2xl border border-white/15 bg-[#151515] p-5 text-white backdrop:bg-black/75 sm:p-7"
+      className="m-auto w-[calc(100%-2rem)] max-w-3xl max-h-[85dvh] overflow-y-auto rounded-2xl border border-white/15 bg-[#151515] p-0 text-white backdrop:bg-black/75 backdrop:cursor-pointer"
     >
-      <header className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
+      <div
+        className="p-5 sm:p-7"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
         <div className="space-y-1.5">
           <p className="text-xs font-semibold uppercase tracking-wider text-[#D4AF37]">
             Detalhamento auditável
@@ -299,10 +308,10 @@ export function InsightDetailsDialog({
                       {statuses[row.status] || row.status}
                     </span>
                     <Link
-                      href={`/agenda/${row.id}`}
+                      href={`/admin/calendario?view=day&date=${encodeURIComponent(row.startTime.slice(0, 10))}`}
                       className="inline-flex items-center gap-1 text-[#D4AF37] hover:underline"
                     >
-                      Ficha do agendamento
+                      Ver no calendário do dia
                       <ExternalLink className="w-3 h-3" />
                     </Link>
                   </div>
@@ -349,6 +358,7 @@ export function InsightDetailsDialog({
           </>
         )
       )}
+      </div>
     </dialog>
   );
 }

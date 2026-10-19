@@ -298,8 +298,14 @@ export default function AdminAtendentesPage() {
 
       {/* Modal de Cadastro */}
       {isRegisterOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#141414] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => !isSubmitting && setIsRegisterOpen(false)}
+        >
+          <div
+            className="bg-[#141414] border border-white/10 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-white/5">
               <div>
                 <h2 className="text-lg font-bold text-white">Cadastrar Nova Atendente</h2>
@@ -399,8 +405,14 @@ export default function AdminAtendentesPage() {
 
       {/* Modal de Desativação */}
       {deactivatingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#141414] border border-red-500/20 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => !isDeactivating && setDeactivatingId(null)}
+        >
+          <div
+            className="bg-[#141414] border border-red-500/20 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mx-auto">
               <ShieldAlert className="w-6 h-6" />
             </div>

@@ -64,7 +64,10 @@ const authProxy = auth((req) => {
     if (!isLoggedIn) {
       return createUnauthorizedResponse(req, pathname);
     }
-    if (userRole !== 'BARBER' && userRole !== 'ADMIN') {
+    if (userRole === 'ADMIN') {
+      return NextResponse.redirect(resolveSafeRedirectUrl('/admin/dashboard', req));
+    }
+    if (userRole !== 'BARBER') {
       return createForbiddenResponse(req, pathname, userRole);
     }
     const targetPath = pathname.replace(/^\/barbeiro/, '/barber');
@@ -82,23 +85,29 @@ const authProxy = auth((req) => {
     return NextResponse.next();
   }
 
-  // 5. Rotas do Barbeiro (/barber/*) -> BARBER ou ADMIN
+  // 5. Rotas do Barbeiro (/barber/*) -> Apenas BARBER (ADMIN é redirecionado ao painel admin)
   if (isBarberRoute) {
     if (!isLoggedIn) {
       return createUnauthorizedResponse(req, pathname);
     }
-    if (userRole !== 'BARBER' && userRole !== 'ADMIN') {
+    if (userRole === 'ADMIN') {
+      return NextResponse.redirect(resolveSafeRedirectUrl('/admin/dashboard', req));
+    }
+    if (userRole !== 'BARBER') {
       return createForbiddenResponse(req, pathname, userRole);
     }
     return NextResponse.next();
   }
 
-  // 6. Rotas da Atendente e Caixa (/atendente/*) -> RECEPTIONIST ou ADMIN
+  // 6. Rotas da Atendente e Caixa (/atendente/*) -> Apenas RECEPTIONIST (ADMIN é redirecionado ao painel admin)
   if (isReceptionistRoute) {
     if (!isLoggedIn) {
       return createUnauthorizedResponse(req, pathname);
     }
-    if (userRole !== 'RECEPTIONIST' && userRole !== 'ADMIN') {
+    if (userRole === 'ADMIN') {
+      return NextResponse.redirect(resolveSafeRedirectUrl('/admin/dashboard', req));
+    }
+    if (userRole !== 'RECEPTIONIST') {
       return createForbiddenResponse(req, pathname, userRole);
     }
     return NextResponse.next();

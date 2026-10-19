@@ -339,8 +339,12 @@ export default function AdminBarbeirosPage() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="deactivate-barber-title"
+          onClick={() => !isDeactivating && setDeactivatingBarber(null)}
         >
-          <div className="bg-[#151515] border border-red-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+          <div
+            className="bg-[#151515] border border-red-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mx-auto">
               <ShieldAlert className="w-6 h-6" />
             </div>

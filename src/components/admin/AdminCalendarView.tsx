@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { AdminOperationsSection } from "./AdminOperationsSection";
 import type { AdminBarberProp } from "./dashboard-types";
 import { CalendarDailyAgenda } from "./CalendarDailyAgenda";
 import { CalendarOverview } from "./CalendarOverview";
@@ -201,6 +202,10 @@ export function AdminCalendarView() {
             : "Pela data de início do atendimento. Concluído e pago são situações diferentes."}
         </p>
       </header>
+      <AdminOperationsSection
+        defaultTab={state.context === "cash" ? "PAYMENTS" : "APPOINTMENTS"}
+        onOperationComplete={() => setRetry((r) => r + 1)}
+      />
       <section className={panel} aria-label="Navegação e filtros">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -502,6 +507,7 @@ export function AdminCalendarView() {
                 appointments={calendar.appointments}
                 context={state.context}
                 filtered={filtered}
+                onUpdated={() => setRetry((r) => r + 1)}
               />
             ) : (
               <CalendarOverview

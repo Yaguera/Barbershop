@@ -9,6 +9,7 @@ import {
   ArrowLeftRight,
   Calendar,
   Check,
+  ChevronDown,
   Clock,
   Filter,
   Info,
@@ -17,7 +18,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   AdminBarberProp,
   AdminServiceProp,
@@ -86,7 +87,10 @@ export function DashboardFilters({
     paymentMethods: [],
   };
 
+  const [isPeriodMenuOpen, setIsPeriodMenuOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const periodMenuRef = useRef<HTMLDivElement>(null);
+
   const [draft, setDraft] = useState<DashboardFilterState>(effectiveFilter);
   const [customStartDraft, setCustomStartDraft] = useState(
     effectiveFilter.customStart,
@@ -101,12 +105,40 @@ export function DashboardFilters({
     effectiveFilter.compareEnd,
   );
 
+  // Close period dropdown and advanced modal when clicking outside or pressing Escape
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (
+        isPeriodMenuOpen &&
+        periodMenuRef.current &&
+        !periodMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsPeriodMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsPeriodMenuOpen(false);
+        setIsAdvancedOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPeriodMenuOpen]);
+
   const openAdvancedPanel = () => {
     setDraft(effectiveFilter);
     setCustomStartDraft(effectiveFilter.customStart);
     setCustomEndDraft(effectiveFilter.customEnd);
     setCompareStartDraft(effectiveFilter.compareStart);
     setCompareEndDraft(effectiveFilter.compareEnd);
+    setIsPeriodMenuOpen(false);
     setIsAdvancedOpen(true);
   };
 
@@ -138,16 +170,20 @@ export function DashboardFilters({
   const quickPeriods: { key: DashboardPeriod; label: string }[] = [
     { key: "today", label: "Hoje" },
     { key: "yesterday", label: "Ontem" },
+    { key: "last_7_days", label: "Últimos 7 dias" },
+    { key: "last_30_days", label: "Últimos 30 dias" },
+    { key: "last_90_days", label: "Últimos 90 dias" },
     { key: "week", label: "Esta semana" },
     { key: "month", label: "Mês atual" },
     { key: "prev_month", label: "Mês anterior" },
-    { key: "last_7_days", label: "Últimos 7d" },
-    { key: "last_30_days", label: "Últimos 30d" },
-    { key: "last_90_days", label: "Últimos 90d" },
     { key: "year", label: "Este ano" },
-    { key: "custom", label: "Personalizado" },
-    { key: "all", label: "Geral" },
+    { key: "custom", label: "Intervalo personalizado" },
+    { key: "all", label: "Todo o histórico (Geral)" },
   ];
+
+  const activePeriodLabel =
+    quickPeriods.find((opt) => opt.key === effectiveFilter.period)?.label ||
+    "Mês atual";
 
   const handleQuickPeriodClick = (nextPeriod: DashboardPeriod) => {
     if (nextPeriod === "custom") {
@@ -156,6 +192,7 @@ export function DashboardFilters({
       const end = effectiveFilter.customEnd || todayIso;
       setCustomStartDraft(start);
       setCustomEndDraft(end);
+      setIsPeriodMenuOpen(false);
       if (onApplyFilters) {
         onApplyFilters({
           ...effectiveFilter,
@@ -168,6 +205,7 @@ export function DashboardFilters({
       }
       return;
     }
+    setIsPeriodMenuOpen(false);
     if (onApplyFilters) {
       onApplyFilters({
         ...effectiveFilter,
@@ -210,11 +248,11 @@ export function DashboardFilters({
   };
 
   return (
-    <div className="bg-[#151515] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col gap-4">
+    <div className="bg-[#151515] border border-white/10 rounded-xl p-4 sm:p-5 shadow-xl flex flex-col gap-4">
       {/* 1. Cabeçalho Compacto: Visão geral + Datas efetivas + Última apuração */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
             {contextTitle}
           </h1>
           <p className="text-zinc-400 text-xs mt-0.5">
@@ -226,13 +264,13 @@ export function DashboardFilters({
         {/* Timestamp do Servidor & Botão de Atualizar */}
         <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
           {dateIntervalLabel && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] border border-white/10 text-xs text-zinc-200 font-medium">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1C1C1C] border border-white/10 text-xs text-zinc-200 font-medium">
               <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>Atual: {dateIntervalLabel}</span>
             </div>
           )}
           {comparisonIntervalLabel && effectiveFilter.compareMode !== "none" && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-xs text-[#D4AF37] font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-xs text-[#D4AF37] font-semibold">
               <ArrowLeftRight className="w-3.5 h-3.5" />
               <span>Ref.: {comparisonIntervalLabel}</span>
             </div>
@@ -247,7 +285,7 @@ export function DashboardFilters({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="min-h-11 min-w-11 p-2 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white/80 hover:text-[#D4AF37] transition-all disabled:opacity-50 cursor-pointer"
+              className="min-h-10 min-w-10 p-2 rounded-lg bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white/80 hover:text-[#D4AF37] transition-all disabled:opacity-50 cursor-pointer"
               title="Atualizar apuração agora"
               aria-label="Atualizar dados"
             >
@@ -259,17 +297,17 @@ export function DashboardFilters({
         </div>
       </div>
 
-      {/* Nota de equivalência de comparação temporal (ex: mês parcial MTD ou ano bissexto) */}
+      {/* Nota de equivalência de comparação temporal */}
       {comparisonEquivalenceNote && effectiveFilter.compareMode !== "none" && (
-        <div className="flex items-center gap-2 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-3.5 py-2 text-xs text-amber-200">
+        <div className="flex items-center gap-2 rounded-lg bg-[#D4AF37]/10 border border-[#D4AF37]/25 px-3.5 py-2 text-xs text-amber-200">
           <Info className="w-4 h-4 text-[#D4AF37] shrink-0" />
           <span>{comparisonEquivalenceNote}</span>
         </div>
       )}
 
-      {/* Aviso explícito quando filtro de método de pagamento está ativo (Seção 6.2) */}
+      {/* Aviso explícito quando filtro de método de pagamento está ativo */}
       {effectiveFilter.paymentMethods.length > 0 && (
-        <div className="flex items-center gap-2 rounded-xl bg-sky-500/10 border border-sky-500/25 px-3.5 py-2 text-xs text-sky-200">
+        <div className="flex items-center gap-2 rounded-lg bg-sky-500/10 border border-sky-500/25 px-3.5 py-2 text-xs text-sky-200">
           <Info className="w-4 h-4 text-sky-400 shrink-0" />
           <span>
             Filtro de forma de pagamento ativo (
@@ -285,33 +323,82 @@ export function DashboardFilters({
         </div>
       )}
 
-      {/* 2. Barra Principal de Períodos e Controles de Comparação/Filtros */}
+      {/* 2. Barra Principal de Filtros estilo Kommo (Apenas o período aplicado visível; abre menu ao clicar) */}
       <div className="flex flex-col gap-3 pt-3 border-t border-white/10">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-          {/* Seletor de Períodos */}
-          <div
-            className="flex flex-wrap items-center gap-1 bg-[#1C1C1C] p-1 rounded-xl border border-white/10"
-            role="group"
-            aria-label="Selecionar período de análise"
-          >
-            {quickPeriods.map((opt) => {
-              const active = effectiveFilter.period === opt.key;
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => handleQuickPeriodClick(opt.key)}
-                  className={`min-h-9 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    active
-                      ? "bg-[#252525] text-[#D4AF37] border border-[#D4AF37]/40 shadow-sm"
-                      : "text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent"
-                  }`}
-                  aria-pressed={active}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {/* Seletor de Período Compacto estilo Kommo */}
+          <div className="relative" ref={periodMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsPeriodMenuOpen((prev) => !prev)}
+              aria-expanded={isPeriodMenuOpen}
+              aria-haspopup="listbox"
+              aria-label={`Período selecionado: ${activePeriodLabel}. Clique para alterar o intervalo de tempo`}
+              className={`inline-flex min-h-10 items-center justify-between gap-3 rounded-lg border px-3.5 py-2 text-xs transition-colors cursor-pointer min-w-[230px] sm:min-w-[260px] ${
+                isPeriodMenuOpen
+                  ? "border-[#D4AF37] bg-[#1F1F1F] text-white"
+                  : "border-white/15 bg-[#1C1C1C] text-white hover:border-white/30"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2 truncate">
+                <Calendar className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                <span className="text-zinc-400">Período:</span>
+                <strong className="font-semibold text-white truncate">
+                  {activePeriodLabel}
+                </strong>
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-zinc-400 shrink-0 transition-transform duration-150 ${
+                  isPeriodMenuOpen ? "rotate-180 text-[#D4AF37]" : ""
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Popover estilo Kommo */}
+            {isPeriodMenuOpen && (
+              <div
+                role="listbox"
+                aria-label="Selecionar intervalo de tempo"
+                className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 rounded-xl border border-white/15 bg-[#161616] shadow-2xl overflow-hidden animate-in fade-in duration-100"
+              >
+                <div className="flex items-center justify-between border-b border-white/10 bg-[#1C1C1C] px-3.5 py-2.5 text-[11px] text-zinc-400">
+                  <span className="inline-flex items-center gap-1.5 font-semibold uppercase tracking-wider text-zinc-300">
+                    <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
+                    Intervalo de tempo
+                  </span>
+                  {dateIntervalLabel && (
+                    <span className="text-[10px] text-zinc-400 truncate max-w-[130px]">
+                      {dateIntervalLabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className="divide-y divide-white/[0.06] max-h-80 overflow-y-auto">
+                  {quickPeriods.map((opt) => {
+                    const active = effectiveFilter.period === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => handleQuickPeriodClick(opt.key)}
+                        className={`flex w-full items-center justify-between px-3.5 py-2.5 text-left text-xs transition-colors cursor-pointer ${
+                          active
+                            ? "bg-[#D4AF37]/15 text-[#D4AF37] font-semibold"
+                            : "text-zinc-200 hover:bg-white/[0.05] hover:text-white"
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {active && (
+                          <Check className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Controles Rápidos: Comparação + Profissional Rápido + Filtros Avançados */}

@@ -17,10 +17,12 @@ export function CalendarDailyAgenda({
   appointments,
   context,
   filtered,
+  onUpdated,
 }: {
   appointments: CalendarAppointment[];
   context: CalendarContext;
   filtered: boolean;
+  onUpdated?: () => void;
 }) {
   const [selected, setSelected] = useState<CalendarAppointment | null>(null);
   const groups = new Map<
@@ -176,6 +178,7 @@ export function CalendarDailyAgenda({
         <CalendarAppointmentDialog
           appointment={selected}
           onClose={() => setSelected(null)}
+          onUpdated={onUpdated}
         />
       )}
     </section>

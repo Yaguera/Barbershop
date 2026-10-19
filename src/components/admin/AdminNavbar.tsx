@@ -46,101 +46,116 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
   const isTeamActive = activePage === 'barbeiros' || activePage === 'atendentes';
   const isSettingsActive = activePage === 'comissoes' || activePage === 'permissoes';
 
-  const pillClass = (active: boolean) =>
-    `flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all motion-btn ${
+  const navItemClass = (active: boolean) =>
+    `group relative inline-flex h-16 items-center gap-2 px-3.5 text-xs font-medium tracking-wide transition-colors ${
       active
-        ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-dourado-premium border border-dourado-premium/50 shadow-[0_0_15px_rgba(245,197,66,0.15)]'
-        : 'bg-zinc-900 hover:bg-zinc-800 text-slate-300 border border-zinc-800 hover:border-dourado-premium/30'
+        ? 'text-white bg-white/[0.03] after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-[#D4AF37]'
+        : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.02]'
+    }`;
+
+  const navIconClass = (active: boolean) =>
+    `w-3.5 h-3.5 transition-colors ${
+      active ? 'text-[#D4AF37]' : 'text-zinc-500 group-hover:text-zinc-300'
     }`;
 
   const drawerLinkClass = (active: boolean) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+    `flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
       active
-        ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40'
-        : 'bg-zinc-900/60 text-slate-300 hover:bg-zinc-800 border border-zinc-800/80'
+        ? 'bg-[#D4AF37]/10 text-[#D4AF37] border-l-2 border-[#D4AF37]'
+        : 'text-zinc-300 hover:bg-white/[0.04] hover:text-white'
     }`;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-900 bg-black/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-2">
-        {/* Logo / Brand */}
-        <Link href="/admin/dashboard" className="flex items-center gap-3 shrink-0">
-          <Image
-            src="/logo.png"
-            alt="Barbearia Premium Logo"
-            width={40}
-            height={40}
-            className="w-10 h-10 rounded-full border border-amber-500/30 object-cover"
-          />
-          <span className="text-base sm:text-lg font-bold tracking-tight bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
-            Barbearia Premium
-          </span>
-        </Link>
-
-        {/* Desktop Navigation (hidden on mobile/tablet) */}
-        <nav className="hidden xl:flex items-center gap-1.5" aria-label="Navegação administrativa">
-          {session?.user && (
-            <div className="flex items-center gap-2 mr-1 pr-2.5 border-r border-zinc-800">
-              {session.user.image && (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name || 'Admin'}
-                  width={28}
-                  height={28}
-                  className="w-7 h-7 rounded-full border border-dourado-premium/20 object-cover"
-                />
-              )}
-              <span className="text-xs text-slate-400 max-w-[140px] truncate">
-                <span className="text-slate-200 font-semibold">{session.user.name}</span>
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#0B0B0B]/95 backdrop-blur-md">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        {/* Left: Brand & Identity */}
+        <div className="flex items-center gap-6 shrink-0">
+          <Link href="/admin/dashboard" className="flex items-center gap-3 shrink-0 group">
+            <Image
+              src="/logo.png"
+              alt="Barbearia Premium Logo"
+              width={34}
+              height={34}
+              className="w-8.5 h-8.5 rounded-md border border-white/10 object-cover"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-sm sm:text-base font-semibold tracking-tight text-white group-hover:text-[#D4AF37] transition-colors">
+                Barbearia Premium
+              </span>
+              <span className="hidden sm:inline-block rounded bg-[#D4AF37]/10 border border-[#D4AF37]/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#D4AF37]">
+                Admin
               </span>
             </div>
-          )}
+          </Link>
+        </div>
 
-          <Link href="/admin/dashboard" className={pillClass(activePage === 'dashboard')}>
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            Painel
+        {/* Center: Desktop Navigation (flat architectural tabs, no pill capsules) */}
+        <nav className="hidden xl:flex items-center h-full" aria-label="Navegação administrativa">
+          <Link href="/admin/dashboard" className={navItemClass(activePage === 'dashboard')}>
+            <LayoutDashboard className={navIconClass(activePage === 'dashboard')} />
+            <span>Painel</span>
           </Link>
 
-          <Link href="/admin/calendario" className={pillClass(activePage === 'calendario')}>
-            <CalendarDays className="w-3.5 h-3.5" />
-            Calendário
+          <Link href="/admin/calendario" className={navItemClass(activePage === 'calendario')}>
+            <CalendarDays className={navIconClass(activePage === 'calendario')} />
+            <span>Calendário & Caixa</span>
           </Link>
 
-          <Link href="/admin/financeiro" className={pillClass(activePage === 'financeiro')}>
-            <DollarSign className="w-3.5 h-3.5" />
-            Financeiro
+          <Link href="/admin/financeiro" className={navItemClass(activePage === 'financeiro')}>
+            <DollarSign className={navIconClass(activePage === 'financeiro')} />
+            <span>Financeiro</span>
           </Link>
 
-          <Link href="/admin/clientes" className={pillClass(activePage === 'clientes')}>
-            <Users className="w-3.5 h-3.5" />
-            Clientes
+          <Link href="/admin/clientes" className={navItemClass(activePage === 'clientes')}>
+            <Users className={navIconClass(activePage === 'clientes')} />
+            <span>Clientes</span>
           </Link>
 
-          <Link href="/admin/barbeiros" className={pillClass(isTeamActive)}>
-            <Briefcase className="w-3.5 h-3.5" />
-            Equipe
+          <Link href="/admin/barbeiros" className={navItemClass(isTeamActive)}>
+            <Briefcase className={navIconClass(isTeamActive)} />
+            <span>Equipe</span>
           </Link>
 
-          <Link href="/admin/servicos" className={pillClass(activePage === 'servicos')}>
-            <Scissors className="w-3.5 h-3.5" />
-            Serviços
+          <Link href="/admin/servicos" className={navItemClass(activePage === 'servicos')}>
+            <Scissors className={navIconClass(activePage === 'servicos')} />
+            <span>Serviços</span>
           </Link>
 
           <Link
             href="/admin/configuracoes/comissoes"
-            className={pillClass(isSettingsActive)}
+            className={navItemClass(isSettingsActive)}
           >
-            <Percent className="w-3.5 h-3.5" />
-            Configurações
+            <Percent className={navIconClass(isSettingsActive)} />
+            <span>Configurações</span>
           </Link>
+        </nav>
 
+        {/* Right: User Account & Session Actions */}
+        <div className="hidden xl:flex items-center gap-2 shrink-0">
           <Link
             href="/profile"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-900 hover:bg-zinc-800 text-slate-200 border border-zinc-800 hover:border-dourado-premium/30 transition-all motion-btn"
+            className="inline-flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+            title="Acessar meu perfil"
           >
-            <User className="w-3.5 h-3.5" />
-            Perfil
+            {session?.user?.image ? (
+              <Image
+                src={session.user.image}
+                alt={session.user.name || 'Admin'}
+                width={24}
+                height={24}
+                className="w-6 h-6 rounded-md border border-white/10 object-cover"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-md bg-white/[0.06] border border-white/10 flex items-center justify-center text-zinc-300">
+                <User className="w-3.5 h-3.5" />
+              </div>
+            )}
+            <span className="max-w-[140px] truncate text-zinc-200 font-medium">
+              {session?.user?.name || 'Perfil'}
+            </span>
           </Link>
+
+          <div className="h-4 w-px bg-white/10 mx-0.5" aria-hidden="true" />
 
           <button
             onClick={() =>
@@ -148,20 +163,20 @@ export function AdminNavbar({ activePage }: AdminNavbarProps) {
                 callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/',
               })
             }
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-500/10 hover:bg-red-500/25 text-red-400 border border-red-500/25 transition-all motion-btn cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
-            Sair
+            <span>Sair</span>
           </button>
-        </nav>
+        </div>
 
         {/* Hamburger Menu Button (Mobile & Tablet) */}
         <button
           onClick={() => setIsOpen(true)}
-          className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-dourado-premium hover:bg-zinc-800 transition-all motion-btn xl:hidden focus:outline-none cursor-pointer"
+          className="p-2 rounded-md bg-white/[0.04] border border-white/10 text-zinc-200 hover:text-[#D4AF37] hover:bg-white/[0.08] transition-colors xl:hidden focus:outline-none cursor-pointer"
           aria-label="Abrir menu lateral"
         >
-          <Menu className="w-6 h-6" />
+          <Menu className="w-5 h-5" />
         </button>
       </div>
 

@@ -11,6 +11,7 @@ import type {
   PaymentMethodFilter,
 } from "@/core/domain/repositories/AdminInsightsRepository";
 import { AdminNavbar } from "@/components/admin/AdminNavbar";
+import { AdminOperationsSection } from "@/components/admin/AdminOperationsSection";
 import { DashboardAnalytics } from "@/components/admin/DashboardAnalytics";
 import { DashboardFilters } from "@/components/admin/DashboardFilters";
 import { PhaseP3OperationsPanel } from "@/components/admin/PhaseP3OperationsPanel";
@@ -434,6 +435,11 @@ function AdminDashboardContent() {
               period={filterState.period}
               barberId={selectedBarberId}
               filterState={filterState}
+            />
+            <AdminOperationsSection
+              onOperationComplete={() =>
+                void loadDashboardData(filterState, filterSignature, true)
+              }
             />
             <PhaseP3OperationsPanel
               period={filterState.period}
