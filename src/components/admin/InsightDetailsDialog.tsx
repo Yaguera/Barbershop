@@ -66,8 +66,11 @@ export function InsightDetailsDialog({
     };
   }, []);
 
+  const filterKey = JSON.stringify(filter);
+
   useEffect(() => {
     let active = true;
+    setLoading(true);
     getAdminInsightDetailsAction({ ...filter, page })
       .then((res) => {
         if (!active) return;
@@ -83,7 +86,7 @@ export function InsightDetailsDialog({
     return () => {
       active = false;
     };
-  }, [filter, page, retry]);
+  }, [filterKey, page, retry]);
 
   function navigate(next: number) {
     setLoading(true);
