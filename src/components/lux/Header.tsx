@@ -79,7 +79,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
   return (
     <>
       <header className="w-full bg-[#0D0D0D]/90 backdrop-blur-xl sticky top-0 z-40 border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-2 lg:gap-6">
           {/* Left: Small Logo & Company Name */}
           <Link
             href="/"
@@ -110,7 +110,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
           </Link>
 
           {/* Center: Clean Minimalist Desktop Navigation (No pill background, subtle hover) */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-4 lg:gap-8" aria-label="Navegação principal">
             <Link
               href="/"
               onClick={() => onLogoClick && onLogoClick()}
@@ -163,7 +163,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
               <button
                 type="button"
                 onClick={onBookClick}
-                className="hidden md:inline-flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.09] text-zinc-200 hover:text-white border border-white/10 hover:border-[#C5A059]/50 font-medium text-xs px-4 py-2 rounded-md transition-all duration-200 cursor-pointer"
+                className="hidden md:inline-flex min-h-11 items-center gap-2 px-2 text-xs lg:text-sm font-medium text-[#E2C16B] hover:text-white transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
               >
                 <Scissors className="w-3.5 h-3.5 text-[#C5A059]" />
                 <span>Agendar Horário</span>
@@ -171,7 +171,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
             ) : (
               <Link
                 href="/?action=agendar"
-                className="hidden md:inline-flex items-center gap-2 bg-white/[0.04] hover:bg-white/[0.09] text-zinc-200 hover:text-white border border-white/10 hover:border-[#C5A059]/50 font-medium text-xs px-4 py-2 rounded-md transition-all duration-200"
+                className="hidden md:inline-flex min-h-11 items-center gap-2 px-2 text-xs lg:text-sm font-medium text-[#E2C16B] hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
               >
                 <Scissors className="w-3.5 h-3.5 text-[#C5A059]" />
                 <span>Agendar Horário</span>
@@ -185,7 +185,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
                 setIsNotificationsOpen(!isNotificationsOpen);
                 if (!isNotificationsOpen) fetchNotifications();
               }}
-              className="w-9 h-9 rounded-md bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-zinc-300 hover:text-white flex items-center justify-center transition-all duration-200 relative cursor-pointer"
+              className="w-11 h-11 rounded-full text-zinc-300 hover:text-white hover:bg-white/[0.06] flex items-center justify-center transition-colors relative cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
             >
               <Bell className="w-4 h-4 stroke-[1.8]" />
               {unreadCount > 0 && (
@@ -275,9 +275,9 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
               }}
               aria-label="Abrir menu da conta"
               aria-expanded={onOpenDrawer ? undefined : isDrawerOpen}
-              className="block rounded-lg focus-visible:outline-2 focus-visible:outline-[#D4AF37] cursor-pointer"
+              className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/[0.06] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37] transition-colors cursor-pointer"
             >
-              <div className="w-9 h-9 rounded-md bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 overflow-hidden flex items-center justify-center transition-all duration-200">
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
                 {session?.user?.image ? (
                   <Image
                     src={session.user.image}
