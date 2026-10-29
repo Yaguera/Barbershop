@@ -35,9 +35,10 @@ export function ServiceCard({
   };
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className="w-38 sm:w-44 md:w-full shrink-0 snap-start bg-[#141414] rounded-lg border border-white/[0.07] hover:border-white/20 hover:bg-[#181818] transition-all duration-200 flex flex-col overflow-hidden group cursor-pointer"
+      className="w-44 sm:w-48 md:w-full shrink-0 snap-start bg-[#151515] rounded-2xl border border-white/10 hover:border-white/20 hover:bg-[#181818] transition-colors flex flex-col overflow-hidden group cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
     >
       {/* Top Image */}
       <div className="h-26 sm:h-30 md:h-40 relative w-full bg-[#1C1C1C] overflow-hidden">
@@ -79,6 +80,6 @@ export function ServiceCard({
           </span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

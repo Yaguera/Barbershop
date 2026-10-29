@@ -6,7 +6,6 @@ import { AppointmentCard } from './AppointmentCard';
 import { BottomNavigation, NavTab } from './BottomNavigation';
 import { Header } from './Header';
 import { HeroBanner } from './HeroBanner';
-import { PremiumBanner } from './PremiumBanner';
 import { QuickAccess } from './QuickAccess';
 import { ServiceItem, ServicesCarousel } from './ServicesCarousel';
 
@@ -26,7 +25,6 @@ interface ClientLuxDashboardProps {
 
 export function ClientLuxDashboard({
   services = [],
-  barbers = [],
   onStartBooking,
   onServiceSelect,
 }: ClientLuxDashboardProps) {
@@ -34,8 +32,10 @@ export function ClientLuxDashboard({
   const [activeTab, setActiveTab] = useState<NavTab>('inicio');
 
   const handleActionClick = (action: 'agendar' | 'servicos' | 'conta' | 'indicar') => {
-    if (action === 'agendar' || action === 'servicos') {
-      onStartBooking && onStartBooking();
+    if (action === 'agendar') {
+      onStartBooking?.();
+    } else if (action === 'servicos') {
+      document.getElementById('servicos')?.scrollIntoView({ behavior: 'smooth' });
     } else if (action === 'conta') {
       router.push('/profile');
     } else if (action === 'indicar') {
@@ -48,20 +48,6 @@ export function ClientLuxDashboard({
 
   const handleTabChange = (tab: NavTab) => {
     setActiveTab(tab);
-    if (tab === 'agendamentos') {
-      router.push('/agenda');
-    } else if (tab === 'historico') {
-      router.push('/historico');
-    } else if (tab === 'inicio') {
-      // already on home
-    }
-  };
-
-  const handleLearnMorePlans = () => {
-    const text = encodeURIComponent(
-      'Olá! Gostaria de conhecer os planos e condições de assinatura mensal da barbearia.'
-    );
-    window.open(`https://wa.me/5585986279194?text=${text}`, '_blank');
   };
 
   return (
@@ -78,10 +64,7 @@ export function ClientLuxDashboard({
         <QuickAccess onActionClick={handleActionClick} />
 
         {/* Próximo Agendamento */}
-        <AppointmentCard
-          autoFetch={true}
-          barberName={barbers.length > 0 ? barbers[0].name : undefined}
-        />
+        <AppointmentCard autoFetch={true} />
 
         {/* Nossos Serviços */}
         <ServicesCarousel
@@ -96,11 +79,6 @@ export function ClientLuxDashboard({
           onViewAllClick={onStartBooking}
         />
 
-        {/* Seja Premium Banner + Indique um Amigo (Desktop Grid) */}
-        <PremiumBanner
-          onLearnMoreClick={handleLearnMorePlans}
-          onReferClick={() => handleActionClick('indicar')}
-        />
       </main>
 
       {/* Fixed Bottom Navigation (Mobile Only) */}

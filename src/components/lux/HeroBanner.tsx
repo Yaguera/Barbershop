@@ -53,9 +53,9 @@ export function HeroBanner({ onBookClick }: HeroBannerProps) {
               <button
                 type="button"
                 onClick={onBookClick}
-                className="bg-[#161616]/90 hover:bg-white/[0.1] text-white font-semibold text-xs sm:text-sm tracking-wide py-3 px-5 sm:py-3.5 sm:px-6 md:py-3.5 md:px-7 rounded-md border border-white/15 hover:border-[#C5A059]/70 transition-all duration-200 inline-flex items-center gap-2.5 cursor-pointer backdrop-blur-sm"
+                className="min-h-12 bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-semibold text-sm py-3 px-6 rounded-xl transition-colors inline-flex items-center gap-2.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                <Calendar className="w-4 h-4 text-[#C5A059] stroke-[2] shrink-0" />
+                <Calendar className="w-4 h-4 stroke-[2] shrink-0" />
                 <span>Agendar Horário</span>
               </button>
             </div>
@@ -74,7 +74,7 @@ export function HeroBanner({ onBookClick }: HeroBannerProps) {
               </span>
               <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Agenda Aberta
+                    Agendamento online
               </span>
             </div>
 
@@ -108,9 +108,9 @@ export function HeroBanner({ onBookClick }: HeroBannerProps) {
                   <ShieldCheck className="w-4 h-4 stroke-[1.8]" />
                 </div>
                 <div>
-                  <p className="font-semibold text-zinc-100">Reserva Garantida</p>
+                  <p className="font-semibold text-zinc-100">Confirmação da reserva</p>
                   <p className="text-zinc-400 text-[11px] leading-snug mt-0.5">
-                    Confirmação imediata e lembretes automáticos.
+                    Confira os detalhes antes de confirmar seu horário.
                   </p>
                 </div>
               </div>

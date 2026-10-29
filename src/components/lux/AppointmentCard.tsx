@@ -106,7 +106,7 @@ export function AppointmentCard({
 
   const formattedDate = apptDateObj
     ? apptDateObj
-        .toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+        .toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' })
         .replace('-feira', '')
         .replace(/^\w/, (c) => c.toUpperCase())
     : typeof propDate === 'string'
@@ -114,7 +114,7 @@ export function AppointmentCard({
     : 'Data a definir';
 
   const formattedTime = apptDateObj
-    ? apptDateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    ? apptDateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
     : propTime || '--:--';
 
   const formattedBarber = dynamicAppt ? dynamicAppt.barberName : propBarberName || 'Profissional';

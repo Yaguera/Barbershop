@@ -27,7 +27,7 @@ export function ServicesCarousel({
   };
 
   return (
-    <section className="w-full max-w-7xl mx-auto py-2 md:py-4">
+    <section id="servicos" className="scroll-mt-24 w-full max-w-7xl mx-auto py-2 md:py-4">
       <div className="flex items-end justify-between mb-3 md:mb-5 px-6">
         <div>
           <span className="hidden md:block text-[11px] font-medium uppercase tracking-widest text-zinc-500 mb-1">

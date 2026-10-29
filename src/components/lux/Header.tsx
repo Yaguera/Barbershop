@@ -45,7 +45,6 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
 
   useEffect(() => {
     if (session?.user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Updates follow awaited server responses.
       onEffectfetchNotifications();
       const interval = setInterval(onEffectfetchNotifications, 15000);
       const handleFocus = () => onEffectfetchNotifications();
@@ -181,6 +180,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
             <button
               type="button"
               aria-label="Notificações"
+              aria-expanded={isNotificationsOpen}
               onClick={() => {
                 setIsNotificationsOpen(!isNotificationsOpen);
                 if (!isNotificationsOpen) fetchNotifications();
@@ -195,7 +195,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
 
             {/* Notifications Dropdown */}
             {isNotificationsOpen && (
-              <div className="absolute right-0 top-12 w-80 sm:w-96 bg-[#141414] border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden animate-fade-in">
+              <div className="fixed inset-x-4 top-20 sm:absolute sm:inset-x-auto sm:right-0 sm:top-12 sm:w-96 bg-[#141414] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-fade-in">
                 <div className="p-3.5 border-b border-white/[0.06] flex items-center justify-between bg-[#181818]">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
@@ -222,8 +222,7 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
                     notifications.map((notif) => (
                       <div
                         key={notif.id}
-                        onClick={(e) => !notif.read && handleMarkAsRead(notif.id, e)}
-                        className={`p-3.5 transition-colors cursor-pointer flex gap-3 ${
+                        className={`p-3.5 transition-colors flex gap-3 ${
                           notif.read ? 'bg-transparent opacity-60 hover:opacity-100' : 'bg-white/[0.02] hover:bg-white/[0.05]'
                         }`}
                       >
@@ -272,9 +271,11 @@ export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) 
               type="button"
               onClick={() => {
                 if (onOpenDrawer) onOpenDrawer();
-                setIsDrawerOpen(true);
+                else setIsDrawerOpen(true);
               }}
-              className="block cursor-pointer"
+              aria-label="Abrir menu da conta"
+              aria-expanded={onOpenDrawer ? undefined : isDrawerOpen}
+              className="block rounded-lg focus-visible:outline-2 focus-visible:outline-[#D4AF37] cursor-pointer"
             >
               <div className="w-9 h-9 rounded-md bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 overflow-hidden flex items-center justify-center transition-all duration-200">
                 {session?.user?.image ? (

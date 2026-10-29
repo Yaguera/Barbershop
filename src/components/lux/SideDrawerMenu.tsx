@@ -6,7 +6,6 @@ import {
   Clock,
   Gift,
   LogOut,
-  MessageCircle,
   Scissors,
   ShieldCheck,
   User,
@@ -15,7 +14,7 @@ import {
 import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 interface SideDrawerMenuProps {
   isOpen: boolean;
@@ -26,22 +25,36 @@ export function SideDrawerMenu({ isOpen, onClose }: SideDrawerMenuProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const [imageError, setImageError] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeMenu = useEffectEvent(onClose);
 
   // Close on Escape key press
   useEffect(() => {
     if (!isOpen) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const controls = () => Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]') || []).filter((element) => element.getClientRects().length > 0);
+    controls()[0]?.focus();
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') closeMenu();
+      if (e.key === 'Tab') {
+        const items = controls();
+        if (!items.length) return;
+        if (e.shiftKey && document.activeElement === items[0]) { e.preventDefault(); items[items.length - 1].focus(); }
+        else if (!e.shiftKey && document.activeElement === items[items.length - 1]) { e.preventDefault(); items[0].focus(); }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+    return () => { window.removeEventListener('keydown', handleKeyDown); document.body.style.overflow = oldOverflow; previous?.focus(); };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   if (!session?.user) {
     return (
       <div
+        ref={dialogRef}
         className="fixed inset-0 z-[100] overflow-hidden"
         role="dialog"
         aria-modal="true"
@@ -119,13 +132,14 @@ export function SideDrawerMenu({ isOpen, onClose }: SideDrawerMenuProps) {
   const handleShareInvite = () => {
     onClose();
     const shareText = encodeURIComponent(
-      'Recomendo a barbearia! Profissionais especialistas e excelente atendimento. Agende seu horário: https://barbershop.com'
+      `Recomendo a barbearia! Agende seu horário: ${window.location.origin}`
     );
     window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank');
   };
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[100] overflow-hidden"
       role="dialog"
       aria-modal="true"
@@ -308,24 +322,6 @@ export function SideDrawerMenu({ isOpen, onClose }: SideDrawerMenuProps) {
                 <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" />
               </button>
 
-              <a
-                href="https://wa.me/5585986279194"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={onClose}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-transparent hover:bg-[#151515] border border-transparent hover:border-white/5 transition-all group text-left cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#1C1C1C] flex items-center justify-center text-[#22C55E]">
-                    <MessageCircle className="w-4 h-4 stroke-[2]" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-semibold text-white block">Falar no WhatsApp</span>
-                    <span className="text-xs text-white/50">Dúvidas e suporte</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-[#22C55E] transition-colors" />
-              </a>
             </div>
           </div>
 

@@ -26,7 +26,7 @@ export function QuickAccess({ onActionClick }: QuickAccessProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
-          className="bg-[#141414] rounded-lg p-3 sm:p-4 border border-white/[0.07]"
+          className="bg-[#151515] rounded-2xl p-3 sm:p-4 border border-white/10"
         >
           <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
             {items.map((item) => {
@@ -36,7 +36,7 @@ export function QuickAccess({ onActionClick }: QuickAccessProps) {
                   key={item.id}
                   type="button"
                   onClick={() => onActionClick && onActionClick(item.id)}
-                  className="flex flex-col items-center justify-center py-1.5 px-1 transition-all duration-200 hover:opacity-80 active:scale-[0.96] group cursor-pointer"
+                  className="min-h-16 rounded-lg flex flex-col items-center justify-center py-1.5 px-1 transition-colors hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-[#D4AF37] group cursor-pointer"
                 >
                   <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-[#C5A059] stroke-[1.8]" />
                   <span className="text-[11px] sm:text-xs font-medium text-zinc-300 mt-1.5 text-center leading-tight">
