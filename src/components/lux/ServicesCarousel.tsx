@@ -71,7 +71,7 @@ export function ServicesCarousel({
               name={srv.name}
               priceFormatted={formatCurrency(srv.price)}
               duration={`${srv.durationMinutes} min`}
-              imageUrl={srv.image || '/images/service_image.png'}
+              imageUrl={srv.image}
               iconType={idx === 0 ? 'scissors' : idx === 1 ? 'beard' : idx === 2 ? 'star' : 'smile'}
               onClick={() => onServiceSelect && onServiceSelect(srv)}
             />

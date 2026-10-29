@@ -8,7 +8,7 @@ interface ServiceCardProps {
   name: string;
   priceFormatted: string;
   duration?: string;
-  imageUrl?: string;
+  imageUrl?: string | null;
   iconType?: 'scissors' | 'beard' | 'star' | 'smile';
   onClick?: () => void;
 }
@@ -17,7 +17,7 @@ export function ServiceCard({
   name,
   priceFormatted,
   duration,
-  imageUrl = '/images/service_image.png',
+  imageUrl,
   iconType = 'scissors',
   onClick,
 }: ServiceCardProps) {
@@ -42,13 +42,17 @@ export function ServiceCard({
     >
       {/* Top Image */}
       <div className="h-26 sm:h-30 md:h-40 relative w-full bg-[#1C1C1C] overflow-hidden">
-        <Image
+        {imageUrl ? <Image
           src={imageUrl}
-          alt={name}
+          alt=""
           fill
           sizes="(max-width: 768px) 180px, 280px"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-        />
+        /> : (
+          <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#242016] to-[#151515] text-[#C5A059]">
+            <Scissors className="w-8 h-8 opacity-70" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-transparent opacity-65" />
 
         {/* Small icon overlapping image */}
