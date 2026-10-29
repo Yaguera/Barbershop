@@ -11,7 +11,7 @@ interface HeroBannerProps {
 export function HeroBanner({ onBookClick }: HeroBannerProps) {
   return (
     <div className="w-full max-w-7xl mx-auto md:px-6 md:pt-6">
-      <section className="w-full relative overflow-hidden min-h-[290px] sm:min-h-[360px] md:min-h-[420px] lg:min-h-[440px] md:rounded-lg md:border md:border-white/[0.08] flex flex-col justify-end md:justify-center select-none">
+      <section className="w-full relative overflow-hidden min-h-[290px] sm:min-h-[360px] md:min-h-[420px] lg:min-h-[440px] flex flex-col justify-end md:justify-center select-none">
         {/* Background Image */}
         <Image
           src="/images/splash_bg.png"
@@ -24,8 +24,9 @@ export function HeroBanner({ onBookClick }: HeroBannerProps) {
         />
 
         {/* Balanced gradient overlays preserving photo visibility with clear text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/55 to-transparent md:from-[#0D0D0D]/90 md:via-[#0D0D0D]/35 z-10 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0D0D0D]/95 via-[#0D0D0D]/65 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0D0D0D] via-[#0D0D0D]/40 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0D0D0D] via-[#0D0D0D]/55 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-l from-[#0D0D0D] via-transparent to-transparent z-10 pointer-events-none" />
 
         {/* Content Container */}
         <div className="relative z-20 w-full px-6 md:px-12 lg:px-14 pt-10 sm:pt-16 pb-6 md:py-12 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
