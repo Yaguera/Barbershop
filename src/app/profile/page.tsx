@@ -2,7 +2,7 @@
 
 import { updatePasswordAction, updateProfileAction } from '@/app/actions/auth-actions';
 import { uploadProfileImageAction } from '@/app/actions/upload-actions';
-import { BarberBottomNavigation } from '@/components/barber/BarberBottomNavigation';
+import { AdminNavbar } from '@/components/admin/AdminNavbar';
 import { BarberNavbar } from '@/components/barber/BarberNavbar';
 import { ReceptionNavbar } from '@/components/reception/ReceptionNavbar';
 import { BottomNavigation } from '@/components/lux/BottomNavigation';
@@ -100,8 +100,10 @@ export default function ProfilePage() {
     return <UnauthorizedView callbackUrl="/profile" />;
   }
 
+  const isAdminUser = session.user.role === 'ADMIN';
   const isReceptionistUser = session.user.role === 'RECEPTIONIST';
-  const isBarberUser = session?.user?.role === 'BARBER' || session?.user?.role === 'ADMIN';
+  const isBarberUser = session.user.role === 'BARBER';
+  const isProfessionalUser = isAdminUser || isBarberUser || isReceptionistUser;
 
   const initials = name
     ? name
@@ -238,21 +240,40 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 selection:bg-[#D4AF37]/30 font-sans">
-      {/* Barra de Navegação Superior Conforme o Perfil */}
-      {isReceptionistUser ? <ReceptionNavbar /> : isBarberUser ? <BarberNavbar /> : <Header />}
+    <div
+      className={`min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 selection:bg-[#C5A059]/30 font-sans ${
+        isProfessionalUser ? 'lg:bg-[#141416] lg:flex-row lg:pb-0' : ''
+      }`}
+    >
+      {/* Navegação Conforme o Perfil */}
+      {isAdminUser ? (
+        <AdminNavbar />
+      ) : isReceptionistUser ? (
+        <ReceptionNavbar />
+      ) : isBarberUser ? (
+        <BarberNavbar />
+      ) : (
+        <Header />
+      )}
 
-      <main className="flex-grow max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-6">
-        
-        {/* Cabeçalho da Página */}
-        <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Minha conta
-          </h1>
-          <p className="text-white/60 text-xs sm:text-sm">
-            Atualize seus dados, sua foto e sua senha.
-          </p>
-        </div>
+      <main
+        id="main-content"
+        className={`flex-grow px-4 sm:px-6 py-6 sm:py-8 w-full space-y-6 ${
+          isProfessionalUser
+            ? 'lg:my-3 lg:mr-3 lg:flex-1 lg:min-w-0 lg:rounded-[24px] lg:border lg:border-white/[0.07] lg:bg-[#0A0A0C] lg:p-6 xl:p-8 lg:shadow-2xl'
+            : 'max-w-4xl mx-auto'
+        }`}
+      >
+        <div className="max-w-4xl space-y-6">
+          {/* Cabeçalho da Página */}
+          <div className="space-y-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Minha conta
+            </h1>
+            <p className="text-white/60 text-xs sm:text-sm">
+              Atualize seus dados, sua foto e sua senha.
+            </p>
+          </div>
 
         {/* Bloco 1: Formulário de Dados Pessoais e Foto */}
         <section className="bg-[#151515] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-md space-y-6">
@@ -561,11 +582,11 @@ export default function ProfilePage() {
             </div>
           </form>
         </section>
-
+        </div>
       </main>
 
-      {/* Navegação Inferior Conforme o Perfil */}
-      {isReceptionistUser ? null : isBarberUser ? <BarberBottomNavigation /> : <BottomNavigation activeTab="mais" />}
+      {/* Navegação Inferior para Clientes (Perfis profissionais já possuem navegação própria em seus navbars) */}
+      {isProfessionalUser ? null : <BottomNavigation activeTab="mais" />}
     </div>
   );
 }

@@ -146,10 +146,10 @@ export default function BarberDashboardHome() {
   const userName = session?.user?.name ? session.user.name.split(' ')[0] : 'Barbeiro';
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col selection:bg-[#D4AF37]/30 font-sans pb-24">
+    <div className="min-h-screen bg-[#0D0D0D] lg:bg-[#141416] text-[#FFFFFF] flex flex-col lg:flex-row selection:bg-[#C5A059]/30 font-sans pb-24 lg:pb-0">
       <BarberNavbar barberProfileId={barberProfileId || undefined} />
 
-      <main className="flex-grow max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-8">
+      <main id="main-content" className="flex-grow px-4 sm:px-6 py-6 sm:py-8 w-full space-y-8 lg:my-3 lg:mr-3 lg:flex-1 lg:min-w-0 lg:rounded-[24px] lg:border lg:border-white/[0.07] lg:bg-[#0A0A0C] lg:p-6 xl:p-8 lg:shadow-2xl">
         
         {/* Cabeçalho Operacional Contextual */}
         <section className="bg-[#151515] border border-white/10 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">

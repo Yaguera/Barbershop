@@ -157,11 +157,11 @@ function AdminBarberMetricsContent() {
   const barberDisplayName = barber?.name || 'Profissional';
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-white flex flex-col selection:bg-[#D4AF37]/30 pb-20">
+    <div className="min-h-screen bg-[#0D0D0D] lg:bg-[#141416] text-white flex flex-col lg:flex-row selection:bg-[#C5A059]/30 pb-20 lg:pb-0">
       {/* 1. Header Administrativo Unificado */}
-      <AdminNavbar activePage="dashboard" />
+      <AdminNavbar activePage="barbeiros" />
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+      <main id="main-content" className="flex-grow px-4 sm:px-6 py-8 w-full space-y-8 lg:my-3 lg:mr-3 lg:flex-1 lg:min-w-0 lg:rounded-[24px] lg:border lg:border-white/[0.07] lg:bg-[#0A0A0C] lg:p-6 xl:p-8 lg:shadow-2xl">
         {/* Breadcrumb & Botão de Retorno ao Painel Geral */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 text-white/50">
@@ -169,19 +169,19 @@ function AdminBarberMetricsContent() {
               Painel
             </Link>
             <span>/</span>
-            <Link href="/admin/dashboard" className="hover:text-white transition-colors">
+            <Link href="/admin/barbeiros" className="hover:text-white transition-colors">
               Equipe
             </Link>
             <span>/</span>
-            <span className="text-[#D4AF37] font-semibold">{barberDisplayName}</span>
+            <span className="text-[#C5A059] font-semibold">{barberDisplayName}</span>
           </div>
 
           <Link
-            href="/admin/dashboard"
+            href="/admin/barbeiros"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#151515] hover:bg-[#1C1C1C] border border-white/10 text-white/80 hover:text-white transition-all text-xs font-semibold self-start sm:self-auto cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Voltar ao Painel Geral
+            Voltar para Equipe
           </Link>
         </div>
 

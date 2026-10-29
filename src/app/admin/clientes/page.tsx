@@ -72,12 +72,15 @@ export default function AdminClientesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-slate-100 flex flex-col selection:bg-amber-500/30">
+    <div className="min-h-screen bg-black lg:bg-[#141416] text-slate-100 flex flex-col lg:flex-row selection:bg-amber-500/30">
       {/* Header */}
       <AdminNavbar activePage="clientes" />
 
       {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 py-8 space-y-8 max-w-6xl">
+      <main
+        id="main-content"
+        className="flex-grow px-4 py-8 space-y-8 lg:my-3 lg:mr-3 lg:flex-1 lg:min-w-0 lg:rounded-[24px] lg:border lg:border-white/[0.07] lg:bg-[#0A0A0C] lg:p-6 xl:p-8 lg:shadow-2xl"
+      >
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
             <div className="flex items-center gap-2 text-amber-400 mb-1">

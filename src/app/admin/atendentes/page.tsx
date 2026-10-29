@@ -136,10 +136,13 @@ export default function AdminAtendentesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[#0A0A0A] lg:bg-[#141416] text-white flex flex-col lg:flex-row font-sans">
       <AdminNavbar activePage="atendentes" />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+      <main
+        id="main-content"
+        className="flex-1 w-full px-4 sm:px-6 py-8 space-y-6 lg:my-3 lg:mr-3 lg:min-w-0 lg:rounded-[24px] lg:border lg:border-white/[0.07] lg:bg-[#0A0A0C] lg:p-6 xl:p-8 lg:shadow-2xl"
+      >
         {/* Cabeçalho */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div>

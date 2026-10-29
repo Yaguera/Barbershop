@@ -50,6 +50,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
   const [notifError, setNotifError] = useState<string | null>(null);
 
   const navRef = useRef<HTMLDivElement>(null);
+  const desktopNavRef = useRef<HTMLElement>(null);
 
   const fetchNotifications = async () => {
     if (!session?.user) return;
@@ -91,7 +92,10 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const outsideMobile = !navRef.current || !navRef.current.contains(target);
+      const outsideDesktop = !desktopNavRef.current || !desktopNavRef.current.contains(target);
+      if (outsideMobile && outsideDesktop) {
         setIsNotificationsOpen(false);
         setIsAccountMenuOpen(false);
       }
@@ -191,10 +195,262 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
         .toUpperCase()
     : 'B';
 
+  const isDashboardActive = pathname === '/barber/dashboard';
+  const isAgendaActive = pathname?.startsWith('/barber/agenda') ?? false;
+  const isMetricasActive = pathname?.startsWith('/barber/metricas') ?? false;
+  const isProfileActive = pathname?.startsWith('/profile') ?? false;
+
+  const sidebarLinkClass = (active: boolean) =>
+    `group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-colors ${
+      active
+        ? 'bg-white/[0.08] text-white font-semibold before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-full before:bg-[#C5A059]'
+        : 'text-zinc-400 font-medium hover:bg-white/[0.04] hover:text-zinc-200'
+    }`;
+
+  const sidebarIconClass = (active: boolean) =>
+    `w-4 h-4 shrink-0 transition-colors ${
+      active ? 'text-[#C5A059]' : 'text-zinc-500 group-hover:text-zinc-300'
+    }`;
+
+  const renderNotificationsContent = () => (
+    <>
+      <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#1C1C1C]">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-[#C5A059]" />
+          <span className="text-xs font-bold text-white uppercase tracking-wider">
+            Notificações
+          </span>
+        </div>
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={handleMarkAllAsRead}
+            className="text-[11px] text-[#C5A059] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+          >
+            <CheckCheck className="w-3.5 h-3.5" /> Ler todas
+          </button>
+        )}
+      </div>
+
+      <div className="max-h-80 overflow-y-auto divide-y divide-white/5 selection:bg-[#C5A059]/30">
+        {isNotifLoading && notifications.length === 0 ? (
+          <div className="p-8 flex items-center justify-center text-white/50 gap-2 text-xs">
+            <RefreshCw className="w-4 h-4 animate-spin text-[#C5A059]" />
+            <span>Carregando notificações...</span>
+          </div>
+        ) : notifError ? (
+          <div className="p-6 text-center space-y-2">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-[#EF4444]">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{notifError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={fetchNotifications}
+              className="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-white/80 transition-colors cursor-pointer"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="p-8 text-center text-white/40 text-xs">
+            Nenhum alerta de atendimento por enquanto.
+          </div>
+        ) : (
+          notifications.map((notif) => (
+            <div
+              key={notif.id}
+              onClick={(e) => !notif.read && handleMarkAsRead(notif.id, e)}
+              className={`p-4 transition-colors cursor-pointer flex gap-3 ${
+                notif.read
+                  ? 'bg-transparent opacity-60 hover:opacity-100'
+                  : 'bg-[#C5A059]/5 hover:bg-[#C5A059]/10'
+              }`}
+            >
+              <div className="shrink-0 pt-0.5">
+                {notif.type === 'ALERT' || notif.type === 'NO_SHOW' ? (
+                  <div className="w-8 h-8 rounded-full bg-[#EF4444]/15 text-[#EF4444] flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                ) : notif.type === 'REMINDER' ? (
+                  <div className="w-8 h-8 rounded-full bg-[#C5A059]/15 text-[#C5A059] flex items-center justify-center">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold text-white truncate">{notif.title}</h4>
+                  <span className="text-[10px] text-white/40 shrink-0">
+                    {formatNotifTime(notif.createdAt)}
+                  </span>
+                </div>
+                <p className="text-xs text-white/70 mt-1 line-clamp-2 leading-relaxed">
+                  {notif.message}
+                </p>
+                {!notif.read && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleMarkAsRead(notif.id, e)}
+                    className="mt-2 text-[10px] text-[#C5A059] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Check className="w-3 h-3" /> Marcar como lida
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/95 backdrop-blur-xl text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between" ref={navRef}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-lg focus:bg-[#C5A059] focus:px-4 focus:py-2 focus:text-xs focus:font-bold focus:text-zinc-950 focus:shadow-lg"
+      >
+        Pular para o conteúdo
+      </a>
+
+      {/* Desktop Left Sidebar (≥ 1024px) */}
+      <aside
+        ref={desktopNavRef}
+        aria-label="Navegação lateral do barbeiro"
+        className="hidden lg:flex lg:w-60 xl:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:px-3.5 lg:py-5 select-none z-40"
+      >
+        <div className="space-y-5 relative">
+          {/* Top Identity + Notification Bell */}
+          <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+            <Link
+              href="/barber/dashboard"
+              className="flex items-center gap-3 min-w-0 group"
+            >
+              <div className="relative shrink-0">
+                {userImage ? (
+                  <Image
+                    src={userImage}
+                    alt={userName}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-lg border border-white/10 object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.07] border border-white/10 flex items-center justify-center text-xs font-semibold text-zinc-200">
+                    {initials}
+                  </div>
+                )}
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#141416]"
+                  aria-hidden="true"
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold text-zinc-100 truncate leading-tight group-hover:text-white transition-colors">
+                  {userName}
+                </span>
+                <span className="text-[11px] font-medium text-zinc-500 truncate leading-tight mt-0.5">
+                  Barbeiro
+                </span>
+              </div>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen);
+                setIsAccountMenuOpen(false);
+                if (!isNotificationsOpen) fetchNotifications();
+              }}
+              className="p-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.05] transition-colors relative cursor-pointer shrink-0"
+              aria-label={
+                unreadCount > 0 ? `${unreadCount} notificações não lidas` : 'Notificações'
+              }
+              aria-expanded={isNotificationsOpen}
+            >
+              <Bell className="w-4 h-4 stroke-[2]" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 px-1 min-w-[14px] h-3.5 rounded-full bg-[#C5A059] text-[#0D0D0D] text-[9px] font-black flex items-center justify-center shadow-sm">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {isNotificationsOpen && (
+            <div className="fixed left-4 top-16 w-80 bg-[#151515] border border-white/10 rounded-2xl shadow-2xl z-[60] overflow-hidden animate-fade-in">
+              {renderNotificationsContent()}
+            </div>
+          )}
+
+          {/* Main Navigation */}
+          <nav className="space-y-1" aria-label="Menu principal do barbeiro">
+            <Link
+              href="/barber/dashboard"
+              aria-current={isDashboardActive ? 'page' : undefined}
+              className={sidebarLinkClass(isDashboardActive)}
+            >
+              <LayoutDashboard className={sidebarIconClass(isDashboardActive)} />
+              <span>Início</span>
+            </Link>
+
+            <Link
+              href="/barber/agenda"
+              aria-current={isAgendaActive ? 'page' : undefined}
+              className={sidebarLinkClass(isAgendaActive)}
+            >
+              <Clock className={sidebarIconClass(isAgendaActive)} />
+              <span>Agenda</span>
+            </Link>
+
+            <Link
+              href="/barber/metricas"
+              aria-current={isMetricasActive ? 'page' : undefined}
+              className={sidebarLinkClass(isMetricasActive)}
+            >
+              <BarChart3 className={sidebarIconClass(isMetricasActive)} />
+              <span>Análises</span>
+            </Link>
+          </nav>
+        </div>
+
+        {/* Bottom Footer Actions */}
+        <div className="pt-4 mt-4 border-t border-white/[0.06] space-y-1">
+          <Link
+            href="/profile"
+            aria-current={isProfileActive ? 'page' : undefined}
+            className={sidebarLinkClass(isProfileActive)}
+          >
+            <Settings className={sidebarIconClass(isProfileActive)} />
+            <span>Minha Conta</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() =>
+              signOut({
+                callbackUrl: typeof window !== 'undefined' ? window.location.origin : '/',
+              })
+            }
+            className="w-full group flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-zinc-400 hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer"
+          >
+            <LogOut className="w-4 h-4 shrink-0 text-zinc-500 group-hover:text-red-400 transition-colors" />
+            <span>Sair</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile & Tablet Top Header (< 1024px) */}
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0D0D0D]/95 backdrop-blur-xl text-white lg:hidden">
+        <div
+          className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between"
+          ref={navRef}
+        >
           {/* Logo / Brand */}
           <Link href="/barber/dashboard" className="flex items-center gap-3">
             <Image
@@ -202,10 +458,10 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
               alt="Barber Logo"
               width={36}
               height={36}
-              className="w-9 h-9 rounded-full border border-[#D4AF37]/40 object-cover shadow-lg"
+              className="w-9 h-9 rounded-full border border-[#C5A059]/40 object-cover shadow-lg"
             />
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-[#D4AF37] uppercase leading-none">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-[#C5A059] uppercase leading-none">
                 ÁREA PROFISSIONAL
               </span>
               <span className="text-sm font-bold tracking-wide text-white uppercase leading-tight mt-0.5">
@@ -219,35 +475,38 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
             <div className="hidden md:flex items-center gap-1.5 mr-2 pr-4 border-r border-white/10">
               <Link
                 href="/barber/dashboard"
+                aria-current={isDashboardActive ? 'page' : undefined}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  pathname === '/barber/dashboard'
-                    ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
-                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
+                  isDashboardActive
+                    ? 'bg-[#1C1C1C] text-[#C5A059] border border-[#C5A059]/30 shadow-sm'
+                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#C5A059] border border-transparent'
                 }`}
               >
-                <LayoutDashboard className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <LayoutDashboard className="w-3.5 h-3.5 text-[#C5A059]" />
                 <span>Início</span>
               </Link>
               <Link
                 href="/barber/agenda"
+                aria-current={isAgendaActive ? 'page' : undefined}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  pathname?.startsWith('/barber/agenda')
-                    ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
-                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
+                  isAgendaActive
+                    ? 'bg-[#1C1C1C] text-[#C5A059] border border-[#C5A059]/30 shadow-sm'
+                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#C5A059] border border-transparent'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <Clock className="w-3.5 h-3.5 text-[#C5A059]" />
                 <span>Agenda</span>
               </Link>
               <Link
                 href="/barber/metricas"
+                aria-current={isMetricasActive ? 'page' : undefined}
                 className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  pathname?.startsWith('/barber/metricas')
-                    ? 'bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30 shadow-sm'
-                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#D4AF37] border border-transparent'
+                  isMetricasActive
+                    ? 'bg-[#1C1C1C] text-[#C5A059] border border-[#C5A059]/30 shadow-sm'
+                    : 'bg-transparent hover:bg-[#151515] text-white/80 hover:text-[#C5A059] border border-transparent'
                 }`}
               >
-                <BarChart3 className="w-3.5 h-3.5 text-[#D4AF37]" />
+                <BarChart3 className="w-3.5 h-3.5 text-[#C5A059]" />
                 <span>Análises</span>
               </Link>
             </div>
@@ -261,110 +520,23 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                 if (!isNotificationsOpen) fetchNotifications();
               }}
               className="p-2 rounded-full text-white/70 hover:text-white hover:bg-[#151515] transition-all relative cursor-pointer"
-              aria-label={unreadCount > 0 ? `${unreadCount} notificações não lidas` : 'Notificações'}
+              aria-label={
+                unreadCount > 0 ? `${unreadCount} notificações não lidas` : 'Notificações'
+              }
               aria-expanded={isNotificationsOpen}
             >
               <Bell className="w-5 h-5 stroke-[2]" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 px-1.5 min-w-[16px] h-4 rounded-full bg-[#D4AF37] text-[#0D0D0D] text-[10px] font-black flex items-center justify-center shadow-md">
+                <span className="absolute top-1 right-1 px-1.5 min-w-[16px] h-4 rounded-full bg-[#C5A059] text-[#0D0D0D] text-[10px] font-black flex items-center justify-center shadow-md">
                   {unreadCount}
                 </span>
               )}
             </button>
 
-            {/* Dropdown de Notificações com Tratamento de Erro e Dimensão Segura */}
+            {/* Dropdown de Notificações Mobile/Tablet */}
             {isNotificationsOpen && (
               <div className="absolute right-0 top-14 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] bg-[#151515] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
-                <div className="p-4 border-b border-white/5 flex items-center justify-between bg-[#1C1C1C]">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">
-                      Notificações
-                    </span>
-                  </div>
-                  {unreadCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleMarkAllAsRead}
-                      className="text-[11px] text-[#D4AF37] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      <CheckCheck className="w-3.5 h-3.5" /> Ler todas
-                    </button>
-                  )}
-                </div>
-
-                <div className="max-h-80 overflow-y-auto divide-y divide-white/5 selection:bg-[#D4AF37]/30">
-                  {isNotifLoading && notifications.length === 0 ? (
-                    <div className="p-8 flex items-center justify-center text-white/50 gap-2 text-xs">
-                      <RefreshCw className="w-4 h-4 animate-spin text-[#D4AF37]" />
-                      <span>Carregando notificações...</span>
-                    </div>
-                  ) : notifError ? (
-                    <div className="p-6 text-center space-y-2">
-                      <div className="flex items-center justify-center gap-1.5 text-xs text-[#EF4444]">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>{notifError}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={fetchNotifications}
-                        className="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-white/80 transition-colors cursor-pointer"
-                      >
-                        Tentar novamente
-                      </button>
-                    </div>
-                  ) : notifications.length === 0 ? (
-                    <div className="p-8 text-center text-white/40 text-xs">
-                      Nenhum alerta de atendimento por enquanto.
-                    </div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={(e) => !notif.read && handleMarkAsRead(notif.id, e)}
-                        className={`p-4 transition-colors cursor-pointer flex gap-3 ${
-                          notif.read ? 'bg-transparent opacity-60 hover:opacity-100' : 'bg-[#D4AF37]/5 hover:bg-[#D4AF37]/10'
-                        }`}
-                      >
-                        <div className="shrink-0 pt-0.5">
-                          {notif.type === 'ALERT' || notif.type === 'NO_SHOW' ? (
-                            <div className="w-8 h-8 rounded-full bg-[#EF4444]/15 text-[#EF4444] flex items-center justify-center">
-                              <AlertTriangle className="w-4 h-4" />
-                            </div>
-                          ) : notif.type === 'REMINDER' ? (
-                            <div className="w-8 h-8 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center">
-                              <Clock className="w-4 h-4" />
-                            </div>
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center">
-                              <Bell className="w-4 h-4" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-xs font-bold text-white truncate">{notif.title}</h4>
-                            <span className="text-[10px] text-white/40 shrink-0">
-                              {formatNotifTime(notif.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-white/70 mt-1 line-clamp-2 leading-relaxed">
-                            {notif.message}
-                          </p>
-                          {!notif.read && (
-                            <button
-                              type="button"
-                              onClick={(e) => handleMarkAsRead(notif.id, e)}
-                              className="mt-2 text-[10px] text-[#D4AF37] hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                            >
-                              <Check className="w-3 h-3" /> Marcar como lida
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                {renderNotificationsContent()}
               </div>
             )}
 
@@ -376,7 +548,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                   setIsAccountMenuOpen(!isAccountMenuOpen);
                   setIsNotificationsOpen(false);
                 }}
-                className="w-10 h-10 rounded-full bg-[#1C1C1C] border-2 border-white/10 hover:border-[#D4AF37] overflow-hidden flex items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50"
+                className="w-10 h-10 rounded-full bg-[#1C1C1C] border-2 border-white/10 hover:border-[#C5A059] overflow-hidden flex items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#C5A059]/50"
                 aria-label="Opções da conta"
                 aria-expanded={isAccountMenuOpen}
               >
@@ -389,19 +561,16 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-xs font-bold text-[#D4AF37]">
-                    {initials}
-                  </span>
+                  <span className="text-xs font-bold text-[#C5A059]">{initials}</span>
                 )}
               </button>
 
               {/* Menu Suspenso da Conta */}
               {isAccountMenuOpen && (
                 <div className="absolute right-0 top-14 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-[#151515] border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50 overflow-hidden animate-fade-in">
-                  
                   {/* Cabeçalho da Conta */}
                   <div className="p-5 bg-gradient-to-b from-[#1C1C1C] to-[#151515] border-b border-white/10 flex flex-col items-center text-center">
-                    <div className="w-14 h-14 rounded-full border-2 border-[#D4AF37] p-0.5 bg-[#0D0D0D] mb-2.5 shadow-md overflow-hidden flex items-center justify-center">
+                    <div className="w-14 h-14 rounded-full border-2 border-[#C5A059] p-0.5 bg-[#0D0D0D] mb-2.5 shadow-md overflow-hidden flex items-center justify-center">
                       {userImage ? (
                         <Image
                           src={userImage}
@@ -411,9 +580,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
-                        <span className="text-base font-bold text-[#D4AF37]">
-                          {initials}
-                        </span>
+                        <span className="text-base font-bold text-[#C5A059]">{initials}</span>
                       )}
                     </div>
                     <span className="font-bold text-sm text-white truncate max-w-full">
@@ -433,7 +600,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                       onClick={() => setIsAccountMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
                     >
-                      <LayoutDashboard className="w-4 h-4 text-[#D4AF37]" />
+                      <LayoutDashboard className="w-4 h-4 text-[#C5A059]" />
                       <span>Início</span>
                     </Link>
 
@@ -442,7 +609,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                       onClick={() => setIsAccountMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
                     >
-                      <Clock className="w-4 h-4 text-[#D4AF37]" />
+                      <Clock className="w-4 h-4 text-[#C5A059]" />
                       <span>Agenda do Dia</span>
                     </Link>
 
@@ -451,7 +618,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                       onClick={() => setIsAccountMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
                     >
-                      <BarChart3 className="w-4 h-4 text-[#D4AF37]" />
+                      <BarChart3 className="w-4 h-4 text-[#C5A059]" />
                       <span>Métricas e Desempenho</span>
                     </Link>
 
@@ -460,7 +627,7 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                       onClick={() => setIsAccountMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:text-white hover:bg-[#1C1C1C] transition-colors"
                     >
-                      <Settings className="w-4 h-4 text-[#D4AF37]" />
+                      <Settings className="w-4 h-4 text-[#C5A059]" />
                       <span>Configurações da Conta</span>
                     </Link>
                   </div>
@@ -481,7 +648,6 @@ export function BarberNavbar({ barberProfileId }: BarberNavbarProps) {
                       <span>Sair da Conta</span>
                     </button>
                   </div>
-
                 </div>
               )}
             </div>

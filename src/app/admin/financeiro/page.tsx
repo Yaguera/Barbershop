@@ -371,10 +371,13 @@ function AdminFinanceiroContent() {
   }`;
 
   return (
-    <main className="min-h-screen bg-[#0c0c0c] text-white selection:bg-amber-500 selection:text-black">
+    <div className="min-h-screen bg-[#0c0c0c] lg:bg-[#141416] text-white flex flex-col lg:flex-row selection:bg-amber-500 selection:text-black">
       <AdminNavbar activePage="financeiro" />
 
-      <div className="mx-auto max-w-7xl px-4 pb-20 pt-8 sm:px-6 lg:px-8">
+      <main
+        id="main-content"
+        className="px-4 pb-20 pt-8 sm:px-6 lg:my-3 lg:mr-3 lg:flex-1 lg:min-w-0 lg:rounded-[24px] lg:border lg:border-white/[0.07] lg:bg-[#0A0A0C] lg:p-6 xl:p-8 lg:pb-16 lg:shadow-2xl"
+      >
         {/* Header & Context Filters */}
         <div className="mb-8 flex flex-col justify-between gap-4 border-b border-white/[0.06] pb-6 lg:flex-row lg:items-end">
           <div>
@@ -1626,7 +1629,7 @@ function AdminFinanceiroContent() {
             </section>
           </>
         ) : null}
-      </div>
+      </main>
 
       {detailFilter && (
         <InsightDetailsDialog
@@ -1635,7 +1638,7 @@ function AdminFinanceiroContent() {
           onClose={() => setDetailFilter(null)}
         />
       )}
-    </main>
+    </div>
   );
 }
 

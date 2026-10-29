@@ -481,10 +481,13 @@ export default function BarberAgendaPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col selection:bg-[#D4AF37]/30 font-sans pb-24">
+    <div className="min-h-screen bg-[#0D0D0D] lg:bg-[#141416] text-[#FFFFFF] flex flex-col lg:flex-row selection:bg-[#C5A059]/30 font-sans pb-24 lg:pb-0">
       <BarberNavbar barberProfileId={barberProfileId || undefined} />
 
-      <main className="flex-grow max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full space-y-6">
+      <main
+        id="main-content"
+        className="flex-grow px-4 sm:px-6 py-6 sm:py-8 w-full space-y-6 lg:my-3 lg:mr-3 lg:flex-1 lg:min-w-0 lg:rounded-[24px] lg:border lg:border-white/[0.07] lg:bg-[#0A0A0C] lg:p-6 xl:p-8 lg:shadow-2xl"
+      >
         
         {/* Cabeçalho da Agenda */}
         <div className="space-y-1">
@@ -542,11 +545,11 @@ export default function BarberAgendaPage() {
               {formatSelectedDateFull(selectedDate)}
             </span>
 
-            {/* Botão no celular para abrir/fechar o calendário sob demanda */}
+            {/* Botão em telas menores que xl para abrir/fechar o calendário sob demanda */}
             <button
               type="button"
               onClick={() => setIsMobileCalendarOpen(!isMobileCalendarOpen)}
-              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-xs font-semibold text-white transition-colors cursor-pointer shrink-0"
+              className="xl:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-xs font-semibold text-white transition-colors cursor-pointer shrink-0"
               aria-expanded={isMobileCalendarOpen}
             >
               <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
@@ -620,18 +623,18 @@ export default function BarberAgendaPage() {
           </div>
         )}
 
-        {/* Calendário no Celular (quando expandido pelo botão "Escolher data") */}
+        {/* Calendário sob demanda (quando expandido pelo botão "Escolher data") */}
         {isMobileCalendarOpen && (
-          <div className="lg:hidden bg-[#151515] border border-white/10 rounded-2xl p-4 shadow-lg animate-fade-in">
+          <div className="xl:hidden bg-[#151515] border border-white/10 rounded-2xl p-4 shadow-lg animate-fade-in">
             {renderCalendarContent()}
           </div>
         )}
 
-        {/* Layout Principal: Lista Diária Primeiro no Celular e Coluna Dupla no Desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Layout Principal: Lista Diária Primeiro no Celular e Coluna Dupla no Desktop Amplo */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           
           {/* Coluna Principal (Lista do Dia) -> Exibida Primeiro */}
-          <section className="lg:col-span-7 xl:col-span-8 space-y-4 order-1">
+          <section className="xl:col-span-8 min-w-0 space-y-4 order-1">
             
             {/* Barra de Filtros e Contagem */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -822,8 +825,8 @@ export default function BarberAgendaPage() {
             </div>
           </section>
 
-          {/* Coluna Lateral Desktop (Calendário Sempre Presente no Desktop) */}
-          <aside className="hidden lg:block lg:col-span-5 xl:col-span-4 sticky top-24 order-2 space-y-4">
+          {/* Coluna Lateral Desktop (Calendário Sempre Presente em Telas Amplas) */}
+          <aside className="hidden xl:block xl:col-span-4 min-w-0 sticky top-6 order-2 space-y-4">
             <div className="bg-[#151515] border border-white/10 rounded-2xl p-4 shadow-lg">
               {renderCalendarContent()}
             </div>
