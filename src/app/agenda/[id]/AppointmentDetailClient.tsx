@@ -231,18 +231,20 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
   return (
     <div className="min-h-screen bg-[#0D0D0D] text-white pb-24 selection:bg-[#D4AF37] selection:text-black">
       {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-[#0D0D0D]/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-b border-white/10 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto min-h-16 flex items-center justify-between gap-3">
         <button
           onClick={() => router.push('/agenda')}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-white/80 hover:text-[#D4AF37] transition-colors"
+          className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4AF37]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar para agendamentos</span>
         </button>
-        <span className="text-xs uppercase font-bold text-white/50 tracking-widest">Sua reserva</span>
+        <span className="text-xs font-medium text-zinc-400">Sua reserva</span>
+        </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         {/* Success Alert Banner */}
         {actionSuccessMessage && (
           <div role="status" className="bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] p-4 rounded-2xl flex items-center gap-3 animate-fadeIn">
@@ -252,14 +254,15 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
         )}
 
         {/* Header Title + Status */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/10">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <span className="text-[11px] font-black tracking-widest uppercase text-[#D4AF37]">
-              GERENCIAR RESERVA
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#D4AF37]">
+              Sua reserva
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1">
-              Detalhes do Agendamento
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-2">
+              Detalhes do agendamento
             </h1>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-400">Confira as informações do seu horário.</p>
           </div>
           <div>{getStatusBadge()}</div>
         </div>
@@ -305,6 +308,9 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
                   return (
                     <button
                       key={index}
+                      type="button"
+                      aria-pressed={isSelected}
+                      aria-label={new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }).format(d)}
                       onClick={() => setSelectedDate(d)}
                       className={`flex flex-col items-center justify-center min-w-[64px] py-3 rounded-2xl border transition-all ${
                         isSelected
@@ -334,7 +340,7 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
                 </div>
-              ) : slots.length === 0 ? (
+              ) : !slots.some((slot) => slot.available) ? (
                 <p className="text-xs text-white/50 bg-[#1C1C1C] p-4 rounded-xl text-center">
                   Nenhum horário disponível nesta data. Por favor, selecione outro dia.
                 </p>
@@ -346,6 +352,8 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
                     return (
                       <button
                         key={index}
+                        type="button"
+                        aria-pressed={isSelected}
                         onClick={() => setSelectedSlot(slot)}
                         className={`py-2 px-3 rounded-xl border text-xs font-bold transition-all ${
                           isSelected
@@ -415,100 +423,81 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
           </div>
         )}
 
-        {/* Date & Time Card */}
-        <div className="bg-[#151515] border border-white/10 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-          <div className="flex items-center gap-2 text-[#D4AF37] text-xs font-bold tracking-wider uppercase">
-            <Calendar className="w-4 h-4" />
-            <span>Data e Horário</span>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
-            <div>
-              <p className="text-lg sm:text-xl font-extrabold text-white capitalize">{formattedDay}</p>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+          <section aria-labelledby="resumo-reserva" className="overflow-hidden rounded-2xl border border-white/10 bg-[#151515]">
+            <div className="border-b border-white/10 px-5 py-5 sm:px-7">
+              <h2 id="resumo-reserva" className="text-base font-semibold text-white">Seu horário</h2>
+              <p className="mt-1 text-sm text-zinc-400">Os detalhes da sua visita em um só lugar.</p>
             </div>
-            <div className="flex items-center gap-2 bg-[#1C1C1C] border border-white/10 px-4 py-2 rounded-2xl self-start sm:self-auto">
-              <Clock className="w-4 h-4 text-[#D4AF37]" />
-              <span className="text-lg font-black text-[#D4AF37]">{formattedTime}</span>
+            <div className="px-5 sm:px-7">
+              <div className="flex items-start gap-4 py-6">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#D4AF37]/20 bg-[#D4AF37]/10 text-[#D4AF37]">
+                  <Calendar className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-zinc-400">Data e horário</p>
+                  <p className="mt-1 text-lg font-semibold leading-snug text-white first-letter:uppercase">{formattedDay}</p>
+                  <p className="mt-1 text-base font-semibold text-[#E5C45B]">{formattedTime}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 border-t border-white/10 py-6">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[#D4AF37]">
+                  <Scissors className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-zinc-400">Serviço</p>
+                  <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h3 className="text-base font-semibold text-white">{appointment.serviceName}</h3>
+                    <span className="whitespace-nowrap text-base font-semibold text-[#E5C45B]">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(appointment.servicePrice)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-zinc-400">Duração estimada: {appointment.serviceDurationMinutes} minutos</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4 border-t border-white/10 py-6">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] text-[#D4AF37]">
+                  {appointment.barberImage ? (
+                    <img src={appointment.barberImage} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <UserIcon className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-zinc-400">Profissional</p>
+                  <h3 className="mt-1 text-base font-semibold text-white">{appointment.barberName}</h3>
+                  {appointment.barberSpecialty && <p className="mt-1 text-sm text-zinc-400">Serviço mais realizado: {appointment.barberSpecialty}</p>}
+                </div>
+              </div>
             </div>
-          </div>
+          </section>
+
+          {(isActive && !isRescheduling && !showCancelConfirm) ? (
+            <section aria-labelledby="acoes-reserva" className="rounded-2xl border border-white/10 bg-[#151515] p-5 sm:p-6">
+              <h2 id="acoes-reserva" className="text-base font-semibold text-white">Precisa fazer alterações?</h2>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">Escolha outro horário ou cancele sua reserva.</p>
+              <div className="mt-5 flex flex-col gap-3">
+                <button type="button" onClick={() => setIsRescheduling(true)} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-4 text-sm font-semibold text-[#0D0D0D] transition-colors hover:bg-[#E2BE4D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                  <CalendarClock className="h-4 w-4" aria-hidden="true" />
+                  Reagendar horário
+                </button>
+                <button type="button" onClick={() => setShowCancelConfirm(true)} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/15 px-4 text-sm font-medium text-zinc-300 transition-colors hover:border-red-400/50 hover:text-red-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                  <XCircle className="h-4 w-4" aria-hidden="true" />
+                  Cancelar reserva
+                </button>
+              </div>
+            </section>
+          ) : !isActive ? (
+            <section className="rounded-2xl border border-white/10 bg-[#151515] p-5 sm:p-6">
+              <h2 className="text-base font-semibold text-white">Agende sua próxima visita</h2>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">Escolha o serviço e o horário que preferir.</p>
+              <button type="button" onClick={() => router.push('/?action=agendar')} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#D4AF37] px-4 text-sm font-semibold text-[#0D0D0D] transition-colors hover:bg-[#E2BE4D] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                Novo agendamento
+              </button>
+            </section>
+          ) : null}
         </div>
-
-        {/* Service Details Card */}
-        <div className="bg-[#151515] border border-white/10 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-          <div className="flex items-center gap-2 text-[#D4AF37] text-xs font-bold tracking-wider uppercase">
-            <Scissors className="w-4 h-4" />
-            <span>Serviço Selecionado</span>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold text-white">{appointment.serviceName}</h3>
-              <p className="text-xs text-white/60 flex items-center gap-1.5 mt-1">
-                <Clock className="w-3.5 h-3.5 text-[#D4AF37]" />
-                <span>Duração estimada: {appointment.serviceDurationMinutes} minutos</span>
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-xs text-white/50 font-medium block">Valor</span>
-              <span className="text-xl sm:text-2xl font-black text-[#D4AF37]">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(appointment.servicePrice)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Barber Profile Card */}
-        <div className="bg-[#151515] border border-white/10 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-          <div className="flex items-center gap-2 text-[#D4AF37] text-xs font-bold tracking-wider uppercase">
-            <UserIcon className="w-4 h-4" />
-            <span>Profissional Responsável</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-[#1C1C1C] border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37] font-bold text-lg overflow-hidden flex-shrink-0 shadow-lg">
-              {appointment.barberImage ? (
-                <img src={appointment.barberImage} alt={appointment.barberName} className="w-full h-full object-cover" />
-              ) : (
-                <Scissors className="w-6 h-6 text-[#D4AF37]" />
-              )}
-            </div>
-            <div>
-              <h4 className="text-lg font-bold text-white">{appointment.barberName}</h4>
-              {appointment.barberSpecialty && <p className="text-xs text-[#D4AF37] font-semibold tracking-wide">Serviço mais realizado: {appointment.barberSpecialty}</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Actions section for Active & Future Appointments */}
-        {isActive && !isRescheduling && !showCancelConfirm && (
-          <div className="pt-2 space-y-3">
-            <button
-              onClick={() => setIsRescheduling(true)}
-              className="w-full py-4 px-6 rounded-2xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-sm shadow-xl shadow-[#D4AF37]/20 transition-all flex items-center justify-center gap-2.5 hover:scale-[1.01]"
-            >
-              <CalendarClock className="w-5 h-5" />
-              <span>Editar Dia e Horário</span>
-            </button>
-
-            <button
-              onClick={() => setShowCancelConfirm(true)}
-              className="w-full py-3.5 px-6 rounded-2xl bg-[#151515] hover:bg-[#EF4444]/15 border border-white/10 hover:border-[#EF4444]/40 text-white/80 hover:text-[#EF4444] font-bold text-sm transition-all flex items-center justify-center gap-2"
-            >
-              <XCircle className="w-4 h-4" />
-              <span>Cancelar Reserva</span>
-            </button>
-          </div>
-        )}
-
-        {/* If completed/past or canceled, show action to book again */}
-        {(!isActive || appointment.status === 'CANCELED') && (
-          <div className="pt-2">
-            <button
-              onClick={() => router.push('/?action=agendar')}
-              className="w-full py-4 px-6 rounded-2xl bg-[#1C1C1C] hover:bg-[#D4AF37]/15 border border-white/15 hover:border-[#D4AF37]/40 text-white hover:text-[#D4AF37] font-bold text-sm transition-all flex items-center justify-center gap-2.5 shadow-lg"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Realizar Novo Agendamento</span>
-            </button>
-          </div>
-        )}
       </main>
     </div>
   );
