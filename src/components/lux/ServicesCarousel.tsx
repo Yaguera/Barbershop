@@ -27,16 +27,21 @@ export function ServicesCarousel({
   };
 
   return (
-    <section className="w-full max-w-6xl mx-auto py-2">
-      <div className="flex items-center justify-between mb-3 px-6">
-        <h2 className="text-sm font-bold text-[#FFFFFF] tracking-tight">
-          Nossos serviços
-        </h2>
+    <section className="w-full max-w-7xl mx-auto py-2 md:py-4">
+      <div className="flex items-end justify-between mb-3 md:mb-5 px-6">
+        <div>
+          <span className="hidden md:block text-[11px] font-bold uppercase tracking-widest text-[#D4AF37] mb-1">
+            Catálogo de Especialidades
+          </span>
+          <h2 className="text-sm md:text-xl font-bold text-[#FFFFFF] tracking-tight">
+            Nossos serviços
+          </h2>
+        </div>
         {services.length > 0 && (
           <button
             type="button"
             onClick={onViewAllClick}
-            className="text-[#D4AF37] text-xs font-bold hover:underline cursor-pointer transition-colors flex items-center gap-1"
+            className="text-[#D4AF37] text-xs md:text-sm font-bold hover:underline cursor-pointer transition-colors flex items-center gap-1"
           >
             <span>Ver todos</span>
             <ChevronRight className="w-4 h-4 stroke-[2.5]" />
@@ -59,7 +64,7 @@ export function ServicesCarousel({
           </div>
         </div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto px-6 pb-3 pt-1 scrollbar-none snap-x snap-mandatory">
+        <div className="flex gap-3 overflow-x-auto px-6 pb-3 pt-1 scrollbar-none snap-x snap-mandatory md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-5 md:overflow-visible">
           {services.map((srv, idx) => (
             <ServiceCard
               key={srv.id}

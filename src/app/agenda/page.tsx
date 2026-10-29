@@ -69,10 +69,10 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 selection:bg-[#D4AF37]/30 font-sans">
+    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 md:pb-12 selection:bg-[#D4AF37]/30 font-sans">
       <Header />
 
-      <main className="flex-grow max-w-4xl mx-auto px-6 py-8 w-full space-y-6">
+      <main className="flex-grow max-w-7xl mx-auto px-6 py-8 w-full space-y-6">
         {/* Title Section */}
         <div className="flex items-center justify-between">
           <div>

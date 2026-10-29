@@ -6,19 +6,23 @@ import { useDragScroll } from '@/hooks/useDragScroll';
 import { useBookingStore } from '@/store/booking-store';
 import {
   AlertTriangle,
+  Calendar,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
   Edit2,
   Loader2,
+  Scissors,
   Star,
+  User,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { ClientLuxDashboard } from './lux/ClientLuxDashboard';
+import { Header } from './lux/Header';
 import SplashScreen from './SplashScreen';
 
 function getOrCreateJourneyId(): string {
@@ -328,59 +332,66 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
   return (
     <>
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-      <div className="space-y-6 pb-12 max-w-4xl mx-auto px-4 sm:px-6">
-        {/* Dynamic Header based on Step */}
-        {step > 0 && (
-          <div className="bg-[#151515] border border-white/5 rounded-2xl p-4 sm:p-5 shadow-xl flex items-center justify-between gap-4">
-            <button
-              onClick={() => setStep(step - 1)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white/80 hover:text-white transition-all text-xs font-bold cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Voltar</span>
-            </button>
 
-            <div className="flex flex-col items-center">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">
-                Etapa {step} de 4
-              </span>
-              <span className="text-xs font-semibold text-white/80">
-                {STEP_LABELS[step]}
-              </span>
-            </div>
+      {/* STEP 0: LUXURY HOME / DASHBOARD (Full width on Desktop & Mobile) */}
+      {step === 0 && (
+        <ClientLuxDashboard
+          services={initialServices}
+          barbers={initialBarbers}
+          onStartBooking={() => setStep(1)}
+          onServiceSelect={(srv) => {
+            setService(srv.id, srv.name, srv.price);
+            setStep(2);
+          }}
+          onOpenHistory={() => {
+            if (!session?.user) {
+              router.push('/auth/login');
+            } else {
+              router.push('/profile');
+            }
+          }}
+        />
+      )}
 
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    step >= i ? 'w-5 sm:w-6 bg-[#D4AF37]' : 'w-2 bg-white/10'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+      {/* STEPS 1-4: BOOKING FLOW (2-Column Layout with Sticky Summary on Desktop) */}
+      {step > 0 && (
+        <div className="min-h-screen flex flex-col">
+          <Header onLogoClick={() => setStep(0)} onBookClick={() => setStep(1)} />
 
-        {/* STEP 0: LUXURY HOME / DASHBOARD */}
-        {step === 0 && (
-          <ClientLuxDashboard
-            services={initialServices}
-            barbers={initialBarbers}
-            onStartBooking={() => setStep(1)}
-            onServiceSelect={(srv) => {
-              setService(srv.id, srv.name, srv.price);
-              setStep(2);
-            }}
-            onOpenHistory={() => {
-              if (!session?.user) {
-                router.push('/auth/login');
-              } else {
-                router.push('/profile');
-              }
-            }}
-          />
-        )}
+          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-10 pb-16">
+            <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+              {/* Left Column: Step Header + Active Step Selection */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* Dynamic Header based on Step */}
+                <div className="bg-[#151515] border border-white/5 rounded-2xl p-4 sm:p-5 shadow-xl flex items-center justify-between gap-4">
+                  <button
+                    onClick={() => setStep(step - 1)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white/80 hover:text-white transition-all text-xs font-bold cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span>Voltar</span>
+                  </button>
+
+                  <div className="flex flex-col items-center">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">
+                      Etapa {step} de 4
+                    </span>
+                    <span className="text-xs font-semibold text-white/80">
+                      {STEP_LABELS[step]}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          step >= i ? 'w-5 sm:w-6 bg-[#D4AF37]' : 'w-2 bg-white/10'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
 
         {/* STEP 1: SERVICES */}
         {step === 1 && (
@@ -720,7 +731,164 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             </div>
           </div>
         )}
-      </div>
+              </div>
+
+              {/* Right Column: Sticky Live Booking Summary Sidebar (Desktop Only) */}
+              <aside className="hidden lg:block lg:col-span-4 sticky top-24">
+                <div className="bg-[#151515] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">
+                        Resumo em Tempo Real
+                      </span>
+                      <h3 className="text-base font-extrabold text-white mt-0.5">
+                        Seu Agendamento
+                      </h3>
+                    </div>
+                    <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
+                      <Scissors className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  {/* Step 1 Summary: Serviço */}
+                  <div className="space-y-4">
+                    <div
+                      onClick={() => setStep(1)}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                        step === 1
+                          ? 'bg-[#1C1C1C] border-[#D4AF37]/40'
+                          : 'bg-[#121212] border-white/5 hover:border-white/15'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/50">
+                        <span className="flex items-center gap-1.5">
+                          <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          1. Serviço
+                        </span>
+                        {serviceId && (
+                          <span className="text-[#D4AF37] text-[10px] hover:underline">Alterar</span>
+                        )}
+                      </div>
+                      {serviceName ? (
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-bold text-white">{serviceName}</p>
+                            <p className="text-[11px] text-white/50">
+                              {selectedServiceObj?.durationMinutes || 45} min
+                            </p>
+                          </div>
+                          <span className="text-sm font-extrabold text-[#D4AF37]">
+                            {formatPrice(servicePrice || 0)}
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="mt-1.5 text-xs text-white/30 italic">
+                          Aguardando seleção...
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Step 2 Summary: Profissional */}
+                    <div
+                      onClick={() => serviceId && setStep(2)}
+                      className={`p-3.5 rounded-2xl border transition-all ${
+                        serviceId ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
+                      } ${
+                        step === 2
+                          ? 'bg-[#1C1C1C] border-[#D4AF37]/40'
+                          : 'bg-[#121212] border-white/5 hover:border-white/15'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/50">
+                        <span className="flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          2. Profissional
+                        </span>
+                        {barberId && (
+                          <span className="text-[#D4AF37] text-[10px] hover:underline">Alterar</span>
+                        )}
+                      </div>
+                      {barberName ? (
+                        <p className="mt-2 text-sm font-bold text-white">{barberName}</p>
+                      ) : (
+                        <p className="mt-1.5 text-xs text-white/30 italic">
+                          Aguardando seleção...
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Step 3 Summary: Data e Horário */}
+                    <div
+                      onClick={() => serviceId && barberId && setStep(3)}
+                      className={`p-3.5 rounded-2xl border transition-all ${
+                        serviceId && barberId ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
+                      } ${
+                        step === 3
+                          ? 'bg-[#1C1C1C] border-[#D4AF37]/40'
+                          : 'bg-[#121212] border-white/5 hover:border-white/15'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/50">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          3. Data e Horário
+                        </span>
+                        {startTime && (
+                          <span className="text-[#D4AF37] text-[10px] hover:underline">Alterar</span>
+                        )}
+                      </div>
+                      {startTime ? (
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-sm font-bold text-white capitalize">
+                            {new Date(startTime).toLocaleString('pt-BR', {
+                              weekday: 'short',
+                              day: '2-digit',
+                              month: 'short',
+                            })}
+                          </span>
+                          <span className="text-sm font-black text-[#D4AF37]">
+                            {new Date(startTime).toLocaleString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="mt-1.5 text-xs text-white/30 italic">
+                          Aguardando seleção...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Total Footer */}
+                  <div className="pt-4 border-t border-white/10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                        Valor Total
+                      </span>
+                      <span className="text-xl font-black text-[#D4AF37]">
+                        {formatPrice(servicePrice || 0)}
+                      </span>
+                    </div>
+
+                    {serviceId && barberId && startTime && step < 4 && (
+                      <button
+                        type="button"
+                        onClick={() => setStep(4)}
+                        className="w-full py-3.5 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <span>Revisar e Confirmar</span>
+                        <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

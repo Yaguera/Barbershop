@@ -16,7 +16,7 @@ export function QuickAccess({ onActionClick }: QuickAccessProps) {
   ];
 
   return (
-    <section className="w-full max-w-6xl mx-auto py-2">
+    <section className="md:hidden w-full max-w-6xl mx-auto py-2">
       <h2 className="text-sm font-bold text-[#FFFFFF] mb-2.5 px-6 tracking-tight">
         Acesso rápido
       </h2>

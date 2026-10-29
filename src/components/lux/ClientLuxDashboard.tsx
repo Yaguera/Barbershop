@@ -65,16 +65,16 @@ export function ClientLuxDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 selection:bg-[#D4AF37]/30 font-sans">
+    <div className="min-h-screen bg-[#0D0D0D] text-[#FFFFFF] flex flex-col pb-24 md:pb-12 selection:bg-[#D4AF37]/30 font-sans">
       {/* Top Header */}
-      <Header />
+      <Header onBookClick={onStartBooking} />
 
       {/* Main Container */}
-      <main className="flex-grow w-full space-y-4">
+      <main className="flex-grow w-full space-y-4 md:space-y-6">
         {/* Hero Section */}
         <HeroBanner onBookClick={onStartBooking} />
 
-        {/* Acesso Rápido */}
+        {/* Acesso Rápido (Mobile Only) */}
         <QuickAccess onActionClick={handleActionClick} />
 
         {/* Próximo Agendamento */}
@@ -96,11 +96,14 @@ export function ClientLuxDashboard({
           onViewAllClick={onStartBooking}
         />
 
-        {/* Seja Premium Banner */}
-        <PremiumBanner onLearnMoreClick={handleLearnMorePlans} />
+        {/* Seja Premium Banner + Indique um Amigo (Desktop Grid) */}
+        <PremiumBanner
+          onLearnMoreClick={handleLearnMorePlans}
+          onReferClick={() => handleActionClick('indicar')}
+        />
       </main>
 
-      {/* Fixed Bottom Navigation */}
+      {/* Fixed Bottom Navigation (Mobile Only) */}
       <BottomNavigation
         activeTab={activeTab}
         onTabChange={handleTabChange}

@@ -66,7 +66,7 @@ export function BottomNavigation({
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-[#0D0D0D]/95 backdrop-blur-xl border-t border-white/5 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] pb-safe"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0D0D0D]/95 backdrop-blur-xl border-t border-white/5 shadow-[0_-4px_25px_rgba(0,0,0,0.6)] pb-safe"
       >
         <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between relative">
           {/* Item 1: Início */}

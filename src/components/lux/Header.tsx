@@ -1,10 +1,11 @@
 'use client';
 
 import { getNotificationsAction,markAllAsReadAction,markAsReadAction } from '@/app/actions/notification-actions';
-import { AlertTriangle,Bell,Check,CheckCheck,Clock,Sparkles,User } from 'lucide-react';
+import { AlertTriangle,Bell,Calendar,Check,CheckCheck,Clock,Home,Scissors,Sparkles,User } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import React,{ useEffect,useEffectEvent,useState } from 'react';
 import { SideDrawerMenu } from './SideDrawerMenu';
 
@@ -19,10 +20,13 @@ interface NotificationItem {
 
 interface HeaderProps {
   onOpenDrawer?: () => void;
+  onBookClick?: () => void;
+  onLogoClick?: () => void;
 }
 
-export function Header({ onOpenDrawer }: HeaderProps) {
+export function Header({ onOpenDrawer, onBookClick, onLogoClick }: HeaderProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -76,10 +80,14 @@ export function Header({ onOpenDrawer }: HeaderProps) {
   return (
     <>
       <header className="w-full bg-[#0D0D0D]/90 backdrop-blur-xl sticky top-0 z-40 border-b border-[rgba(255,255,255,0.06)]">
-        <div className="max-w-6xl mx-auto px-6 pt-4 pb-4 sm:pt-6 flex items-center justify-between">
-          {/* Left: Small Logo & Company Name exactly like screenshot */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-[#151515] shrink-0 flex items-center justify-center shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
+          {/* Left: Small Logo & Company Name */}
+          <Link
+            href="/"
+            onClick={() => onLogoClick && onLogoClick()}
+            className="flex items-center gap-2.5 group shrink-0"
+          >
+            <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-[#151515] shrink-0 flex items-center justify-center shadow-lg group-hover:border-[#D4AF37]/40 transition-colors">
               <Image
                 src="/logo.png"
                 alt="Barber Shop Logo"
@@ -102,8 +110,78 @@ export function Header({ onOpenDrawer }: HeaderProps) {
             </div>
           </Link>
 
-          {/* Right: Notifications & User Avatar exactly like screenshot */}
-          <div className="flex items-center gap-2.5 relative">
+          {/* Center: Desktop Navigation Bar (Hidden on Mobile) */}
+          <nav className="hidden md:flex items-center gap-1 bg-[#151515]/90 border border-white/5 rounded-full p-1.5 shadow-inner">
+            <Link
+              href="/"
+              onClick={() => onLogoClick && onLogoClick()}
+              className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide transition-all flex items-center gap-2 ${
+                pathname === '/'
+                  ? 'bg-[#D4AF37] text-[#0D0D0D] shadow-[0_2px_12px_rgba(212,175,55,0.3)]'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5 stroke-[2.2]" />
+              <span>Início</span>
+            </Link>
+
+            <Link
+              href="/agenda"
+              className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide transition-all flex items-center gap-2 ${
+                pathname?.startsWith('/agenda')
+                  ? 'bg-[#D4AF37] text-[#0D0D0D] shadow-[0_2px_12px_rgba(212,175,55,0.3)]'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 stroke-[2.2]" />
+              <span>Meus Agendamentos</span>
+            </Link>
+
+            <Link
+              href="/historico"
+              className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide transition-all flex items-center gap-2 ${
+                pathname?.startsWith('/historico')
+                  ? 'bg-[#D4AF37] text-[#0D0D0D] shadow-[0_2px_12px_rgba(212,175,55,0.3)]'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 stroke-[2.2]" />
+              <span>Histórico</span>
+            </Link>
+
+            <Link
+              href="/profile"
+              className={`px-4 py-2 rounded-full text-xs font-bold tracking-wide transition-all flex items-center gap-2 ${
+                pathname?.startsWith('/profile')
+                  ? 'bg-[#D4AF37] text-[#0D0D0D] shadow-[0_2px_12px_rgba(212,175,55,0.3)]'
+                  : 'text-white/70 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <User className="w-3.5 h-3.5 stroke-[2.2]" />
+              <span>Minha Conta</span>
+            </Link>
+          </nav>
+
+          {/* Right: Desktop CTA + Notifications & User Avatar */}
+          <div className="flex items-center gap-3 relative shrink-0">
+            {onBookClick ? (
+              <button
+                type="button"
+                onClick={onBookClick}
+                className="hidden md:inline-flex items-center gap-2 bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-[0_4px_15px_rgba(212,175,55,0.25)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              >
+                <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Agendar Horário</span>
+              </button>
+            ) : (
+              <Link
+                href="/?action=agendar"
+                className="hidden md:inline-flex items-center gap-2 bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-[0_4px_15px_rgba(212,175,55,0.25)] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Scissors className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Agendar Horário</span>
+              </Link>
+            )}
             <button
               type="button"
               aria-label="Notificações"
