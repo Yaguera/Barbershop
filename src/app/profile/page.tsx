@@ -247,10 +247,10 @@ export default function ProfilePage() {
         {/* Cabeçalho da Página */}
         <div className="space-y-1">
           <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Configurações da Conta
+            Minha conta
           </h1>
           <p className="text-white/60 text-xs sm:text-sm">
-            Gerencie sua identidade, foto de perfil, telefone de contato e credenciais de segurança.
+            Atualize seus dados, sua foto e sua senha.
           </p>
         </div>
 
@@ -259,7 +259,7 @@ export default function ProfilePage() {
           <div className="border-b border-white/10 pb-3">
             <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
               <User className="w-4 h-4 text-[#D4AF37]" />
-              <span>Identidade e Dados Pessoais</span>
+              <span>Dados pessoais</span>
             </h2>
             <p className="text-xs text-white/50 mt-0.5">
               Suas informações de contato e apresentação na plataforma.
@@ -267,14 +267,14 @@ export default function ProfilePage() {
           </div>
 
           {profileErrorMsg && (
-            <div className="flex items-center gap-2.5 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-3.5 text-[#EF4444] text-xs sm:text-sm animate-fade-in">
+            <div role="alert" className="flex items-center gap-2.5 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-3.5 text-red-300 text-xs sm:text-sm animate-fade-in">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{profileErrorMsg}</span>
             </div>
           )}
 
           {profileSuccessMsg && (
-            <div className="flex items-center gap-2.5 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl p-3.5 text-[#22C55E] text-xs sm:text-sm animate-fade-in">
+            <div role="status" className="flex items-center gap-2.5 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl p-3.5 text-[#22C55E] text-xs sm:text-sm animate-fade-in">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{profileSuccessMsg}</span>
             </div>
@@ -446,14 +446,14 @@ export default function ProfilePage() {
           </div>
 
           {passwordErrorMsg && (
-            <div className="flex items-center gap-2.5 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-3.5 text-[#EF4444] text-xs sm:text-sm animate-fade-in">
+            <div role="alert" className="flex items-center gap-2.5 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl p-3.5 text-red-300 text-xs sm:text-sm animate-fade-in">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{passwordErrorMsg}</span>
             </div>
           )}
 
           {passwordSuccessMsg && (
-            <div className="flex items-center gap-2.5 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl p-3.5 text-[#22C55E] text-xs sm:text-sm animate-fade-in">
+            <div role="status" className="flex items-center gap-2.5 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-xl p-3.5 text-[#22C55E] text-xs sm:text-sm animate-fade-in">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{passwordSuccessMsg}</span>
             </div>

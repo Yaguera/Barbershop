@@ -79,12 +79,13 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
             <div className="flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
               <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-                Sua Cadeira Reservada
+              SEUS HORÁRIOS
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
               Meus Agendamentos
             </h1>
+            <p className="mt-2 text-sm text-zinc-400">Confira seus próximos horários e acesse os detalhes de cada reserva.</p>
           </div>
 
           <Link
@@ -98,22 +99,22 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
 
         {/* Appointments List or Empty State */}
         {appointments.length === 0 ? (
-          <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-10 sm:p-14 text-center space-y-5">
+          <div className="bg-[#151515] border border-white/10 rounded-2xl p-8 sm:p-14 text-center space-y-5">
             <div className="w-12 h-12 rounded-md bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#C5A059] mx-auto">
               <CalendarIcon className="w-6 h-6 stroke-[1.6]" />
             </div>
             <div className="max-w-xs mx-auto space-y-1">
               <h3 className="text-base font-semibold text-white">Nenhum agendamento ativo</h3>
-              <p className="text-xs text-zinc-500 leading-relaxed">
+              <p className="text-sm text-zinc-400 leading-relaxed">
                 Você ainda não possui horários marcados para os próximos dias.
               </p>
             </div>
             <div className="pt-2">
               <Link
                 href="/?action=agendar"
-                className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-md bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-[#C5A059]/60 text-white font-medium text-xs transition-all"
+                className="inline-flex min-h-11 items-center justify-center gap-2 py-2.5 px-5 rounded-xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-semibold text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                <Scissors className="w-3.5 h-3.5 text-[#C5A059]" />
+                <Scissors className="w-4 h-4" />
                 <span>Agendar Horário</span>
               </Link>
             </div>

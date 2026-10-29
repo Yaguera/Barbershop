@@ -79,23 +79,24 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
             <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
-              Registro de Atendimentos
+              SEUS ATENDIMENTOS
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
-            Histórico Completo
+            Histórico
           </h1>
+          <p className="mt-2 text-sm text-zinc-400">Consulte seus atendimentos anteriores e suas situações.</p>
         </div>
 
         {/* List of Past Appointments */}
         {appointments.length === 0 ? (
-          <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-10 sm:p-14 text-center space-y-5">
+          <div className="bg-[#151515] border border-white/10 rounded-2xl p-8 sm:p-14 text-center space-y-5">
             <div className="w-12 h-12 rounded-md bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#C5A059] mx-auto">
               <Clock className="w-6 h-6 stroke-[1.6]" />
             </div>
             <div className="max-w-xs mx-auto space-y-1">
               <h3 className="text-base font-semibold text-white">Nenhum histórico registrado</h3>
-              <p className="text-xs text-zinc-500 leading-relaxed">
+              <p className="text-sm text-zinc-400 leading-relaxed">
                 Quando você realizar ou concluir atendimentos, eles ficarão salvos aqui.
               </p>
             </div>
@@ -105,7 +106,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                 className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-md bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-[#C5A059]/60 text-white font-medium text-xs transition-all"
               >
                 <Scissors className="w-3.5 h-3.5 text-[#C5A059]" />
-                <span>Realizar Primeiro Corte</span>
+                <span>Agendar um horário</span>
               </Link>
             </div>
           </div>
@@ -154,7 +155,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                         )}
                         {isNoShow && (
                           <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">
-                            Falta (No-Show)
+                            Falta
                           </span>
                         )}
                         {isPending && (

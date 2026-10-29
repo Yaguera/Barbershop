@@ -196,7 +196,7 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
         </div>
       );
     }
-    if (appointment.status === 'COMPLETED' || (!isFuture && appointment.status !== 'CANCELED')) {
+    if (appointment.status === 'COMPLETED') {
       return (
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] text-xs font-bold uppercase tracking-wider">
           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -209,6 +209,14 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#EF4444] text-xs font-bold uppercase tracking-wider">
           <AlertCircle className="w-3.5 h-3.5" />
           <span>Ausente</span>
+        </div>
+      );
+    }
+    if (!isFuture) {
+      return (
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-zinc-300">
+          <Clock className="w-3.5 h-3.5" />
+          <span>Aguardando atualização</span>
         </div>
       );
     }
@@ -231,13 +239,13 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
           <ArrowLeft className="w-4 h-4" />
           <span>Voltar para agendamentos</span>
         </button>
-        <span className="text-xs uppercase font-bold text-white/40 tracking-widest">Reserva VIP</span>
+        <span className="text-xs uppercase font-bold text-white/50 tracking-widest">Sua reserva</span>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-6">
         {/* Success Alert Banner */}
         {actionSuccessMessage && (
-          <div className="bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] p-4 rounded-2xl flex items-center gap-3 animate-fadeIn">
+          <div role="status" className="bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#22C55E] p-4 rounded-2xl flex items-center gap-3 animate-fadeIn">
             <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
             <p className="text-sm font-bold">{actionSuccessMessage}</p>
           </div>
@@ -273,7 +281,7 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
             </div>
 
             {rescheduleError && (
-              <div className="p-3.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/25 text-[#EF4444] text-xs font-semibold">
+              <div role="alert" className="p-3.5 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/25 text-red-300 text-sm font-semibold">
                 {rescheduleError}
               </div>
             )}
