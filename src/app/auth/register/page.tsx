@@ -128,9 +128,11 @@ function RegisterForm() {
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
               required
+              minLength={6}
+              aria-describedby="password-hint"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Crie sua senha"
               className="w-full pl-12 pr-12 py-3 bg-[#1C1C1C] border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-[#D4AF37] focus:outline-none transition-colors"
             />
             <button
@@ -143,6 +145,7 @@ function RegisterForm() {
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
           </div>
+          <p id="password-hint" className="text-xs text-zinc-400">Use pelo menos 6 caracteres.</p>
         </div>
 
         <button

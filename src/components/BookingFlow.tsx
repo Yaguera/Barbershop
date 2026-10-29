@@ -372,7 +372,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-10 pb-16">
             <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
               {/* Left Column: Step Header + Active Step Selection */}
-              <div className="lg:col-span-8 space-y-6">
+              <div className={`${step === 4 ? 'lg:col-span-12 lg:max-w-4xl lg:mx-auto lg:w-full' : 'lg:col-span-8'} space-y-6`}>
                 {/* Dynamic Header based on Step */}
                 <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-4 sm:p-5 flex items-center justify-between gap-4">
                   <button
@@ -432,13 +432,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                   }`}
                 >
                   <div className="w-14 h-14 rounded-md overflow-hidden shrink-0 mr-4 border border-white/10 relative">
-                    <Image
-                      src={service.image || '/images/service_image.png'}
-                      alt={service.name}
+                    {service.image ? <Image
+                      src={service.image}
+                      alt=""
                       width={56}
                       height={56}
                       className="object-cover w-full h-full"
-                    />
+                    /> : <div aria-hidden="true" className="w-full h-full flex items-center justify-center bg-[#242016] text-[#C5A059]"><Scissors className="w-5 h-5" /></div>}
                   </div>
                   <div className="flex-grow min-w-0 pr-2">
                     <h3 className="font-semibold text-white text-sm sm:text-base truncate">{service.name}</h3>
@@ -494,9 +494,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                     </div>
                     <div className="flex-grow min-w-0 pr-2">
                       <h3 className="font-semibold text-white text-sm sm:text-base truncate">{barber.name}</h3>
-                      <p className="text-zinc-400 text-xs font-normal mt-0.5 truncate">
-                        {barber.specialty || 'Especialista'}
-                      </p>
+                      {barber.specialty && <p className="text-zinc-400 text-xs font-normal mt-0.5">Serviço mais realizado: {barber.specialty}</p>}
                       <div className="flex items-center mt-1 text-zinc-500 text-xs">
                         <Star className="w-3 h-3 text-[#C5A059] mr-1 shrink-0" />
                         <span>Profissional qualificado</span>
@@ -659,12 +657,12 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 <div className="flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
+                      <p className="text-xs text-zinc-400 uppercase tracking-wider font-medium">
                         Serviço
                       </p>
                       <button aria-label="Editar serviço"
                         onClick={() => setStep(1)}
-                        className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        className="text-sm text-zinc-300 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#D4AF37]"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Editar</span>
@@ -684,12 +682,12 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 <div className="sm:pl-6 flex flex-col justify-between border-t sm:border-t-0 border-white/[0.06] pt-4 sm:pt-0">
                   <div>
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
+                      <p className="text-xs text-zinc-400 uppercase tracking-wider font-medium">
                         Profissional
                       </p>
                       <button aria-label="Editar profissional"
                         onClick={() => setStep(2)}
-                        className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        className="text-sm text-zinc-300 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#D4AF37]"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Editar</span>
@@ -698,7 +696,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                     <p className="font-semibold text-white text-base mt-2">{barberName}</p>
                     <p className="text-xs text-zinc-400 mt-0.5">Atendimento presencial</p>
                   </div>
-                  <span className="text-xs text-zinc-500 mt-3">
+                  <span className="text-xs text-zinc-400 mt-3">
                     Pagamento realizado no local
                   </span>
                 </div>
@@ -707,12 +705,12 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 <div className="sm:pl-6 flex flex-col justify-between border-t sm:border-t-0 border-white/[0.06] pt-4 sm:pt-0">
                   <div>
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
+                      <p className="text-xs text-zinc-400 uppercase tracking-wider font-medium">
                         Data e Horário
                       </p>
                       <button aria-label="Editar data e horário"
                         onClick={() => setStep(3)}
-                        className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
+                        className="text-sm text-zinc-300 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[#D4AF37]"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Editar</span>
@@ -757,7 +755,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               </button>
 
               {status !== 'authenticated' && (
-                <p className="text-center text-zinc-500 text-xs leading-relaxed">
+                <p className="text-center text-zinc-400 text-sm leading-relaxed">
                   Você será direcionado para entrar ou se cadastrar com segurança, mantendo suas escolhas.
                 </p>
               )}
@@ -767,7 +765,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               </div>
 
               {/* Right Column: Sticky Live Booking Summary Sidebar (Desktop Only) */}
-              <aside className="hidden lg:block lg:col-span-4 sticky top-24">
+              <aside className={`${step === 4 ? 'hidden' : 'hidden lg:block'} lg:col-span-4 sticky top-24`}>
                 <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-6 space-y-5">
                   <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
                     <div>
@@ -785,9 +783,9 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
 
                   {/* Step 1 Summary: Serviço */}
                   <div className="space-y-3">
-                    <div
+                    <button type="button"
                       onClick={() => setStep(1)}
-                      className={`p-3.5 rounded-md border transition-all cursor-pointer ${
+                      className={`w-full text-left p-3.5 rounded-md border transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${
                         step === 1
                           ? 'bg-white/[0.04] border-white/20'
                           : 'bg-[#111111] border-white/[0.06] hover:border-white/15'
@@ -799,7 +797,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           1. Serviço
                         </span>
                         {serviceId && (
-                          <span className="text-zinc-400 hover:text-white text-[10px]">Alterar</span>
+                          <span className="text-zinc-300 text-xs">Alterar</span>
                         )}
                       </div>
                       {serviceName ? (
@@ -819,12 +817,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           Aguardando seleção...
                         </p>
                       )}
-                    </div>
+                    </button>
 
                     {/* Step 2 Summary: Profissional */}
-                    <div
-                      onClick={() => serviceId && setStep(2)}
-                      className={`p-3.5 rounded-md border transition-all ${
+                    <button type="button"
+                      disabled={!serviceId}
+                      onClick={() => setStep(2)}
+                      className={`w-full text-left p-3.5 rounded-md border transition-all focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${
                         serviceId ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                       } ${
                         step === 2
@@ -838,7 +837,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           2. Profissional
                         </span>
                         {barberId && (
-                          <span className="text-zinc-400 hover:text-white text-[10px]">Alterar</span>
+                          <span className="text-zinc-300 text-xs">Alterar</span>
                         )}
                       </div>
                       {barberName ? (
@@ -848,12 +847,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           Aguardando seleção...
                         </p>
                       )}
-                    </div>
+                    </button>
 
                     {/* Step 3 Summary: Data e Horário */}
-                    <div
-                      onClick={() => serviceId && barberId && setStep(3)}
-                      className={`p-3.5 rounded-md border transition-all ${
+                    <button type="button"
+                      disabled={!serviceId || !barberId}
+                      onClick={() => setStep(3)}
+                      className={`w-full text-left p-3.5 rounded-md border transition-all focus-visible:outline-2 focus-visible:outline-[#D4AF37] ${
                         serviceId && barberId ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                       } ${
                         step === 3
@@ -867,7 +867,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           3. Data e Horário
                         </span>
                         {startTime && (
-                          <span className="text-zinc-400 hover:text-white text-[10px]">Alterar</span>
+                          <span className="text-zinc-300 text-xs">Alterar</span>
                         )}
                       </div>
                       {startTime ? (
@@ -877,12 +877,14 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                               weekday: 'short',
                               day: '2-digit',
                               month: 'short',
+                              timeZone: 'America/Sao_Paulo',
                             })}
                           </span>
                           <span className="text-sm font-bold text-[#C5A059]">
                             {new Date(startTime).toLocaleString('pt-BR', {
                               hour: '2-digit',
                               minute: '2-digit',
+                              timeZone: 'America/Sao_Paulo',
                             })}
                           </span>
                         </div>
@@ -891,7 +893,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           Aguardando seleção...
                         </p>
                       )}
-                    </div>
+                    </button>
                   </div>
 
                   {/* Total Footer */}

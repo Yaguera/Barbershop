@@ -38,7 +38,7 @@ export default async function Home() {
         workEnd: b.workEnd,
         image: b.user?.image || null,
         active: b.user?.active ?? true,
-        specialty: specialty || 'Especialista em Cortes & Barba',
+        specialty: specialty || undefined,
       };
     })
   );
