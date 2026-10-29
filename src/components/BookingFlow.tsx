@@ -2,6 +2,7 @@
 
 import { createAppointmentAction } from '@/app/actions/appointment-actions';
 import { trackBookingTelemetryAction } from '@/app/actions/telemetry-goals-actions';
+import { canResumeBooking } from '@/core/utils/booking-resume';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import { useBookingStore } from '@/store/booking-store';
 import {
@@ -20,7 +21,7 @@ import {
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { ClientLuxDashboard } from './lux/ClientLuxDashboard';
 import { Header } from './lux/Header';
 import SplashScreen from './SplashScreen';
@@ -98,15 +99,19 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
   const [step, setStep] = useState(0); // 0 = Home, 1 = Services, 2 = Barber, 3 = DateTime, 4 = Confirm
 
   const action = searchParams?.get('action');
+  const resumeBooking = searchParams?.get('retomar') === '1';
+  const resumed = useRef(false);
   const [previousAction, setPreviousAction] = useState<string | null | undefined>(undefined);
   if (action !== previousAction) {
     setPreviousAction(action);
-    if (action === 'agendar' && step === 0) setStep(1);
+    if (action === 'agendar' && !resumeBooking && step === 0) setStep(1);
   }
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [availableSlots, setAvailableSlots] = useState<{ time: string; dateTime: string; available: boolean }[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
+  const [slotsRetry, setSlotsRetry] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState<BookingSuccessProp | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -175,44 +180,47 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
 
   // Quando o usuário volta autenticado com um rascunho completo, posiciona na Revisão sem disparar agendamento automático
   useEffect(() => {
-    if (
-      status === 'authenticated' &&
-      serviceId &&
-      barberId &&
-      startTime &&
-      !bookingSuccess &&
-      step === 0 &&
-      action === 'agendar'
-    ) {
+    if (action !== 'agendar' || !resumeBooking || resumed.current || status === 'loading') return;
+    resumed.current = true;
+    if (canResumeBooking({ authenticated: status === 'authenticated', serviceId, servicePrice, barberId, startTime, services: initialServices, barbers: initialBarbers, now: Date.now() })) {
       setStep(4);
+    } else {
+      setStep(1);
+      setErrorMessage('Confira novamente o serviço e o horário para continuar seu agendamento.');
     }
-  }, [status, serviceId, barberId, startTime, bookingSuccess, step, action]);
+  }, [status, serviceId, servicePrice, barberId, startTime, action, resumeBooking, initialServices, initialBarbers]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchSlots = async () => {
       if (!barberId || !serviceId) return;
       setIsLoadingSlots(true);
+      setSlotsError(false);
       setAvailableSlots([]);
       try {
         const dateStr = formatYYYYMMDD(selectedDate);
-        const res = await fetch(`/api/barbers/${barberId}/availability?date=${dateStr}&serviceId=${serviceId}`);
+        const res = await fetch(`/api/barbers/${barberId}/availability?date=${dateStr}&serviceId=${serviceId}`, { signal: controller.signal });
         if (!res.ok) throw new Error('Failed to load slots');
         const data = await res.json();
-        setAvailableSlots(data);
+        if (!controller.signal.aborted) setAvailableSlots(data);
       } catch (err) {
-        console.error('Error fetching availability:', err);
+        if (!controller.signal.aborted) {
+          console.error('Error fetching availability:', err);
+          setSlotsError(true);
+        }
       } finally {
-        setIsLoadingSlots(false);
+        if (!controller.signal.aborted) setIsLoadingSlots(false);
       }
     };
     if (step === 3) fetchSlots();
-  }, [barberId, serviceId, selectedDate, step]);
+    return () => controller.abort();
+  }, [barberId, serviceId, selectedDate, step, slotsRetry]);
 
   const handleConfirm = async () => {
     if (isSubmitting) return;
 
     if (status !== 'authenticated') {
-      router.push(`/auth/login?callbackUrl=${encodeURIComponent('/?action=agendar')}`);
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent('/?action=agendar&retomar=1')}`);
       return;
     }
     if (!barberId || !serviceId || !startTime) {
@@ -247,7 +255,9 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         clearBooking();
       } else {
         setErrorMessage(result.error || 'Ocorreu um erro ao confirmar o agendamento.');
-        if (result.error?.includes('reservado')) {
+        if (!result.success && result.code === 'SLOT_CONFLICT') {
+          setErrorMessage('Este horário acabou de ficar indisponível. Escolha outro horário.');
+          setStartTime(null);
           setStep(3); // Redireciona de volta para seleção de horários em caso de conflito
         }
       }
@@ -296,6 +306,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               {new Date(bookingSuccess.startTime).toLocaleString('pt-BR', {
                 dateStyle: 'short',
                 timeStyle: 'short',
+                timeZone: 'America/Sao_Paulo',
               })}
             </span>
           </div>
@@ -366,13 +377,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-4 sm:p-5 flex items-center justify-between gap-4">
                   <button
                     onClick={() => setStep(step - 1)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all text-xs font-medium cursor-pointer"
+                    className="inline-flex min-h-11 items-center gap-1.5 px-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-colors text-sm font-medium focus-visible:outline-2 focus-visible:outline-[#D4AF37] cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span>Voltar</span>
                   </button>
 
-                  <div className="flex flex-col items-center">
+                  <div className="flex flex-col items-center" aria-live="polite">
                     <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
                       Etapa {step} de 4
                     </span>
@@ -404,11 +415,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                 Selecione o serviço desejado com preço e duração exatos.
               </p>
             </div>
+            {errorMessage && <p role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">{errorMessage}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {initialServices.map((service) => (
                 <button
                   key={service.id}
                   onClick={() => {
+                    setErrorMessage(null);
                     setService(service.id, service.name, service.price);
                     setStep(2);
                   }}
@@ -530,7 +543,9 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       setStartTime(null);
                     }}
                     disabled={!isWorkday}
-                    className={`snap-center shrink-0 w-18 sm:w-22 py-3.5 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer border ${
+                    aria-pressed={isSelected}
+                    aria-label={day.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    className={`snap-center shrink-0 w-18 sm:w-22 py-3.5 rounded-xl flex flex-col items-center justify-center transition-all focus-visible:outline-2 focus-visible:outline-[#D4AF37] cursor-pointer border ${
                       isSelected
                         ? 'bg-white/[0.08] border-[#C5A059]/70 text-white font-bold'
                         : isWorkday
@@ -547,16 +562,34 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               })}
             </div>
 
+            <div className="space-y-2">
+              <label htmlFor="booking-date" className="block text-sm font-medium text-zinc-300">Escolher outra data</label>
+              <input id="booking-date" type="date" min={formatYYYYMMDD(today)} value={formatYYYYMMDD(selectedDate)}
+                onChange={(event) => {
+                  if (!event.target.value) return;
+                  setSelectedDate(new Date(`${event.target.value}T12:00:00`));
+                  setStartTime(null);
+                  setErrorMessage(null);
+                }}
+                className="min-h-11 w-full max-w-xs rounded-xl border border-white/15 bg-[#151515] px-3 text-white focus-visible:outline-2 focus-visible:outline-[#D4AF37]" />
+            </div>
+
             <div className="pt-2">
               <h3 className="text-white font-semibold text-sm mb-3 flex items-center">
                 <Clock className="w-4 h-4 mr-2 text-[#C5A059]" />
                 Horários disponíveis
               </h3>
 
+              {errorMessage && <p role="alert" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">{errorMessage}</p>}
               {isLoadingSlots ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-zinc-400 text-xs">
+                <div role="status" className="flex flex-col items-center justify-center py-12 gap-3 text-zinc-400 text-sm">
                   <Loader2 className="w-5 h-5 text-[#C5A059] animate-spin" />
                   <span>Consultando horários disponíveis...</span>
+                </div>
+              ) : slotsError ? (
+                <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 p-5 text-sm text-red-200">
+                  <p>Não foi possível consultar os horários. Verifique sua conexão e tente novamente.</p>
+                  <button type="button" onClick={() => setSlotsRetry((value) => value + 1)} className="mt-3 min-h-11 rounded-lg border border-red-300/40 px-4 font-semibold focus-visible:outline-2 focus-visible:outline-white">Tentar novamente</button>
                 </div>
               ) : availableSlots.length === 0 ? (
                 <div className="bg-[#141414] p-6 rounded-lg text-center text-zinc-500 border border-white/[0.07] text-xs">
@@ -569,12 +602,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       key={idx}
                       onClick={() => {
                         if (slot.available) {
+                          setErrorMessage(null);
                           setStartTime(slot.dateTime);
                           setStep(4);
                         }
                       }}
                       disabled={!slot.available}
-                      className={`py-2.5 rounded-md text-xs font-medium transition-all cursor-pointer border ${
+                      className={`min-h-11 py-2.5 rounded-xl text-sm font-medium transition-all focus-visible:outline-2 focus-visible:outline-[#D4AF37] cursor-pointer border ${
                         !slot.available
                           ? 'bg-transparent border-white/[0.04] text-zinc-600 line-through cursor-not-allowed'
                           : startTime === slot.dateTime
@@ -604,7 +638,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             </div>
 
             {errorMessage && (
-              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg flex items-start gap-3 text-red-300 text-sm">
+              <div role="alert" className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg flex items-start gap-3 text-red-300 text-sm">
                 <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <p>{errorMessage}</p>
               </div>
@@ -628,7 +662,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
                         Serviço
                       </p>
-                      <button
+                      <button aria-label="Editar serviço"
                         onClick={() => setStep(1)}
                         className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
                       >
@@ -653,7 +687,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
                         Profissional
                       </p>
-                      <button
+                      <button aria-label="Editar profissional"
                         onClick={() => setStep(2)}
                         className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
                       >
@@ -676,7 +710,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
                         Data e Horário
                       </p>
-                      <button
+                      <button aria-label="Editar data e horário"
                         onClick={() => setStep(3)}
                         className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
                       >
@@ -690,6 +724,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           weekday: 'short',
                           day: '2-digit',
                           month: 'short',
+                          timeZone: 'America/Sao_Paulo',
                         })}
                     </p>
                     <p className="text-[#C5A059] font-bold text-base mt-0.5">
@@ -697,12 +732,10 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                         new Date(startTime).toLocaleString('pt-BR', {
                           hour: '2-digit',
                           minute: '2-digit',
+                          timeZone: 'America/Sao_Paulo',
                         })}
                     </p>
                   </div>
-                  <span className="text-xs text-zinc-500 mt-3">
-                    Cancelamento gratuito até 2h antes
-                  </span>
                 </div>
               </div>
             </div>
@@ -710,8 +743,8 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             <div className="pt-2 space-y-3">
               <button
                 onClick={handleConfirm}
-                disabled={isSubmitting}
-                className="w-full py-3.5 rounded-md font-semibold text-sm bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#C5A059]/60 text-white transition-all disabled:opacity-50 flex items-center justify-center cursor-pointer"
+                disabled={isSubmitting || status === 'loading'}
+                className="w-full min-h-12 py-3.5 rounded-xl font-semibold text-sm bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] transition-colors disabled:opacity-50 flex items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white cursor-pointer"
               >
                 {isSubmitting ? (
                   <span className="inline-flex items-center gap-2">

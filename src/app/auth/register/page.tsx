@@ -65,14 +65,14 @@ function RegisterForm() {
       </div>
 
       {error && (
-        <div className="flex items-center gap-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4 text-[#EF4444] text-sm animate-fade-in">
+        <div role="alert" className="flex items-center gap-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-2xl p-4 text-red-300 text-sm animate-fade-in">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <p className="font-medium">{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-3 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-2xl p-4 text-[#22C55E] text-sm animate-fade-in">
+        <div role="status" className="flex items-center gap-3 bg-[#22C55E]/10 border border-[#22C55E]/30 rounded-2xl p-4 text-[#22C55E] text-sm animate-fade-in">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           <p className="font-medium">{success}</p>
         </div>
@@ -137,7 +137,8 @@ function RegisterForm() {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
-              className="absolute right-3.5 top-3.5 text-white/40 hover:text-white transition-colors focus:outline-none"
+              aria-pressed={showPassword}
+              className="absolute right-1 top-1 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-white/60 hover:text-white transition-colors focus-visible:outline-2 focus-visible:outline-[#D4AF37]"
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
