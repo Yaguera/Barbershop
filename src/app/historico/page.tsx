@@ -160,7 +160,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                         )}
                         {isPending && (
                           <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-white/[0.04] text-[#C5A059] border border-white/10">
-                            Pendente
+                            Aguardando atualização
                           </span>
                         )}
                       </div>
@@ -177,9 +177,9 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                     </div>
                   </div>
 
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-white/[0.06] pt-3 sm:pt-0 gap-3">
-                    <span className="font-bold text-[#C5A059] text-base">
-                      R$ {(appt.priceCents / 100).toFixed(2)}
+                  <div className="flex flex-wrap sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-white/[0.06] pt-3 sm:pt-0 gap-3">
+                    <span className="font-bold text-[#C5A059] text-base whitespace-nowrap">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(appt.priceCents / 100)}
                     </span>
 
                     <div className="flex items-center gap-2">

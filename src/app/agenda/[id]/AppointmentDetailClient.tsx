@@ -35,7 +35,7 @@ export interface AppointmentDetail {
   servicePrice: number;
   serviceDurationMinutes: number;
   barberName: string;
-  barberSpecialty: string;
+  barberSpecialty: string | null;
   barberImage: string | null;
   clientName: string;
 }
@@ -208,7 +208,7 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
       return (
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EF4444]/15 border border-[#EF4444]/30 text-[#EF4444] text-xs font-bold uppercase tracking-wider">
           <AlertCircle className="w-3.5 h-3.5" />
-          <span>Ausente</span>
+          <span>Falta</span>
         </div>
       );
     }
@@ -223,7 +223,7 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
     return (
       <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#22C55E]/20 border border-[#22C55E]/40 text-[#22C55E] text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#22C55E]/10">
         <CheckCircle2 className="w-3.5 h-3.5" />
-        <span>Confirmado</span>
+        <span>{appointment.status === 'PENDING' ? 'Agendado' : 'Confirmado'}</span>
       </div>
     );
   };
@@ -449,7 +449,7 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
             <div className="text-right">
               <span className="text-xs text-white/50 font-medium block">Valor</span>
               <span className="text-xl sm:text-2xl font-black text-[#D4AF37]">
-                R$ {appointment.servicePrice.toFixed(2)}
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(appointment.servicePrice)}
               </span>
             </div>
           </div>
@@ -471,7 +471,7 @@ export function AppointmentDetailClient({ initialAppointment }: { initialAppoint
             </div>
             <div>
               <h4 className="text-lg font-bold text-white">{appointment.barberName}</h4>
-              <p className="text-xs text-[#D4AF37] font-semibold tracking-wide">{appointment.barberSpecialty}</p>
+              {appointment.barberSpecialty && <p className="text-xs text-[#D4AF37] font-semibold tracking-wide">Serviço mais realizado: {appointment.barberSpecialty}</p>}
             </div>
           </div>
         </div>

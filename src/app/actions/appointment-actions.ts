@@ -338,7 +338,7 @@ export async function getAppointmentDetailsAction(appointmentId: string) {
         servicePrice: appointment.priceCents / 100,
         serviceDurationMinutes: appointment.service?.durationMinutes || 30,
         barberName: barber?.user?.name || 'Barbeiro Profissional',
-        barberSpecialty: specialty || 'Master Barber & Hair Stylist',
+        barberSpecialty: specialty,
         barberImage: barber?.user?.image || null,
         clientName: appointment.client?.name || 'Cliente VIP',
       },

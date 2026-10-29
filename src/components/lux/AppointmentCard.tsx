@@ -174,7 +174,7 @@ export function AppointmentCard({
                     {formattedDate}
                   </span>
 
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                     <div className="flex items-center gap-1.5 text-xs text-zinc-400">
                       <Clock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
                       <span>{formattedTime}</span>
