@@ -30,10 +30,10 @@ export function ServicesCarousel({
     <section className="w-full max-w-7xl mx-auto py-2 md:py-4">
       <div className="flex items-end justify-between mb-3 md:mb-5 px-6">
         <div>
-          <span className="hidden md:block text-[11px] font-bold uppercase tracking-widest text-[#D4AF37] mb-1">
+          <span className="hidden md:block text-[11px] font-medium uppercase tracking-widest text-zinc-500 mb-1">
             Catálogo de Especialidades
           </span>
-          <h2 className="text-sm md:text-xl font-bold text-[#FFFFFF] tracking-tight">
+          <h2 className="text-sm md:text-lg font-semibold text-white tracking-tight">
             Nossos serviços
           </h2>
         </div>
@@ -41,18 +41,18 @@ export function ServicesCarousel({
           <button
             type="button"
             onClick={onViewAllClick}
-            className="text-[#D4AF37] text-xs md:text-sm font-bold hover:underline cursor-pointer transition-colors flex items-center gap-1"
+            className="text-zinc-400 hover:text-white text-xs md:text-sm font-medium cursor-pointer transition-colors flex items-center gap-1"
           >
             <span>Ver todos</span>
-            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+            <ChevronRight className="w-4 h-4 stroke-[2]" />
           </button>
         )}
       </div>
 
       {services.length === 0 ? (
         <div className="px-6">
-          <div className="bg-[#151515] border border-white/5 rounded-2xl p-6 text-center space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-[#1C1C1C] text-[#D4AF37] flex items-center justify-center mx-auto">
+          <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-6 text-center space-y-2">
+            <div className="w-10 h-10 rounded-md bg-white/[0.04] text-[#C5A059] flex items-center justify-center mx-auto">
               <Scissors className="w-5 h-5" />
             </div>
             <p className="text-xs font-semibold text-white/70">

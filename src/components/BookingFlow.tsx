@@ -275,24 +275,24 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
 
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center max-w-lg mx-auto">
-        <div className="w-20 h-20 bg-[#D4AF37]/20 rounded-full flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(212,175,55,0.3)]">
-          <CheckCircle2 className="w-10 h-10 text-[#D4AF37]" />
+        <div className="w-16 h-16 bg-white/[0.04] border border-white/10 rounded-lg flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-8 h-8 text-[#C5A059]" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">Reserva Confirmada</h1>
-        <p className="text-white/60 text-sm mb-8">Seu horário foi garantido com sucesso no sistema.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Reserva Confirmada</h1>
+        <p className="text-zinc-400 text-sm mb-8">Seu horário foi garantido com sucesso no sistema.</p>
 
-        <div className="w-full bg-[#151515] rounded-3xl p-6 mb-8 text-left space-y-4 border border-white/10 shadow-xl">
-          <div className="flex justify-between items-center border-b border-white/5 pb-3">
-            <span className="text-white/50 text-xs font-semibold uppercase tracking-wider">Serviço</span>
-            <span className="text-white font-bold text-sm text-right">{bookedService?.name}</span>
+        <div className="w-full bg-[#141414] rounded-lg p-6 mb-8 text-left space-y-4 border border-white/[0.08]">
+          <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+            <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Serviço</span>
+            <span className="text-white font-semibold text-sm text-right">{bookedService?.name}</span>
           </div>
-          <div className="flex justify-between items-center border-b border-white/5 pb-3">
-            <span className="text-white/50 text-xs font-semibold uppercase tracking-wider">Profissional</span>
-            <span className="text-white font-bold text-sm text-right">{bookedBarber?.name}</span>
+          <div className="flex justify-between items-center border-b border-white/[0.06] pb-3">
+            <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Profissional</span>
+            <span className="text-white font-semibold text-sm text-right">{bookedBarber?.name}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-white/50 text-xs font-semibold uppercase tracking-wider">Data & Horário</span>
-            <span className="text-[#D4AF37] font-black text-sm text-right">
+            <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Data & Horário</span>
+            <span className="text-[#C5A059] font-bold text-sm text-right">
               {new Date(bookingSuccess.startTime).toLocaleString('pt-BR', {
                 dateStyle: 'short',
                 timeStyle: 'short',
@@ -308,7 +308,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               setStep(0);
               router.push('/agenda');
             }}
-            className="w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3.5 px-6 rounded-md font-semibold text-sm bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#C5A059]/60 text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>Ver Meus Agendamentos</span>
             <ChevronRight className="w-4 h-4" />
@@ -320,7 +320,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               setStep(0);
               router.push('/');
             }}
-            className="w-full py-3.5 px-6 rounded-2xl font-semibold text-xs sm:text-sm bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white transition-all cursor-pointer"
+            className="w-full py-3 px-6 rounded-md font-medium text-xs sm:text-sm bg-transparent hover:bg-white/[0.04] border border-white/[0.08] text-zinc-400 hover:text-white transition-all cursor-pointer"
           >
             Voltar ao Início
           </button>
@@ -363,20 +363,20 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               {/* Left Column: Step Header + Active Step Selection */}
               <div className="lg:col-span-8 space-y-6">
                 {/* Dynamic Header based on Step */}
-                <div className="bg-[#151515] border border-white/5 rounded-2xl p-4 sm:p-5 shadow-xl flex items-center justify-between gap-4">
+                <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-4 sm:p-5 flex items-center justify-between gap-4">
                   <button
                     onClick={() => setStep(step - 1)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-white/10 text-white/80 hover:text-white transition-all text-xs font-bold cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white transition-all text-xs font-medium cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span>Voltar</span>
                   </button>
 
                   <div className="flex flex-col items-center">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#D4AF37]">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
                       Etapa {step} de 4
                     </span>
-                    <span className="text-xs font-semibold text-white/80">
+                    <span className="text-xs font-semibold text-white">
                       {STEP_LABELS[step]}
                     </span>
                   </div>
@@ -385,8 +385,8 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                     {[1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
-                          step >= i ? 'w-5 sm:w-6 bg-[#D4AF37]' : 'w-2 bg-white/10'
+                        className={`h-1 rounded-sm transition-all duration-300 ${
+                          step >= i ? 'w-5 sm:w-6 bg-[#C5A059]' : 'w-2 bg-white/10'
                         }`}
                       />
                     ))}
@@ -397,14 +397,14 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         {step === 1 && (
           <div className="space-y-6 animate-fade-in-up">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white mb-1.5 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1.5 tracking-tight">
                 Qual o serviço?
               </h1>
-              <p className="text-white/60 text-xs sm:text-sm">
+              <p className="text-zinc-400 text-xs sm:text-sm">
                 Selecione o serviço desejado com preço e duração exatos.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {initialServices.map((service) => (
                 <button
                   key={service.id}
@@ -412,29 +412,29 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                     setService(service.id, service.name, service.price);
                     setStep(2);
                   }}
-                  className={`flex items-center p-4 rounded-2xl border transition-all text-left cursor-pointer ${
+                  className={`flex items-center p-4 rounded-lg border transition-all text-left cursor-pointer ${
                     serviceId === service.id
-                      ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_0_20px_rgba(212,175,55,0.2)]'
-                      : 'border-white/5 bg-[#151515] hover:border-[#D4AF37]/30 hover:bg-[#1C1C1C]'
+                      ? 'border-[#C5A059]/70 bg-white/[0.06]'
+                      : 'border-white/[0.07] bg-[#141414] hover:border-white/20 hover:bg-[#181818]'
                   }`}
                 >
-                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 mr-4 border border-white/10 relative">
+                  <div className="w-14 h-14 rounded-md overflow-hidden shrink-0 mr-4 border border-white/10 relative">
                     <Image
                       src={service.image || '/images/service_image.png'}
                       alt={service.name}
-                      width={64}
-                      height={64}
+                      width={56}
+                      height={56}
                       className="object-cover w-full h-full"
                     />
                   </div>
                   <div className="flex-grow min-w-0 pr-2">
-                    <h3 className="font-bold text-white text-base truncate">{service.name}</h3>
-                    <div className="flex items-center text-white/60 text-xs mt-1 font-medium">
-                      <Clock className="w-3.5 h-3.5 mr-1 text-[#D4AF37] shrink-0" />{' '}
+                    <h3 className="font-semibold text-white text-sm sm:text-base truncate">{service.name}</h3>
+                    <div className="flex items-center text-zinc-400 text-xs mt-1 font-normal">
+                      <Clock className="w-3.5 h-3.5 mr-1 text-zinc-500 shrink-0" />{' '}
                       {service.durationMinutes} min
                     </div>
                   </div>
-                  <div className="text-[#D4AF37] font-black text-base sm:text-lg tracking-tight shrink-0">
+                  <div className="text-[#C5A059] font-bold text-sm sm:text-base tracking-tight shrink-0">
                     {formatPrice(service.price)}
                   </div>
                 </button>
@@ -447,14 +447,14 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         {step === 2 && (
           <div className="space-y-6 animate-fade-in-up">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white mb-1.5 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1.5 tracking-tight">
                 Com qual profissional?
               </h1>
-              <p className="text-white/60 text-xs sm:text-sm">
+              <p className="text-zinc-400 text-xs sm:text-sm">
                 Escolha o especialista de sua preferência para realizar o atendimento.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {initialBarbers
                 .filter((b) => b.active !== false)
                 .map((barber) => (
@@ -464,34 +464,34 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       setBarber(barber.id, barber.name);
                       setStep(3);
                     }}
-                    className={`flex items-center p-4 rounded-2xl border transition-all text-left cursor-pointer ${
+                    className={`flex items-center p-4 rounded-lg border transition-all text-left cursor-pointer ${
                       barberId === barber.id
-                        ? 'border-[#D4AF37] bg-[#D4AF37]/10 shadow-[0_0_20px_rgba(212,175,55,0.2)]'
-                        : 'border-white/5 bg-[#151515] hover:border-[#D4AF37]/30 hover:bg-[#1C1C1C]'
+                        ? 'border-[#C5A059]/70 bg-white/[0.06]'
+                        : 'border-white/[0.07] bg-[#141414] hover:border-white/20 hover:bg-[#181818]'
                     }`}
                   >
-                    <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 mr-4 border border-[#D4AF37]/30 shadow-md">
+                    <div className="w-13 h-13 rounded-md overflow-hidden shrink-0 mr-4 border border-white/10">
                       <Image
                         src={barber.image || '/images/barber_portrait.png'}
                         alt={barber.name}
-                        width={56}
-                        height={56}
+                        width={52}
+                        height={52}
                         className="object-cover w-full h-full"
                       />
                     </div>
                     <div className="flex-grow min-w-0 pr-2">
-                      <h3 className="font-bold text-white text-base truncate">{barber.name}</h3>
-                      <p className="text-[#D4AF37] text-xs font-semibold mt-0.5 truncate">
+                      <h3 className="font-semibold text-white text-sm sm:text-base truncate">{barber.name}</h3>
+                      <p className="text-zinc-400 text-xs font-normal mt-0.5 truncate">
                         {barber.specialty || 'Especialista'}
                       </p>
-                      <div className="flex items-center mt-1 text-white/50 text-xs">
-                        <Star className="w-3.5 h-3.5 text-[#D4AF37] fill-current mr-1 shrink-0" />
+                      <div className="flex items-center mt-1 text-zinc-500 text-xs">
+                        <Star className="w-3 h-3 text-[#C5A059] mr-1 shrink-0" />
                         <span>Profissional qualificado</span>
                       </div>
                     </div>
                     <ChevronRight
-                      className={`w-5 h-5 shrink-0 ${
-                        barberId === barber.id ? 'text-[#D4AF37]' : 'text-white/30'
+                      className={`w-4 h-4 shrink-0 ${
+                        barberId === barber.id ? 'text-white' : 'text-zinc-600'
                       }`}
                     />
                   </button>
@@ -504,17 +504,17 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         {step === 3 && (
           <div className="space-y-6 animate-fade-in-up">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white mb-1.5 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1.5 tracking-tight">
                 Quando?
               </h1>
-              <p className="text-white/60 text-xs sm:text-sm">
+              <p className="text-zinc-400 text-xs sm:text-sm">
                 Selecione a data e o horário desejado na agenda do profissional.
               </p>
             </div>
 
             <div
               {...daysScroll}
-              className={`flex gap-3 sm:gap-4 overflow-x-auto pb-3 scrollbar-none snap-x ${daysScroll.className}`}
+              className={`flex gap-2.5 sm:gap-3 overflow-x-auto pb-3 scrollbar-none snap-x ${daysScroll.className}`}
             >
               {daysList.map((day, idx) => {
                 const isSelected = formatYYYYMMDD(day) === formatYYYYMMDD(selectedDate);
@@ -530,36 +530,36 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       setStartTime(null);
                     }}
                     disabled={!isWorkday}
-                    className={`snap-center shrink-0 w-20 sm:w-24 py-4 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer ${
+                    className={`snap-center shrink-0 w-18 sm:w-22 py-3.5 rounded-lg flex flex-col items-center justify-center transition-all cursor-pointer border ${
                       isSelected
-                        ? 'bg-[#D4AF37] text-[#0D0D0D] shadow-[0_0_20px_rgba(212,175,55,0.3)] font-black'
+                        ? 'bg-white/[0.08] border-[#C5A059]/70 text-white font-bold'
                         : isWorkday
-                        ? 'bg-[#151515] border border-white/10 text-white hover:bg-[#1C1C1C]'
-                        : 'bg-[#151515]/40 border border-transparent text-white/20 cursor-not-allowed opacity-40'
+                        ? 'bg-[#141414] border-white/[0.07] text-zinc-300 hover:bg-[#181818] hover:border-white/20 hover:text-white'
+                        : 'bg-[#141414]/40 border-transparent text-zinc-600 cursor-not-allowed opacity-40'
                     }`}
                   >
-                    <span className="text-[11px] uppercase font-bold tracking-wider mb-1">
+                    <span className="text-[10px] uppercase font-medium tracking-wider mb-1 text-zinc-400">
                       {formatWeekDay(day)}
                     </span>
-                    <span className="text-2xl font-black">{day.getDate()}</span>
+                    <span className="text-xl font-bold">{day.getDate()}</span>
                   </button>
                 );
               })}
             </div>
 
             <div className="pt-2">
-              <h3 className="text-white font-bold text-sm mb-3 flex items-center">
-                <Clock className="w-4 h-4 mr-2 text-[#D4AF37]" />
+              <h3 className="text-white font-semibold text-sm mb-3 flex items-center">
+                <Clock className="w-4 h-4 mr-2 text-[#C5A059]" />
                 Horários disponíveis
               </h3>
 
               {isLoadingSlots ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3 text-white/60 text-xs">
-                  <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-zinc-400 text-xs">
+                  <Loader2 className="w-5 h-5 text-[#C5A059] animate-spin" />
                   <span>Consultando horários disponíveis...</span>
                 </div>
               ) : availableSlots.length === 0 ? (
-                <div className="bg-[#151515] p-6 rounded-2xl text-center text-white/50 border border-white/5 text-xs">
+                <div className="bg-[#141414] p-6 rounded-lg text-center text-zinc-500 border border-white/[0.07] text-xs">
                   Nenhum horário disponível para a data selecionada. Escolha outra data acima.
                 </div>
               ) : (
@@ -574,12 +574,12 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                         }
                       }}
                       disabled={!slot.available}
-                      className={`py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`py-2.5 rounded-md text-xs font-medium transition-all cursor-pointer border ${
                         !slot.available
-                          ? 'bg-transparent border border-white/5 text-white/20 line-through cursor-not-allowed'
+                          ? 'bg-transparent border-white/[0.04] text-zinc-600 line-through cursor-not-allowed'
                           : startTime === slot.dateTime
-                          ? 'bg-[#D4AF37] text-[#0D0D0D] shadow-md font-black'
-                          : 'bg-[#151515] border border-white/10 text-white hover:border-[#D4AF37]/50 hover:bg-[#1C1C1C]'
+                          ? 'bg-white/[0.09] border-[#C5A059]/70 text-white font-semibold'
+                          : 'bg-[#141414] border-white/[0.07] text-zinc-300 hover:border-white/25 hover:bg-[#181818] hover:text-white'
                       }`}
                     >
                       {slot.time}
@@ -595,96 +595,96 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
         {step === 4 && (
           <div className="space-y-6 animate-fade-in-up">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white mb-1.5 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1.5 tracking-tight">
                 Revisão do Agendamento
               </h1>
-              <p className="text-white/60 text-xs sm:text-sm">
+              <p className="text-zinc-400 text-xs sm:text-sm">
                 Confira os detalhes escolhidos antes de realizar a confirmação.
               </p>
             </div>
 
             {errorMessage && (
-              <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-2xl flex items-start gap-3 text-red-300 text-sm shadow-md">
+              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg flex items-start gap-3 text-red-300 text-sm">
                 <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                 <p>{errorMessage}</p>
               </div>
             )}
 
-            <div className="bg-[#151515] rounded-2xl p-6 border border-white/5 shadow-xl space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-white/5">
-                <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+            <div className="bg-[#141414] rounded-lg p-6 border border-white/[0.07] space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
+                <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
                   Resumo da Reserva
                 </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1C1C1C] text-[#D4AF37] border border-[#D4AF37]/30">
-                  Ainda não confirmado
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-medium bg-white/[0.04] text-zinc-300 border border-white/10">
+                  Aguardando confirmação
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:divide-x divide-white/5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:divide-x divide-white/[0.06]">
                 {/* Coluna 1: Serviço */}
                 <div className="flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-white/50 uppercase tracking-widest font-bold">
+                      <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
                         Serviço
                       </p>
                       <button
                         onClick={() => setStep(1)}
-                        className="text-xs text-[#D4AF37] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Editar</span>
                       </button>
                     </div>
-                    <p className="font-bold text-white text-base mt-2">{serviceName}</p>
-                    <p className="text-xs text-white/60 mt-0.5">
+                    <p className="font-semibold text-white text-base mt-2">{serviceName}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">
                       Duração estimada: {selectedServiceObj?.durationMinutes || 45} min
                     </p>
                   </div>
-                  <p className="text-[#D4AF37] font-black text-lg mt-3">
+                  <p className="text-[#C5A059] font-bold text-lg mt-3">
                     {formatPrice(servicePrice || 0)}
                   </p>
                 </div>
 
                 {/* Coluna 2: Profissional */}
-                <div className="sm:pl-6 flex flex-col justify-between border-t sm:border-t-0 border-white/5 pt-4 sm:pt-0">
+                <div className="sm:pl-6 flex flex-col justify-between border-t sm:border-t-0 border-white/[0.06] pt-4 sm:pt-0">
                   <div>
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-white/50 uppercase tracking-widest font-bold">
+                      <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
                         Profissional
                       </p>
                       <button
                         onClick={() => setStep(2)}
-                        className="text-xs text-[#D4AF37] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Editar</span>
                       </button>
                     </div>
-                    <p className="font-bold text-white text-base mt-2">{barberName}</p>
-                    <p className="text-xs text-white/60 mt-0.5">Atendimento presencial</p>
+                    <p className="font-semibold text-white text-base mt-2">{barberName}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">Atendimento presencial</p>
                   </div>
-                  <span className="text-xs text-white/50 mt-3">
+                  <span className="text-xs text-zinc-500 mt-3">
                     Pagamento realizado no local
                   </span>
                 </div>
 
                 {/* Coluna 3: Data e Horário */}
-                <div className="sm:pl-6 flex flex-col justify-between border-t sm:border-t-0 border-white/5 pt-4 sm:pt-0">
+                <div className="sm:pl-6 flex flex-col justify-between border-t sm:border-t-0 border-white/[0.06] pt-4 sm:pt-0">
                   <div>
                     <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-white/50 uppercase tracking-widest font-bold">
+                      <p className="text-[11px] text-zinc-500 uppercase tracking-widest font-medium">
                         Data e Horário
                       </p>
                       <button
                         onClick={() => setStep(3)}
-                        className="text-xs text-[#D4AF37] hover:underline inline-flex items-center gap-1 cursor-pointer"
+                        className="text-xs text-zinc-400 hover:text-white inline-flex items-center gap-1 cursor-pointer transition-colors"
                       >
                         <Edit2 className="w-3 h-3" />
                         <span>Editar</span>
                       </button>
                     </div>
-                    <p className="font-bold text-white text-base capitalize mt-2">
+                    <p className="font-semibold text-white text-base capitalize mt-2">
                       {startTime &&
                         new Date(startTime).toLocaleString('pt-BR', {
                           weekday: 'short',
@@ -692,7 +692,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           month: 'short',
                         })}
                     </p>
-                    <p className="text-[#D4AF37] font-black text-base mt-0.5">
+                    <p className="text-[#C5A059] font-bold text-base mt-0.5">
                       {startTime &&
                         new Date(startTime).toLocaleString('pt-BR', {
                           hour: '2-digit',
@@ -700,7 +700,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                         })}
                     </p>
                   </div>
-                  <span className="text-xs text-white/50 mt-3">
+                  <span className="text-xs text-zinc-500 mt-3">
                     Cancelamento gratuito até 2h antes
                   </span>
                 </div>
@@ -711,11 +711,11 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               <button
                 onClick={handleConfirm}
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-xl font-bold text-base bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] transition-all shadow-lg shadow-[#D4AF37]/20 disabled:opacity-50 flex items-center justify-center cursor-pointer"
+                className="w-full py-3.5 rounded-md font-semibold text-sm bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#C5A059]/60 text-white transition-all disabled:opacity-50 flex items-center justify-center cursor-pointer"
               >
                 {isSubmitting ? (
                   <span className="inline-flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     <span>Confirmando...</span>
                   </span>
                 ) : (
@@ -724,7 +724,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
               </button>
 
               {status !== 'authenticated' && (
-                <p className="text-center text-white/50 text-xs leading-relaxed">
+                <p className="text-center text-zinc-500 text-xs leading-relaxed">
                   Você será direcionado para entrar ou se cadastrar com segurança, mantendo suas escolhas.
                 </p>
               )}
@@ -735,54 +735,54 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
 
               {/* Right Column: Sticky Live Booking Summary Sidebar (Desktop Only) */}
               <aside className="hidden lg:block lg:col-span-4 sticky top-24">
-                <div className="bg-[#151515] border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5">
-                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-6 space-y-5">
+                  <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">
+                      <span className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
                         Resumo em Tempo Real
                       </span>
-                      <h3 className="text-base font-extrabold text-white mt-0.5">
+                      <h3 className="text-base font-semibold text-white mt-0.5">
                         Seu Agendamento
                       </h3>
                     </div>
-                    <div className="w-9 h-9 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
+                    <div className="w-8 h-8 rounded-md bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#C5A059]">
                       <Scissors className="w-4 h-4" />
                     </div>
                   </div>
 
                   {/* Step 1 Summary: Serviço */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div
                       onClick={() => setStep(1)}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                      className={`p-3.5 rounded-md border transition-all cursor-pointer ${
                         step === 1
-                          ? 'bg-[#1C1C1C] border-[#D4AF37]/40'
-                          : 'bg-[#121212] border-white/5 hover:border-white/15'
+                          ? 'bg-white/[0.04] border-white/20'
+                          : 'bg-[#111111] border-white/[0.06] hover:border-white/15'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/50">
+                      <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-zinc-500">
                         <span className="flex items-center gap-1.5">
-                          <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          <Scissors className="w-3.5 h-3.5 text-[#C5A059]" />
                           1. Serviço
                         </span>
                         {serviceId && (
-                          <span className="text-[#D4AF37] text-[10px] hover:underline">Alterar</span>
+                          <span className="text-zinc-400 hover:text-white text-[10px]">Alterar</span>
                         )}
                       </div>
                       {serviceName ? (
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <div>
-                            <p className="text-sm font-bold text-white">{serviceName}</p>
-                            <p className="text-[11px] text-white/50">
+                            <p className="text-sm font-semibold text-white">{serviceName}</p>
+                            <p className="text-[11px] text-zinc-500">
                               {selectedServiceObj?.durationMinutes || 45} min
                             </p>
                           </div>
-                          <span className="text-sm font-extrabold text-[#D4AF37]">
+                          <span className="text-sm font-bold text-[#C5A059]">
                             {formatPrice(servicePrice || 0)}
                           </span>
                         </div>
                       ) : (
-                        <p className="mt-1.5 text-xs text-white/30 italic">
+                        <p className="mt-1.5 text-xs text-zinc-600">
                           Aguardando seleção...
                         </p>
                       )}
@@ -791,27 +791,27 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                     {/* Step 2 Summary: Profissional */}
                     <div
                       onClick={() => serviceId && setStep(2)}
-                      className={`p-3.5 rounded-2xl border transition-all ${
+                      className={`p-3.5 rounded-md border transition-all ${
                         serviceId ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                       } ${
                         step === 2
-                          ? 'bg-[#1C1C1C] border-[#D4AF37]/40'
-                          : 'bg-[#121212] border-white/5 hover:border-white/15'
+                          ? 'bg-white/[0.04] border-white/20'
+                          : 'bg-[#111111] border-white/[0.06] hover:border-white/15'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/50">
+                      <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-zinc-500">
                         <span className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          <User className="w-3.5 h-3.5 text-[#C5A059]" />
                           2. Profissional
                         </span>
                         {barberId && (
-                          <span className="text-[#D4AF37] text-[10px] hover:underline">Alterar</span>
+                          <span className="text-zinc-400 hover:text-white text-[10px]">Alterar</span>
                         )}
                       </div>
                       {barberName ? (
-                        <p className="mt-2 text-sm font-bold text-white">{barberName}</p>
+                        <p className="mt-2 text-sm font-semibold text-white">{barberName}</p>
                       ) : (
-                        <p className="mt-1.5 text-xs text-white/30 italic">
+                        <p className="mt-1.5 text-xs text-zinc-600">
                           Aguardando seleção...
                         </p>
                       )}
@@ -820,33 +820,33 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                     {/* Step 3 Summary: Data e Horário */}
                     <div
                       onClick={() => serviceId && barberId && setStep(3)}
-                      className={`p-3.5 rounded-2xl border transition-all ${
+                      className={`p-3.5 rounded-md border transition-all ${
                         serviceId && barberId ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'
                       } ${
                         step === 3
-                          ? 'bg-[#1C1C1C] border-[#D4AF37]/40'
-                          : 'bg-[#121212] border-white/5 hover:border-white/15'
+                          ? 'bg-white/[0.04] border-white/20'
+                          : 'bg-[#111111] border-white/[0.06] hover:border-white/15'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-white/50">
+                      <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-zinc-500">
                         <span className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          <Calendar className="w-3.5 h-3.5 text-[#C5A059]" />
                           3. Data e Horário
                         </span>
                         {startTime && (
-                          <span className="text-[#D4AF37] text-[10px] hover:underline">Alterar</span>
+                          <span className="text-zinc-400 hover:text-white text-[10px]">Alterar</span>
                         )}
                       </div>
                       {startTime ? (
                         <div className="mt-2 flex items-center justify-between">
-                          <span className="text-sm font-bold text-white capitalize">
+                          <span className="text-sm font-semibold text-white capitalize">
                             {new Date(startTime).toLocaleString('pt-BR', {
                               weekday: 'short',
                               day: '2-digit',
                               month: 'short',
                             })}
                           </span>
-                          <span className="text-sm font-black text-[#D4AF37]">
+                          <span className="text-sm font-bold text-[#C5A059]">
                             {new Date(startTime).toLocaleString('pt-BR', {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -854,7 +854,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                           </span>
                         </div>
                       ) : (
-                        <p className="mt-1.5 text-xs text-white/30 italic">
+                        <p className="mt-1.5 text-xs text-zinc-600">
                           Aguardando seleção...
                         </p>
                       )}
@@ -862,12 +862,12 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                   </div>
 
                   {/* Total Footer */}
-                  <div className="pt-4 border-t border-white/10 space-y-4">
+                  <div className="pt-4 border-t border-white/[0.06] space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                      <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
                         Valor Total
                       </span>
-                      <span className="text-xl font-black text-[#D4AF37]">
+                      <span className="text-lg font-bold text-[#C5A059]">
                         {formatPrice(servicePrice || 0)}
                       </span>
                     </div>
@@ -876,10 +876,10 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                       <button
                         type="button"
                         onClick={() => setStep(4)}
-                        className="w-full py-3.5 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-extrabold text-xs uppercase tracking-wider shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                        className="w-full py-3 px-4 rounded-md bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 hover:border-[#C5A059]/60 text-white font-semibold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
                         <span>Revisar e Confirmar</span>
-                        <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                        <ChevronRight className="w-4 h-4 stroke-[2]" />
                       </button>
                     )}
                   </div>

@@ -77,34 +77,34 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
         {/* Title Section */}
         <div>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-            <span className="text-xs font-bold uppercase tracking-widest text-[#D4AF37]">
+            <Sparkles className="w-3.5 h-3.5 text-[#C5A059]" />
+            <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
               Registro de Atendimentos
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
             Histórico Completo
           </h1>
         </div>
 
         {/* List of Past Appointments */}
         {appointments.length === 0 ? (
-          <div className="bg-[#151515] border border-white/10 rounded-3xl p-10 sm:p-14 text-center space-y-5 shadow-2xl">
-            <div className="w-16 h-16 rounded-2xl bg-[#1C1C1C] border border-white/10 flex items-center justify-center text-[#D4AF37] mx-auto shadow-inner">
-              <Clock className="w-8 h-8 stroke-[1.5]" />
+          <div className="bg-[#141414] border border-white/[0.07] rounded-lg p-10 sm:p-14 text-center space-y-5">
+            <div className="w-12 h-12 rounded-md bg-white/[0.04] border border-white/10 flex items-center justify-center text-[#C5A059] mx-auto">
+              <Clock className="w-6 h-6 stroke-[1.6]" />
             </div>
             <div className="max-w-xs mx-auto space-y-1">
-              <h3 className="text-lg font-bold text-white">Nenhum histórico registrado</h3>
-              <p className="text-xs text-white/50 leading-relaxed">
+              <h3 className="text-base font-semibold text-white">Nenhum histórico registrado</h3>
+              <p className="text-xs text-zinc-500 leading-relaxed">
                 Quando você realizar ou concluir atendimentos, eles ficarão salvos aqui.
               </p>
             </div>
             <div className="pt-2">
               <Link
                 href="/?action=agendar"
-                className="inline-flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-2xl bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] font-bold text-sm shadow-xl shadow-[#D4AF37]/25 transition-all hover:scale-105"
+                className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-md bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-[#C5A059]/60 text-white font-medium text-xs transition-all"
               >
-                <Scissors className="w-4 h-4" />
+                <Scissors className="w-3.5 h-3.5 text-[#C5A059]" />
                 <span>Realizar Primeiro Corte</span>
               </Link>
             </div>
@@ -120,55 +120,55 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
               return (
                 <div
                   key={appt.id}
-                  className="bg-[#151515] border border-white/10 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-white/20 shadow-lg"
+                  className="bg-[#141414] border border-white/[0.07] hover:border-white/15 rounded-lg p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
                 >
                   <div className="flex items-start gap-4">
                     <div className="pt-1">
                       {isCompleted ? (
-                        <div className="w-10 h-10 rounded-xl bg-[#22C55E]/15 text-[#22C55E] flex items-center justify-center border border-[#22C55E]/30">
-                          <CheckCircle2 className="w-5 h-5" />
+                        <div className="w-9 h-9 rounded-md bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+                          <CheckCircle2 className="w-4 h-4" />
                         </div>
                       ) : isCanceled || isNoShow ? (
-                        <div className="w-10 h-10 rounded-xl bg-[#EF4444]/15 text-[#EF4444] flex items-center justify-center border border-[#EF4444]/30">
-                          <XCircle className="w-5 h-5" />
+                        <div className="w-9 h-9 rounded-md bg-red-500/10 text-red-400 flex items-center justify-center border border-red-500/20">
+                          <XCircle className="w-4 h-4" />
                         </div>
                       ) : (
-                        <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/15 text-[#D4AF37] flex items-center justify-center border border-[#D4AF37]/30">
-                          <Clock className="w-5 h-5" />
+                        <div className="w-9 h-9 rounded-md bg-white/[0.04] text-[#C5A059] flex items-center justify-center border border-white/10">
+                          <Clock className="w-4 h-4" />
                         </div>
                       )}
                     </div>
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-bold text-white text-base truncate">{appt.service.name}</h4>
+                        <h4 className="font-semibold text-white text-sm sm:text-base truncate">{appt.service.name}</h4>
                         {isCompleted && (
-                          <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30">
+                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                             Concluído
                           </span>
                         )}
                         {isCanceled && (
-                          <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30">
+                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">
                             Cancelado
                           </span>
                         )}
                         {isNoShow && (
-                          <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30">
+                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">
                             Falta (No-Show)
                           </span>
                         )}
                         {isPending && (
-                          <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#D4AF37] border border-[#D4AF37]/30">
+                          <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-white/[0.04] text-[#C5A059] border border-white/10">
                             Pendente
                           </span>
                         )}
                       </div>
 
-                      <p className="text-xs text-white/60 mt-1">
-                        Profissional: <span className="text-white font-medium">{appt.barber.user?.name || 'Barbeiro Master'}</span>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Profissional: <span className="text-zinc-200 font-medium">{appt.barber.user?.name || 'Barbeiro Master'}</span>
                       </p>
 
-                      <div className="flex items-center gap-3 text-xs text-[#D4AF37] font-semibold mt-1.5">
+                      <div className="flex items-center gap-2.5 text-xs text-zinc-400 font-normal mt-1.5">
                         <span>{formatDate(appt.startTime)}</span>
                         <span>•</span>
                         <span>{formatTime(appt.startTime)}</span>
@@ -176,23 +176,23 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                     </div>
                   </div>
 
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-white/5 pt-3 sm:pt-0 gap-3">
-                    <span className="font-bold text-white text-base">
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 border-white/[0.06] pt-3 sm:pt-0 gap-3">
+                    <span className="font-bold text-[#C5A059] text-base">
                       R$ {(appt.priceCents / 100).toFixed(2)}
                     </span>
 
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/agenda/${appt.id}`}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#D4AF37]/15 text-xs font-bold text-white/80 hover:text-[#D4AF37] border border-white/10 hover:border-[#D4AF37]/40 transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-300 hover:text-white border border-white/10 hover:border-white/25 transition-all"
                       >
                         <span>Ver detalhes</span>
                       </Link>
                       <Link
                         href="/?action=agendar"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#D4AF37]/15 text-xs font-bold text-[#D4AF37] border border-white/10 hover:border-[#D4AF37]/40 transition-all"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] text-xs font-medium text-zinc-200 hover:text-white border border-white/10 hover:border-[#C5A059]/50 transition-all"
                       >
-                        <RotateCcw className="w-3.5 h-3.5" />
+                        <RotateCcw className="w-3.5 h-3.5 text-[#C5A059]" />
                         <span>Agendar de novo</span>
                       </Link>
                     </div>

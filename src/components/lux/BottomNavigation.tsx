@@ -74,10 +74,10 @@ export function BottomNavigation({
             type="button"
             onClick={() => handleTabClick('inicio')}
             className={`flex flex-col items-center justify-center gap-1 w-12 transition-all duration-200 cursor-pointer ${
-              currentTab === 'inicio' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
+              currentTab === 'inicio' ? 'text-white' : 'text-zinc-500 hover:text-zinc-200'
             }`}
           >
-            <Home className="w-5 h-5 stroke-[2]" />
+            <Home className="w-5 h-5 stroke-[1.8]" />
             <span className="text-[11px] font-medium tracking-tight">Início</span>
           </button>
 
@@ -86,24 +86,24 @@ export function BottomNavigation({
             type="button"
             onClick={() => handleTabClick('agendamentos')}
             className={`flex flex-col items-center justify-center gap-1 w-14 transition-all duration-200 cursor-pointer ${
-              currentTab === 'agendamentos' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
+              currentTab === 'agendamentos' ? 'text-white' : 'text-zinc-500 hover:text-zinc-200'
             }`}
           >
-            <Clock className="w-5 h-5 stroke-[2]" />
+            <Clock className="w-5 h-5 stroke-[1.8]" />
             <span className="text-[11px] font-medium tracking-tight">Agenda</span>
           </button>
 
           {/* Item 3: Botão central com nome visual 'Agendar' */}
-          <div className="relative -mt-5 flex flex-col items-center justify-center">
+          <div className="relative -mt-4 flex flex-col items-center justify-center">
             <button
               type="button"
               onClick={handlePlusClick}
               aria-label="Agendar Horário"
-              className="w-12 h-12 rounded-full bg-[#D4AF37] hover:bg-[#E2BE4D] text-[#0D0D0D] flex items-center justify-center shadow-[0_4px_20px_rgba(212,175,55,0.4)] transition-all duration-200 hover:scale-105 active:scale-95 border-4 border-[#0D0D0D] cursor-pointer"
+              className="w-11 h-11 rounded-lg bg-[#1A1A1A] hover:bg-[#242424] text-[#C5A059] flex items-center justify-center transition-all duration-200 border border-white/15 cursor-pointer"
             >
-              <Plus className="w-6 h-6 stroke-[2.5]" />
+              <Plus className="w-5 h-5 stroke-[2.2]" />
             </button>
-            <span className="text-[10px] font-bold text-[#D4AF37] tracking-tight mt-0.5">
+            <span className="text-[10px] font-medium text-zinc-300 tracking-tight mt-1">
               Agendar
             </span>
           </div>
@@ -113,10 +113,10 @@ export function BottomNavigation({
             type="button"
             onClick={() => handleTabClick('historico')}
             className={`flex flex-col items-center justify-center gap-1 w-14 transition-all duration-200 cursor-pointer ${
-              currentTab === 'historico' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
+              currentTab === 'historico' ? 'text-white' : 'text-zinc-500 hover:text-zinc-200'
             }`}
           >
-            <Calendar className="w-5 h-5 stroke-[2]" />
+            <Calendar className="w-5 h-5 stroke-[1.8]" />
             <span className="text-[11px] font-medium tracking-tight">Histórico</span>
           </button>
 
@@ -125,10 +125,10 @@ export function BottomNavigation({
             type="button"
             onClick={() => handleTabClick('mais')}
             className={`flex flex-col items-center justify-center gap-1 w-12 transition-all duration-200 cursor-pointer ${
-              currentTab === 'mais' ? 'text-[#D4AF37]' : 'text-[#7A7A7A] hover:text-[#FFFFFF]'
+              currentTab === 'mais' ? 'text-white' : 'text-zinc-500 hover:text-zinc-200'
             }`}
           >
-            <MoreHorizontal className="w-5 h-5 stroke-[2]" />
+            <MoreHorizontal className="w-5 h-5 stroke-[1.8]" />
             <span className="text-[11px] font-medium tracking-tight">Mais</span>
           </button>
         </div>

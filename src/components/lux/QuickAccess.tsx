@@ -26,9 +26,9 @@ export function QuickAccess({ onActionClick }: QuickAccessProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
-          className="bg-[#151515] rounded-2xl p-3 sm:p-4 border border-white/5 shadow-xl"
+          className="bg-[#141414] rounded-lg p-3 sm:p-4 border border-white/[0.07]"
         >
-          <div className="grid grid-cols-4 divide-x divide-white/5">
+          <div className="grid grid-cols-4 divide-x divide-white/[0.06]">
             {items.map((item) => {
               const IconComponent = item.icon;
               return (
@@ -38,8 +38,8 @@ export function QuickAccess({ onActionClick }: QuickAccessProps) {
                   onClick={() => onActionClick && onActionClick(item.id)}
                   className="flex flex-col items-center justify-center py-1.5 px-1 transition-all duration-200 hover:opacity-80 active:scale-[0.96] group cursor-pointer"
                 >
-                  <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-[#D4AF37] stroke-[1.8] transition-transform group-hover:scale-110" />
-                  <span className="text-[11px] sm:text-xs font-semibold text-white/80 mt-1.5 text-center leading-tight">
+                  <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-[#C5A059] stroke-[1.8]" />
+                  <span className="text-[11px] sm:text-xs font-medium text-zinc-300 mt-1.5 text-center leading-tight">
                     {item.label}
                   </span>
                 </button>
