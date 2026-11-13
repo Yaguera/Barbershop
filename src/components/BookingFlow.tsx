@@ -5,6 +5,7 @@ import { trackBookingTelemetryAction } from '@/app/actions/telemetry-goals-actio
 import { canResumeBooking } from '@/core/utils/booking-resume';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import { useBookingStore } from '@/store/booking-store';
+import { getServiceImage } from '@/utils/service-images';
 import {
   AlertTriangle,
   Calendar,
@@ -417,7 +418,7 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
             </div>
             {errorMessage && <p role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">{errorMessage}</p>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {initialServices.map((service) => (
+              {initialServices.map((service, idx) => (
                 <button
                   key={service.id}
                   onClick={() => {
@@ -432,13 +433,13 @@ export default function BookingFlow({ initialServices, initialBarbers }: Booking
                   }`}
                 >
                   <div className="w-14 h-14 rounded-md overflow-hidden shrink-0 mr-4 border border-white/10 relative">
-                    {service.image ? <Image
-                      src={service.image}
+                    <Image
+                      src={getServiceImage(service.name, service.image, idx)}
                       alt=""
                       width={56}
                       height={56}
                       className="object-cover w-full h-full"
-                    /> : <div aria-hidden="true" className="w-full h-full flex items-center justify-center bg-[#242016] text-[#C5A059]"><Scissors className="w-5 h-5" /></div>}
+                    />
                   </div>
                   <div className="flex-grow min-w-0 pr-2">
                     <h3 className="font-semibold text-white text-sm sm:text-base truncate">{service.name}</h3>

@@ -38,22 +38,23 @@ export function ServiceCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-44 sm:w-48 md:w-full shrink-0 snap-start bg-[#151515] rounded-2xl border border-white/10 hover:border-white/20 hover:bg-[#181818] transition-colors flex flex-col overflow-hidden group cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
+      className="w-48 sm:w-54 md:w-64 lg:w-68 shrink-0 snap-start bg-[#151515] rounded-2xl border border-white/10 hover:border-white/20 hover:bg-[#181818] transition-colors flex flex-col overflow-hidden group cursor-pointer text-left select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#D4AF37]"
     >
       {/* Top Image */}
-      <div className="h-26 sm:h-30 md:h-40 relative w-full bg-[#1C1C1C] overflow-hidden">
+      <div className="h-28 sm:h-32 md:h-44 relative w-full bg-[#1C1C1C] overflow-hidden">
         {imageUrl ? <Image
           src={imageUrl}
           alt=""
           fill
-          sizes="(max-width: 768px) 180px, 280px"
+          draggable={false}
+          sizes="(max-width: 768px) 220px, 280px"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         /> : (
           <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#242016] to-[#151515] text-[#C5A059]">
             <Scissors className="w-8 h-8 opacity-70" />
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-transparent to-transparent opacity-65" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#151515] via-transparent to-transparent opacity-70" />
 
         {/* Small icon overlapping image */}
         <div className="absolute bottom-2 left-2.5 md:bottom-3 md:left-3.5 w-6 h-6 md:w-7 md:h-7 rounded-md bg-[#141414]/90 border border-white/10 flex items-center justify-center z-10 backdrop-blur-xs">
